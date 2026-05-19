@@ -1,0 +1,21 @@
+﻿node_modules/
+.next/
+dist/
+build/
+
+# .NET
+bin/
+obj/
+*.user
+*.suo
+.vs/
+
+# Python
+__pycache__/
+venv/
+env/
+.env
+
+# OS
+.DS_Store
+Thumbs.db
