@@ -14,11 +14,12 @@ const geistMono = Geist_Mono({
 
 import { AuthProvider } from "@/contexts/AuthContext";
 import { CartProvider } from "@/contexts/CartContext";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 import Chatbot from "@/components/Chatbot";
 
 export const metadata: Metadata = {
-  title: "TravelHub - Complete Travel Tour Platform",
-  description: "Book your favorite tours and explore beautiful destinations",
+  title: "VoyagerElite - Trải Nghiệm Du Lịch Thượng Lưu",
+  description: "Kiến tạo những hành trình di sản và trải nghiệm du lịch cá nhân hóa hàng đầu tại Việt Nam.",
 };
 
 export default function RootLayout({
@@ -32,12 +33,14 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <AuthProvider>
-          <CartProvider>
-            {children}
-            <Chatbot />
-          </CartProvider>
-        </AuthProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <CartProvider>
+              {children}
+              <Chatbot />
+            </CartProvider>
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

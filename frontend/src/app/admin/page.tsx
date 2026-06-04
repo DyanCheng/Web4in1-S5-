@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
-import { Plane, Package, Users, DollarSign, Plus, Edit, Trash2, Search, Loader2 } from 'lucide-react';
+import { Package, Users, DollarSign, Plus, Edit, Trash2, Search, Loader2, Sun, Moon } from 'lucide-react';
+import { useTheme } from '@/contexts/ThemeContext';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:5200';
 
@@ -36,6 +37,7 @@ export default function AdminDashboard() {
   const router = useRouter();
   const navigate = (url: string) => router.push(url);
   const { user, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const [activeTab, setActiveTab] = useState('overview');
   const [tours, setTours] = useState<Tour[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -90,10 +92,10 @@ export default function AdminDashboard() {
   const activeToursCount = tours.length;
 
   const stats = [
-    { label: 'Tổng doanh thu', value: `${totalRevenue.toLocaleString('vi-VN')}đ`, icon: <DollarSign className="size-8" />, color: 'bg-green-100 text-green-600' },
-    { label: 'Tổng đơn hàng', value: totalOrders.toString(), icon: <Package className="size-8" />, color: 'bg-blue-100 text-blue-600' },
-    { label: 'Khách đặt tour', value: uniqueUsersCount.toString(), icon: <Users className="size-8" />, color: 'bg-purple-100 text-purple-600' },
-    { label: 'Tours đang có', value: activeToursCount.toString(), icon: <Plane className="size-8" />, color: 'bg-orange-100 text-orange-600' }
+    { label: 'Tổng doanh thu', value: `${totalRevenue.toLocaleString('vi-VN')}đ`, icon: <DollarSign className="size-6" />, color: 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400' },
+    { label: 'Tổng đơn hàng', value: totalOrders.toString(), icon: <Package className="size-6" />, color: 'bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400' },
+    { label: 'Khách hàng', value: uniqueUsersCount.toString(), icon: <Users className="size-6" />, color: 'bg-violet-50 dark:bg-violet-950/40 text-violet-600 dark:text-violet-400' },
+    { label: 'Hành trình', value: activeToursCount.toString(), icon: <Package className="size-6" />, color: 'bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400' }
   ];
 
   const handleDeleteBooking = async (id: string) => {
@@ -118,7 +120,7 @@ export default function AdminDashboard() {
 
   if (!user || user.role !== 'admin') {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center text-gray-700 font-medium">
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center text-slate-700 dark:text-slate-400 font-bold">
         Đang chuyển hướng quyền truy cập...
       </div>
     );
@@ -131,69 +133,89 @@ export default function AdminDashboard() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className={`min-h-screen bg-slate-50/50 dark:bg-slate-955 font-sans transition-colors duration-300 flex flex-col ${
+      theme === 'dark' ? 'dark text-white' : 'text-slate-900'
+    }`}>
+      
       {/* Header */}
-      <header className="bg-white border-b">
+      <header className="bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 py-4 transition-colors">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center gap-2">
-              <Plane className="size-8 text-blue-600" />
-              <span className="text-2xl text-gray-900 font-bold">TravelHub Admin</span>
+          <div className="flex justify-between items-center">
+            
+            <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
+              <span className="text-2xl font-black text-blue-900 dark:text-blue-400 font-serif italic tracking-wide">
+                VoyagerElite Admin
+              </span>
             </div>
 
             <div className="flex items-center gap-4">
-              <span className="text-gray-700 font-medium">{user.name}</span>
+              {/* Theme toggle */}
+              <button
+                onClick={toggleTheme}
+                className="p-2 text-slate-600 dark:text-slate-350 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors cursor-pointer"
+              >
+                {theme === 'dark' ? <Sun className="size-5 text-yellow-400" /> : <Moon className="size-5" />}
+              </button>
+
+              <span className="text-slate-750 dark:text-slate-200 font-bold text-sm">{user.name}</span>
               <button
                 onClick={logout}
-                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-semibold cursor-pointer"
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-200 rounded-full transition-all text-xs font-bold cursor-pointer"
               >
                 Đăng xuất
               </button>
             </div>
+
           </div>
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="flex items-center justify-between mb-8">
-          <h1 className="text-3xl text-gray-900 font-bold">Quản trị hệ thống</h1>
-          <Link href="/" className="text-blue-600 hover:text-blue-700 font-semibold cursor-pointer">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex-1 w-full text-left">
+        
+        <div className="flex items-center justify-between mb-10">
+          <div>
+            <span className="inline-block px-4 py-1.5 text-xs font-extrabold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 rounded-full border border-blue-100/30 uppercase tracking-widest mb-3">
+              Khu vực quản trị
+            </span>
+            <h1 className="text-3xl font-black font-serif text-slate-900 dark:text-white">Hệ Thống VoyagerElite</h1>
+          </div>
+          <Link href="/" className="text-sm font-bold text-blue-600 dark:text-blue-400 hover:underline">
             ← Về trang chủ
           </Link>
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 text-left">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
           {stats.map((stat, index) => (
-            <div key={index} className="bg-white rounded-xl p-6 border border-gray-100 shadow-sm shadow-indigo-100/50">
-              <div className="flex items-center justify-between mb-4">
-                <div className={`size-16 rounded-lg flex items-center justify-center ${stat.color}`}>
-                  {stat.icon}
-                </div>
+            <div key={index} className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-100/40 dark:border-slate-800/40 shadow-sm flex items-center gap-4">
+              <div className={`size-12 rounded-2xl flex items-center justify-center shrink-0 ${stat.color}`}>
+                {stat.icon}
               </div>
-              <p className="text-sm text-gray-600 mb-1 font-semibold">{stat.label}</p>
-              <p className="text-3xl text-gray-900 font-bold">{stat.value}</p>
+              <div>
+                <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">{stat.label}</p>
+                <p className="text-2xl font-black text-slate-900 dark:text-white mt-0.5">{stat.value}</p>
+              </div>
             </div>
           ))}
         </div>
 
-        {/* Tabs */}
-        <div className="bg-white rounded-xl mb-8 border border-gray-100 shadow-sm text-left">
-          <div className="border-b bg-gray-50/50 rounded-t-xl">
-            <div className="flex gap-8 px-6">
+        {/* Tabs and tables */}
+        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100/40 dark:border-slate-800/40 shadow-sm overflow-hidden mb-10">
+          <div className="border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/20 px-6">
+            <div className="flex gap-8">
               {['overview', 'tours', 'orders'].map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
-                  className={`py-4 border-b-2 transition-colors capitalize font-semibold cursor-pointer ${
+                  className={`py-4 border-b-2 transition-colors font-bold text-sm tracking-wider cursor-pointer ${
                     activeTab === tab
-                      ? 'border-blue-600 text-blue-600'
-                      : 'border-transparent text-gray-600 hover:text-gray-900'
+                      ? 'border-blue-605 text-blue-600 dark:border-blue-400 dark:text-blue-400'
+                      : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-slate-205'
                   }`}
                 >
-                  {tab === 'overview' && 'Tổng quan'}
-                  {tab === 'tours' && 'Quản lý Tour'}
-                  {tab === 'orders' && 'Đơn hàng đặt'}
+                  {tab === 'overview' && 'TỔNG QUAN'}
+                  {tab === 'tours' && 'QUẢN LÝ TOUR'}
+                  {tab === 'orders' && 'DANH SÁCH ĐƠN HÀNG'}
                 </button>
               ))}
             </div>
@@ -201,57 +223,54 @@ export default function AdminDashboard() {
 
           <div className="p-6">
             {loading ? (
-              <div className="flex items-center justify-center py-12">
+              <div className="flex items-center justify-center py-20">
                 <Loader2 className="size-8 text-blue-600 animate-spin" />
-                <span className="ml-3 text-gray-600 font-medium">Đang tải dữ liệu...</span>
+                <span className="ml-3 text-slate-500 dark:text-slate-400 font-bold">Đang tải dữ liệu quản trị...</span>
               </div>
             ) : (
               <>
                 {/* Overview Tab */}
                 {activeTab === 'overview' && (
-                  <div className="space-y-6">
-                    <h2 className="text-2xl text-gray-900 font-bold">Hoạt động gần đây</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div>
-                        <h3 className="text-lg text-gray-900 mb-4 font-semibold">Đơn đặt tour mới</h3>
-                        <div className="space-y-3 font-medium text-sm">
-                          {bookings.slice(0, 3).map((order) => (
-                            <div key={order.id} className="border rounded-lg p-4 bg-white shadow-sm flex justify-between items-center">
-                              <div>
-                                <p className="text-gray-900 font-bold">{order.userEmail}</p>
-                                <p className="text-xs text-gray-500 font-semibold mt-0.5">{order.tourTitle}</p>
-                                <p className="text-xxs text-gray-400 font-semibold mt-1">Khởi hành: {order.date}</p>
-                              </div>
-                              <div className="text-right">
-                                <span className="text-blue-600 font-bold block">{Number(order.total).toLocaleString('vi-VN')}đ</span>
-                                <span
-                                  className={`text-xxs px-2 py-0.5 rounded-full font-bold inline-block mt-1 ${
-                                    order.status === 'confirmed'
-                                      ? 'bg-green-100 text-green-700'
-                                      : 'bg-yellow-100 text-yellow-700'
-                                  }`}
-                                >
-                                  {order.status === 'confirmed' ? 'Đã duyệt' : 'Chờ duyệt'}
-                                </span>
-                              </div>
+                  <div className="space-y-8">
+                    <div>
+                      <h3 className="text-lg font-extrabold text-slate-900 dark:text-white mb-4 font-serif">Đơn đặt tour mới nhất</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-bold">
+                        {bookings.slice(0, 4).map((order) => (
+                          <div key={order.id} className="border border-slate-100 dark:border-slate-800 rounded-2xl p-5 bg-slate-50/50 dark:bg-slate-900 shadow-xxs flex justify-between items-center">
+                            <div>
+                              <p className="text-slate-900 dark:text-white font-extrabold text-sm">{order.userEmail}</p>
+                              <p className="text-slate-400 dark:text-slate-500 mt-1">{order.tourTitle}</p>
+                              <p className="text-[10px] text-slate-400 dark:text-slate-550 mt-1 uppercase tracking-wider">Khởi hành: {order.date}</p>
                             </div>
-                          ))}
-                        </div>
+                            <div className="text-right">
+                              <span className="text-blue-900 dark:text-blue-400 font-black text-sm block">{Number(order.total).toLocaleString('vi-VN')}đ</span>
+                              <span
+                                className={`text-[9px] px-2.5 py-0.5 rounded-full font-black tracking-wide uppercase inline-block mt-2 ${
+                                  order.status === 'confirmed'
+                                    ? 'bg-green-50 text-green-700 dark:bg-green-950/40 dark:text-green-400'
+                                    : 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400'
+                                }`}
+                              >
+                                {order.status === 'confirmed' ? 'Đã duyệt' : 'Chờ duyệt'}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
                       </div>
+                    </div>
 
-                      <div>
-                        <h3 className="text-lg text-gray-900 mb-4 font-semibold">Danh sách Tour có sẵn</h3>
-                        <div className="space-y-3 font-medium text-sm">
-                          {tours.slice(0, 3).map((t) => (
-                            <div key={t.id} className="border rounded-lg p-4 bg-white shadow-sm flex items-center gap-3">
-                              <img src={t.image} alt={t.title} className="size-12 rounded object-cover" />
-                              <div>
-                                <p className="text-gray-900 font-bold">{t.title}</p>
-                                <p className="text-xs text-gray-500 font-semibold">{t.location} • {Number(t.price).toLocaleString('vi-VN')}đ</p>
-                              </div>
+                    <div>
+                      <h3 className="text-lg font-extrabold text-slate-900 dark:text-white mb-4 font-serif">Hành trình đang có sẵn</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-bold">
+                        {tours.slice(0, 4).map((t) => (
+                          <div key={t.id} className="border border-slate-100 dark:border-slate-800 rounded-2xl p-4 bg-slate-50/50 dark:bg-slate-900 shadow-xxs flex items-center gap-3">
+                            <img src={t.image} alt={t.title} className="size-11 rounded-xl object-cover shrink-0" />
+                            <div>
+                              <p className="text-slate-900 dark:text-white font-extrabold text-sm line-clamp-1">{t.title}</p>
+                              <p className="text-slate-400 dark:text-slate-500 mt-1">{t.location} • {Number(t.price).toLocaleString('vi-VN')}đ</p>
                             </div>
-                          ))}
-                        </div>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   </div>
@@ -260,74 +279,76 @@ export default function AdminDashboard() {
                 {/* Tours Tab */}
                 {activeTab === 'tours' && (
                   <div>
-                    <div className="flex items-center justify-between mb-6">
-                      <h2 className="text-2xl text-gray-900 font-bold">Danh sách Tour du lịch</h2>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                      <h2 className="text-xl font-extrabold text-slate-900 dark:text-white font-serif">Quản lý tour du lịch</h2>
                       <button 
                         onClick={() => alert('Chức năng thêm Tour mới được kích hoạt!')}
-                        className="px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 font-semibold cursor-pointer"
+                        className="px-4 py-2.5 bg-blue-900 hover:bg-blue-955 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-2xl transition-colors flex items-center gap-2 font-bold text-xs cursor-pointer shadow-md"
                       >
-                        <Plus className="size-5" />
+                        <Plus className="size-4" />
                         Thêm tour mới
                       </button>
                     </div>
 
-                    <div className="mb-4">
+                    <div className="mb-6">
                       <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-5 text-gray-400" />
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
                         <input
                           type="text"
                           placeholder="Tìm kiếm tour theo tên hoặc địa điểm..."
                           value={searchQuery}
                           onChange={(e) => setSearchQuery(e.target.value)}
-                          className="w-full pl-10 pr-4 py-2.5 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                          className="w-full pl-11 pr-4 py-2.5 border border-slate-150 dark:border-slate-800 bg-transparent rounded-2xl outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 text-slate-800 dark:text-slate-100 font-bold text-sm transition-all"
                         />
                       </div>
                     </div>
 
-                    <div className="overflow-x-auto border rounded-xl">
-                      <table className="w-full">
-                        <thead className="bg-gray-50 border-b">
-                          <tr>
-                            <th className="px-6 py-3 text-left text-xs text-gray-500 uppercase font-semibold">Tên tour</th>
-                            <th className="px-6 py-3 text-left text-xs text-gray-500 uppercase font-semibold">Địa điểm</th>
-                            <th className="px-6 py-3 text-left text-xs text-gray-500 uppercase font-semibold">Thời gian</th>
-                            <th className="px-6 py-3 text-left text-xs text-gray-500 uppercase font-semibold">Đơn giá</th>
-                            <th className="px-6 py-3 text-left text-xs text-gray-500 uppercase font-semibold">Đánh giá</th>
-                            <th className="px-6 py-3 text-left text-xs text-gray-500 uppercase font-semibold">Thao tác</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y font-medium text-sm text-gray-800 bg-white">
-                          {filteredTours.map((t) => (
-                            <tr key={t.id}>
-                              <td className="px-6 py-4 font-bold flex items-center gap-2">
-                                <img src={t.image} alt={t.title} className="size-10 rounded object-cover" />
-                                {t.title}
-                              </td>
-                              <td className="px-6 py-4">{t.location}</td>
-                              <td className="px-6 py-4">{t.duration}</td>
-                              <td className="px-6 py-4 text-blue-600 font-bold">{Number(t.price).toLocaleString('vi-VN')}đ</td>
-                              <td className="px-6 py-4 text-yellow-600">★ {t.rating} ({t.reviews})</td>
-                              <td className="px-6 py-4 text-sm">
-                                <div className="flex gap-2">
-                                  <button onClick={() => alert('Sửa thông tin tour')} className="text-blue-600 hover:text-blue-700 cursor-pointer">
-                                    <Edit className="size-4" />
-                                  </button>
-                                  <button
-                                    onClick={() => {
-                                      if (confirm('Bạn muốn xóa tour này?')) {
-                                        setTours(prev => prev.filter(item => item.id !== t.id));
-                                      }
-                                    }}
-                                    className="text-red-600 hover:text-red-700 cursor-pointer"
-                                  >
-                                    <Trash2 className="size-4" />
-                                  </button>
-                                </div>
-                              </td>
+                    <div className="border border-slate-100 dark:border-slate-800 rounded-2xl overflow-hidden">
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                          <thead className="bg-slate-50/60 dark:bg-slate-800/40 border-b border-slate-100 dark:border-slate-800">
+                            <tr>
+                              <th className="px-6 py-3.5 text-left text-xs text-slate-400 dark:text-slate-500 uppercase tracking-widest font-black">Hình ảnh & Tên tour</th>
+                              <th className="px-6 py-3.5 text-left text-xs text-slate-400 dark:text-slate-500 uppercase tracking-widest font-black">Địa điểm</th>
+                              <th className="px-6 py-3.5 text-left text-xs text-slate-400 dark:text-slate-500 uppercase tracking-widest font-black">Thời gian</th>
+                              <th className="px-6 py-3.5 text-left text-xs text-slate-400 dark:text-slate-500 uppercase tracking-widest font-black">Đơn giá</th>
+                              <th className="px-6 py-3.5 text-left text-xs text-slate-400 dark:text-slate-500 uppercase tracking-widest font-black">Đánh giá</th>
+                              <th className="px-6 py-3.5 text-left text-xs text-slate-400 dark:text-slate-500 uppercase tracking-widest font-black">Thao tác</th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                          </thead>
+                          <tbody className="divide-y divide-slate-105 dark:divide-slate-800 font-semibold text-slate-700 dark:text-slate-300">
+                            {filteredTours.map((t) => (
+                              <tr key={t.id} className="hover:bg-slate-50/30 dark:hover:bg-slate-800/10">
+                                <td className="px-6 py-4 font-bold flex items-center gap-3 text-slate-900 dark:text-white">
+                                  <img src={t.image} alt={t.title} className="size-10 rounded-lg object-cover shrink-0" />
+                                  <span className="line-clamp-1">{t.title}</span>
+                                </td>
+                                <td className="px-6 py-4">{t.location}</td>
+                                <td className="px-6 py-4 text-slate-500 dark:text-slate-400">{t.duration}</td>
+                                <td className="px-6 py-4 text-blue-900 dark:text-blue-400 font-black">{Number(t.price).toLocaleString('vi-VN')}đ</td>
+                                <td className="px-6 py-4 text-amber-600 dark:text-amber-500 font-bold">★ {t.rating} ({t.reviews})</td>
+                                <td className="px-6 py-4">
+                                  <div className="flex gap-3">
+                                    <button onClick={() => alert('Sửa thông tin tour')} className="text-blue-600 dark:text-blue-400 hover:text-blue-700 cursor-pointer">
+                                      <Edit className="size-4" />
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        if (confirm('Bạn muốn xóa tour này?')) {
+                                          setTours(prev => prev.filter(item => item.id !== t.id));
+                                        }
+                                      }}
+                                      className="text-red-500 hover:text-red-700 cursor-pointer"
+                                    >
+                                      <Trash2 className="size-4" />
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -335,63 +356,66 @@ export default function AdminDashboard() {
                 {/* Orders Tab */}
                 {activeTab === 'orders' && (
                   <div>
-                    <h2 className="text-2xl text-gray-900 mb-6 font-bold">Danh sách Đơn đặt tour</h2>
-                    <div className="overflow-x-auto border rounded-xl">
-                      <table className="w-full">
-                        <thead className="bg-gray-50 border-b">
-                          <tr>
-                            <th className="px-6 py-3 text-left text-xs text-gray-500 uppercase font-semibold">Mã đơn</th>
-                            <th className="px-6 py-3 text-left text-xs text-gray-500 uppercase font-semibold">Khách hàng (Email)</th>
-                            <th className="px-6 py-3 text-left text-xs text-gray-500 uppercase font-semibold">Tour</th>
-                            <th className="px-6 py-3 text-left text-xs text-gray-500 uppercase font-semibold">Khởi hành</th>
-                            <th className="px-6 py-3 text-left text-xs text-gray-500 uppercase font-semibold">Số người</th>
-                            <th className="px-6 py-3 text-left text-xs text-gray-500 uppercase font-semibold">Tổng tiền</th>
-                            <th className="px-6 py-3 text-left text-xs text-gray-500 uppercase font-semibold">Trạng thái</th>
-                            <th className="px-6 py-3 text-left text-xs text-gray-500 uppercase font-semibold">Thao tác</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y font-medium text-sm text-gray-800 bg-white">
-                          {bookings.map((order) => (
-                            <tr key={order.id}>
-                              <td className="px-6 py-4 font-bold">{order.id}</td>
-                              <td className="px-6 py-4 font-semibold">{order.userEmail}</td>
-                              <td className="px-6 py-4">{order.tourTitle}</td>
-                              <td className="px-6 py-4">{order.date}</td>
-                              <td className="px-6 py-4">{order.guests} người</td>
-                              <td className="px-6 py-4 text-blue-600 font-bold">{Number(order.total).toLocaleString('vi-VN')}đ</td>
-                              <td className="px-6 py-4 text-sm">
-                                <span
-                                  className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
-                                    order.status === 'confirmed'
-                                      ? 'bg-green-100 text-green-700'
-                                      : 'bg-yellow-100 text-yellow-700'
-                                  }`}
-                                >
-                                  {order.status === 'confirmed' ? 'Đã duyệt' : 'Chờ duyệt'}
-                                </span>
-                              </td>
-                              <td className="px-6 py-4">
-                                <div className="flex gap-2">
-                                  {order.status !== 'confirmed' && (
-                                    <button 
-                                      onClick={() => handleConfirmBooking(order.id)}
-                                      className="px-2 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700 font-semibold cursor-pointer"
-                                    >
-                                      Duyệt
-                                    </button>
-                                  )}
-                                  <button
-                                    onClick={() => handleDeleteBooking(order.id)}
-                                    className="px-2 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700 font-semibold cursor-pointer"
-                                  >
-                                    Hủy
-                                  </button>
-                                </div>
-                              </td>
+                    <h2 className="text-xl font-extrabold text-slate-900 dark:text-white font-serif mb-6">Đơn hàng đặt từ khách</h2>
+                    
+                    <div className="border border-slate-100 dark:border-slate-800 rounded-2xl overflow-hidden">
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                          <thead className="bg-slate-50/60 dark:bg-slate-800/40 border-b border-slate-100 dark:border-slate-800">
+                            <tr>
+                              <th className="px-6 py-3.5 text-left text-xs text-slate-400 dark:text-slate-500 uppercase tracking-widest font-black">Mã đơn</th>
+                              <th className="px-6 py-3.5 text-left text-xs text-slate-400 dark:text-slate-500 uppercase tracking-widest font-black">Khách hàng</th>
+                              <th className="px-6 py-3.5 text-left text-xs text-slate-400 dark:text-slate-500 uppercase tracking-widest font-black">Hành trình</th>
+                              <th className="px-6 py-3.5 text-left text-xs text-slate-400 dark:text-slate-500 uppercase tracking-widest font-black">Khởi hành</th>
+                              <th className="px-6 py-3.5 text-left text-xs text-slate-400 dark:text-slate-500 uppercase tracking-widest font-black">Số lượng</th>
+                              <th className="px-6 py-3.5 text-left text-xs text-slate-400 dark:text-slate-550 uppercase tracking-widest font-black">Tổng chi phí</th>
+                              <th className="px-6 py-3.5 text-left text-xs text-slate-400 dark:text-slate-550 uppercase tracking-widest font-black">Trạng thái</th>
+                              <th className="px-6 py-3.5 text-left text-xs text-slate-400 dark:text-slate-550 uppercase tracking-widest font-black">Phê duyệt</th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-semibold text-slate-700 dark:text-slate-300">
+                            {bookings.map((order) => (
+                              <tr key={order.id} className="hover:bg-slate-50/30 dark:hover:bg-slate-800/10">
+                                <td className="px-6 py-4 font-bold text-slate-900 dark:text-white">{order.id}</td>
+                                <td className="px-6 py-4">{order.userEmail}</td>
+                                <td className="px-6 py-4">{order.tourTitle}</td>
+                                <td className="px-6 py-4 text-slate-500 dark:text-slate-400">{order.date}</td>
+                                <td className="px-6 py-4">{order.guests} người</td>
+                                <td className="px-6 py-4 text-blue-900 dark:text-blue-400 font-black">{Number(order.total).toLocaleString('vi-VN')}đ</td>
+                                <td className="px-6 py-4">
+                                  <span
+                                    className={`px-2.5 py-0.5 rounded-full text-[10px] font-black tracking-wide uppercase ${
+                                      order.status === 'confirmed'
+                                        ? 'bg-green-50 text-green-700 dark:bg-green-950/40 dark:text-green-400'
+                                        : 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400'
+                                    }`}
+                                  >
+                                    {order.status === 'confirmed' ? 'Đã duyệt' : 'Chờ duyệt'}
+                                  </span>
+                                </td>
+                                <td className="px-6 py-4">
+                                  <div className="flex gap-2">
+                                    {order.status !== 'confirmed' && (
+                                      <button 
+                                        onClick={() => handleConfirmBooking(order.id)}
+                                        className="px-3 py-1 bg-green-600 text-white rounded-xl text-xxs hover:bg-green-705 font-bold cursor-pointer transition-colors shadow-xxs"
+                                      >
+                                        Duyệt
+                                      </button>
+                                    )}
+                                    <button
+                                      onClick={() => handleDeleteBooking(order.id)}
+                                      className="px-3 py-1 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl text-xxs font-bold cursor-pointer transition-colors"
+                                    >
+                                      Hủy
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
                     </div>
                   </div>
                 )}

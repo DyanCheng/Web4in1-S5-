@@ -3,7 +3,10 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ImageWithFallback } from '@/components/figma/ImageWithFallback';
-import { MapPin, Calendar, Star, Plane, SlidersHorizontal, Loader2 } from 'lucide-react';
+import { MapPin, Calendar, Star, SlidersHorizontal, Loader2 } from 'lucide-react';
+import Header from '@/components/Header';
+import Footer from '@/components/Footer';
+import { useTheme } from '@/contexts/ThemeContext';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:5200';
 
@@ -25,6 +28,7 @@ function ToursPageInner() {
   const [tours, setTours] = useState<Tour[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const { theme } = useTheme();
 
   const destination = searchParams.get('destination') || '';
 
@@ -66,41 +70,36 @@ function ToursPageInner() {
     : tours;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className={`min-h-screen bg-slate-50/50 dark:bg-slate-950 font-sans transition-colors duration-300 flex flex-col ${
+      theme === 'dark' ? 'dark text-white' : 'text-slate-900'
+    }`}>
       {/* Header */}
-      <header className="bg-white border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
-              <Plane className="size-8 text-blue-600" />
-              <span className="text-2xl text-gray-900 font-bold">TravelHub</span>
-            </div>
-            <button onClick={() => navigate('/')} className="text-blue-600 hover:text-blue-700 font-semibold cursor-pointer">
-              ← Quay lại
-            </button>
-          </div>
-        </div>
-      </header>
+      <Header />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="flex items-center justify-between mb-8">
-          <div className="text-left">
-            <h1 className="text-3xl text-gray-900 mb-2 font-bold">
-              {destination ? `Kết quả tìm kiếm: "${destination}"` : 'Tất cả các tour'}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 flex-1 w-full">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-12 gap-4 text-left">
+          <div>
+            <span className="inline-block px-4 py-1.5 text-xs font-extrabold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 rounded-full border border-blue-100/30 uppercase tracking-widest mb-3">
+              VoyagerElite Tours
+            </span>
+            <h1 className="text-3xl sm:text-4xl font-extrabold font-serif leading-tight text-slate-900 dark:text-white">
+              {destination ? `Kết quả tìm kiếm: "${destination}"` : 'Hành Trình Khám Phá'}
             </h1>
-            <p className="text-gray-600">{toursToShow.length} tour được tìm thấy</p>
+            <p className="text-slate-500 dark:text-slate-400 text-sm mt-2 font-semibold">
+              Tìm thấy {toursToShow.length} hành trình độc bản dành cho bạn
+            </p>
           </div>
 
-          <button className="flex items-center gap-2 px-4 py-2 border rounded-lg hover:bg-gray-50 transition-colors font-medium text-gray-700 bg-white">
-            <SlidersHorizontal className="size-5" />
-            Bộ lọc
+          <button className="flex items-center gap-2 px-5 py-2.5 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl hover:bg-slate-55 dark:hover:bg-slate-800 transition-all font-bold text-sm text-slate-700 dark:text-slate-200 cursor-pointer shadow-sm">
+            <SlidersHorizontal className="size-4" />
+            Bộ lọc nâng cao
           </button>
         </div>
 
         {loading ? (
-          <div className="flex items-center justify-center py-24">
+          <div className="flex flex-col items-center justify-center py-32">
             <Loader2 className="size-10 text-blue-600 animate-spin" />
-            <span className="ml-3 text-gray-600 text-lg">Đang tải danh sách tour...</span>
+            <span className="mt-4 text-slate-500 dark:text-slate-400 font-bold">Đang tải danh sách hành trình...</span>
           </div>
         ) : (
           <>
@@ -108,49 +107,55 @@ function ToursPageInner() {
               {toursToShow.map((tour) => (
                 <div
                   key={tour.id}
-                  className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-shadow group cursor-pointer"
+                  className="bg-white dark:bg-slate-900 rounded-3xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 border border-slate-100/40 dark:border-slate-800/40 hover:-translate-y-1 cursor-pointer group flex flex-col h-full"
                   onClick={() => navigate(`/tour/${tour.id}`)}
                 >
                   <div className="relative h-64 overflow-hidden">
                     <ImageWithFallback
                       src={tour.image}
                       alt={tour.title}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
-                    <div className="absolute top-4 right-4 bg-white px-3 py-1 rounded-full">
-                      <span className="text-sm font-semibold">⭐ {tour.rating}</span>
+                    <div className="absolute top-4 right-4 bg-slate-950/65 backdrop-blur-sm px-3.5 py-1.5 rounded-full shadow-md text-white font-bold text-xs flex items-center gap-1">
+                      <Star className="size-3.5 fill-amber-400 text-amber-400" />
+                      <span>{tour.rating}</span>
                     </div>
                   </div>
 
-                  <div className="p-6 text-left">
-                    <div className="flex items-center gap-2 text-gray-500 mb-2">
-                      <MapPin className="size-4" />
-                      <span className="text-sm">{tour.location}</span>
+                  <div className="p-6 text-left flex flex-col flex-1">
+                    <div className="flex items-center gap-1.5 text-slate-400 dark:text-slate-500 mb-2 font-bold text-xs uppercase tracking-wider">
+                      <MapPin className="size-3.5 text-blue-600" />
+                      <span>{tour.location}</span>
                     </div>
 
-                    <h3 className="text-xl text-gray-900 mb-3 font-semibold">{tour.title}</h3>
+                    <h3 className="text-xl font-extrabold text-slate-900 dark:text-white mb-2 leading-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                      {tour.title}
+                    </h3>
 
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-2 text-gray-500">
-                        <Calendar className="size-4" />
-                        <span className="text-sm">{tour.duration}</span>
+                    <div className="flex items-center gap-4 text-slate-400 dark:text-slate-500 text-xs font-semibold mb-6">
+                      <div className="flex items-center gap-1.5">
+                        <Calendar className="size-3.5" />
+                        <span>{tour.duration}</span>
                       </div>
-                      <span className="text-xs text-gray-500">{tour.reviews} đánh giá</span>
+                      <span>•</span>
+                      <span>{tour.reviews} đánh giá</span>
                     </div>
 
-                    <div className="flex items-center justify-between pt-4 border-t">
-                      <div className="text-left">
-                        <span className="text-xs text-gray-500">Từ</span>
-                        <p className="text-2xl text-blue-600 font-bold">{tour.price.toLocaleString('vi-VN')}đ</p>
+                    <div className="flex items-center justify-between pt-5 border-t border-slate-100 dark:border-slate-800 mt-auto">
+                      <div>
+                        <span className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 tracking-wider">Giá từ</span>
+                        <p className="text-2xl font-black text-blue-900 dark:text-blue-400 leading-none mt-1">
+                          {tour.price.toLocaleString('vi-VN')}đ
+                        </p>
                       </div>
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           navigate(`/tour/${tour.id}`);
                         }}
-                        className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                        className="px-5 py-2.5 bg-blue-900 hover:bg-blue-950 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-2xl transition-colors font-bold text-xs cursor-pointer shadow-md"
                       >
-                        Xem chi tiết
+                        Chi tiết
                       </button>
                     </div>
                   </div>
@@ -159,19 +164,22 @@ function ToursPageInner() {
             </div>
 
             {toursToShow.length === 0 && (
-              <div className="text-center py-16">
-                <p className="text-gray-500 mb-4">Không tìm thấy tour nào phù hợp</p>
+              <div className="text-center py-24 bg-white dark:bg-slate-900 rounded-3xl border border-slate-100/40 dark:border-slate-800/40 p-8 shadow-sm">
+                <p className="text-slate-500 dark:text-slate-400 mb-6 font-semibold">Không tìm thấy tour nào phù hợp với yêu cầu của bạn</p>
                 <button
                   onClick={() => navigate('/')}
-                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                  className="px-8 py-3 bg-blue-900 hover:bg-blue-950 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-full transition-all font-bold text-sm shadow-md cursor-pointer"
                 >
-                  Về trang chủ
+                  Quay lại trang chủ
                 </button>
               </div>
             )}
           </>
         )}
       </div>
+
+      {/* Footer */}
+      <Footer />
     </div>
   );
 }
