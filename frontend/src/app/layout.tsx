@@ -18,7 +18,7 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import Chatbot from "@/components/Chatbot";
 
 export const metadata: Metadata = {
-  title: "VoyagerElite - Trải Nghiệm Du Lịch Thượng Lưu",
+  title: "Travel Booking - Trải Nghiệm Du Lịch Thượng Lưu",
   description: "Kiến tạo những hành trình di sản và trải nghiệm du lịch cá nhân hóa hàng đầu tại Việt Nam.",
 };
 

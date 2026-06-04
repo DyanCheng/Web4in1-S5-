@@ -157,7 +157,7 @@ export default function HotelOwnerDashboard() {
             
             <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
               <span className="text-2xl font-black text-blue-900 dark:text-blue-400 font-serif italic tracking-wide">
-                VoyagerElite Hotels
+                Travel Booking Hotels
               </span>
             </div>
 

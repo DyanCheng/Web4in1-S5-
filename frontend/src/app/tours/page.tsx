@@ -80,7 +80,7 @@ function ToursPageInner() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-12 gap-4 text-left">
           <div>
             <span className="inline-block px-4 py-1.5 text-xs font-extrabold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 rounded-full border border-blue-100/30 uppercase tracking-widest mb-3">
-              VoyagerElite Tours
+              Travel Booking Tours
             </span>
             <h1 className="text-3xl sm:text-4xl font-extrabold font-serif leading-tight text-slate-900 dark:text-white">
               {destination ? `Kết quả tìm kiếm: "${destination}"` : 'Hành Trình Khám Phá'}

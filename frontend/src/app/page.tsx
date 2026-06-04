@@ -591,7 +591,7 @@ export default function HomePage() {
                     </span>
                   </div>
                   <p className="text-slate-600 dark:text-slate-300 text-sm leading-relaxed font-semibold italic mb-8">
-                    “Chuyến đi Thụy Sỹ vừa rồi thực sự là một giấc mơ. Từ khách sạn đến phương tiện di chuyển đều hoàn hảo. Đội ngũ VoyagerElite rất tận tâm!”
+                    “Chuyến đi Thụy Sỹ vừa rồi thực sự là một giấc mơ. Từ khách sạn đến phương tiện di chuyển đều hoàn hảo. Đội ngũ Travel Booking rất tận tâm!”
                   </p>
                 </div>
 
@@ -622,7 +622,7 @@ export default function HomePage() {
                     </span>
                   </div>
                   <p className="text-slate-600 dark:text-slate-300 text-sm leading-relaxed font-semibold italic mb-8">
-                    “Tôi đã đặt tour riêng đi Santorini qua VoyagerElite. Dịch vụ độc bản đúng như mô tả và chúng tôi không phải lo nghĩ bất cứ điều gì!”
+                    “Tôi đã đặt tour riêng đi Santorini qua Travel Booking. Dịch vụ độc bản đúng như mô tả và chúng tôi không phải lo nghĩ bất cứ điều gì!”
                   </p>
                 </div>
 
