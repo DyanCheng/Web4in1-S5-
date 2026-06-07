@@ -63,12 +63,30 @@ export default function Header() {
             >
               Tours
             </button>
-            <a 
-              href={getNavLink('#partners')} 
-              className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors py-2"
+            <button
+              onClick={() => navigate('/hotel')}
+              className={`hover:text-blue-600 dark:hover:text-blue-400 transition-colors py-2 uppercase font-bold text-sm tracking-wider cursor-pointer ${
+                pathname.startsWith('/hotel') ? 'text-blue-600 dark:text-blue-400' : ''
+              }`}
             >
-              Đối tác
-            </a>
+              Khách sạn
+            </button>
+            <button
+              onClick={() => navigate('/vehicle')}
+              className={`hover:text-blue-600 dark:hover:text-blue-400 transition-colors py-2 uppercase font-bold text-sm tracking-wider cursor-pointer ${
+                pathname.startsWith('/vehicle') ? 'text-blue-600 dark:text-blue-400' : ''
+              }`}
+            >
+              Phương tiện
+            </button>
+            {user?.role === 'admin' && (
+              <a 
+                href={getNavLink('#partners')} 
+                className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors py-2"
+              >
+                Đối tác
+              </a>
+            )}
             {user && (user.role === 'admin' || user.role === 'hotel_owner') && (
               <button 
                 onClick={() => navigate(user.role === 'admin' ? '/admin' : '/hotel-owner')} 
@@ -165,13 +183,27 @@ export default function Header() {
             >
               Tours
             </button>
-            <a 
-              href={getNavLink('#partners')} 
-              onClick={() => setMobileMenuOpen(false)}
-              className="px-3 py-2 text-sm font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg"
+            <button
+              onClick={() => { navigate('/hotel'); setMobileMenuOpen(false); }}
+              className="px-3 py-2 text-left text-sm font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg cursor-pointer"
             >
-              Đối tác
-            </a>
+              Khách sạn
+            </button>
+            <button
+              onClick={() => { navigate('/vehicle'); setMobileMenuOpen(false); }}
+              className="px-3 py-2 text-left text-sm font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg cursor-pointer"
+            >
+              Phương tiện
+            </button>
+            {user?.role === 'admin' && (
+              <a 
+                href={getNavLink('#partners')} 
+                onClick={() => setMobileMenuOpen(false)}
+                className="px-3 py-2 text-sm font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg"
+              >
+                Đối tác
+              </a>
+            )}
 
             <div className="border-t border-slate-100 dark:border-slate-800 my-2 pt-2">
               {user ? (

@@ -144,7 +144,7 @@ export default function AdminDashboard() {
             
             <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
               <span className="text-2xl font-black text-blue-900 dark:text-blue-400 font-serif italic tracking-wide">
-                VoyagerElite Admin
+                Travel Booking Admin
               </span>
             </div>
 
@@ -177,7 +177,7 @@ export default function AdminDashboard() {
             <span className="inline-block px-4 py-1.5 text-xs font-extrabold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 rounded-full border border-blue-100/30 uppercase tracking-widest mb-3">
               Khu vực quản trị
             </span>
-            <h1 className="text-3xl font-black font-serif text-slate-900 dark:text-white">Hệ Thống VoyagerElite</h1>
+            <h1 className="text-3xl font-black font-serif text-slate-900 dark:text-white">Hệ Thống Travel Booking</h1>
           </div>
           <Link href="/" className="text-sm font-bold text-blue-600 dark:text-blue-400 hover:underline">
             ← Về trang chủ

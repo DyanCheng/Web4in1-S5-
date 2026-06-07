@@ -110,7 +110,7 @@ export function HeroSection({ imageUrl, title, description, stats }: HeroSection
       <div className="absolute inset-0 bg-black/35" />
       <div className="relative z-10 flex flex-col justify-between p-8 sm:p-12 text-white h-full">
         <div>
-          <span className="text-base sm:text-lg font-semibold opacity-80">Voyager Elite</span>
+          <span className="text-base sm:text-lg font-semibold opacity-80">Travel Booking</span>
         </div>
 
         <div>

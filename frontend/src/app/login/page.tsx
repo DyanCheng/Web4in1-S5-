@@ -67,7 +67,7 @@ export default function LoginPage() {
 
   const heroContent = (
     <HeroSection
-      imageUrl="/images/login-banner.jpg"
+      imageUrl="https://motogo.vn/wp-content/uploads/2023/10/bien-Nha-Trang-4-1024x765.jpg"
       title="Bắt đầu hành trình tinh hoa của bạn."
       description="Khám phá những điểm đến độc quyền và trải nghiệm dịch vụ nghỉ dưỡng đẳng cấp được cá nhân hóa cho riêng bạn."
       stats={[

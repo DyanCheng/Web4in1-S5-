@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { Mail, Lock, User, Eye, EyeOff } from 'lucide-react';
-import { AuthLayout, AuthCard, AuthInput, AuthFooter } from '@/components/AuthLayout';
+import { AuthLayout, AuthCard, AuthInput, HeroSection, AuthFooter } from '@/components/AuthLayout';
 
 const inputClass =
   'w-full pl-12 pr-4 py-2 sm:py-3 border border-slate-150 dark:border-slate-800 bg-transparent rounded-2xl outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 text-slate-855 dark:text-slate-100 font-bold text-sm transition-all';
@@ -21,6 +21,18 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const heroContent = (
+    <HeroSection
+      imageUrl="https://motogo.vn/wp-content/uploads/2023/10/bien-Nha-Trang-4-1024x765.jpg"
+      title="Bắt đầu hành trình tinh hoa của bạn."
+      description="Tạo tài khoản để khám phá những điểm đến độc quyền và trải nghiệm nghỉ dưỡng được cá nhân hóa cho riêng bạn."
+      stats={[
+        { label: 'Đối tác khách sạn', value: '500+' },
+        { label: 'Điểm đến toàn cầu', value: '120+' },
+      ]}
+    />
+  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,7 +61,7 @@ export default function RegisterPage() {
   };
 
   return (
-    <AuthLayout showHero={false}>
+    <AuthLayout heroContent={heroContent} showHero>
       <AuthCard
         title="Tạo tài khoản mới"
         subtitle="Đăng ký để khám phá những trải nghiệm thượng lưu"

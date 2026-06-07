@@ -113,7 +113,7 @@ export default function CheckoutPage() {
           </div>
 
           <h1 className="text-3xl font-black font-serif text-slate-900 dark:text-white mb-3">Đặt tour thành công!</h1>
-          <p className="text-slate-500 dark:text-slate-400 mb-2 font-semibold">Cảm ơn bạn đã lựa chọn hành trình của VoyagerElite</p>
+          <p className="text-slate-500 dark:text-slate-400 mb-2 font-semibold">Cảm ơn bạn đã lựa chọn hành trình của Travel Booking</p>
           <p className="text-lg font-bold text-slate-700 dark:text-slate-300 mb-8">Mã đơn hàng: <span className="font-extrabold text-blue-600 dark:text-blue-400">{orderId}</span></p>
 
           <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 border border-slate-100/40 dark:border-slate-800/40 w-full text-left mb-10 shadow-sm">
