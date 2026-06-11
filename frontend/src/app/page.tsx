@@ -18,17 +18,19 @@ import {
   ArrowRight, 
   ChevronDown, 
   Sparkles, 
-  SlidersHorizontal
+  SlidersHorizontal,
+  Heart
 } from 'lucide-react';
 import { ImageWithFallback } from '@/components/figma/ImageWithFallback';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCart } from '@/contexts/CartContext';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Slider } from '@/components/ui/slider';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useTheme } from '@/contexts/ThemeContext';
+import { getFavorites, toggleFavorite } from '@/lib/tourStorage';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:5200';
 
@@ -97,9 +99,26 @@ export default function HomePage() {
   const [searchType, setSearchType] = useState<'domestic' | 'international'>('domestic');
   const [priceRange, setPriceRange] = useState<number[]>([0, 100000000]);
   const [isFilterExpanded, setIsFilterExpanded] = useState(false);
+  const [durationFilter, setDurationFilter] = useState('');
   const [tours, setTours] = useState<Tour[]>([]);
   const [loading, setLoading] = useState(true);
+  const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
   const { theme } = useTheme();
+  const destinationSuggestions = useMemo(() => {
+    const keyword = searchQuery.destination.trim().toLowerCase();
+    if (!keyword || tours.length === 0) return [];
+    return tours.filter((tour) => tour.title.toLowerCase().includes(keyword) || tour.location.toLowerCase().includes(keyword)).slice(0, 6);
+  }, [searchQuery.destination, tours]);
+
+  const startLocationSuggestions = useMemo(() => {
+    const keyword = searchQuery.startLocation.trim().toLowerCase();
+    if (!keyword || tours.length === 0) return [];
+    return tours.filter((tour) => tour.title.toLowerCase().includes(keyword) || tour.location.toLowerCase().includes(keyword)).slice(0, 6);
+  }, [searchQuery.startLocation, tours]);
+
+  useEffect(() => {
+    setFavoriteIds(getFavorites().map((tour) => tour.id));
+  }, [tours]);
 
   useEffect(() => {
     const fetchTours = async () => {
@@ -133,6 +152,14 @@ export default function HomePage() {
     setSearchQuery(prev => ({ ...prev, destination: tag }));
     setIsFilterExpanded(true);
   };
+
+  const filteredTours = tours.filter((tour) => {
+    const matchesDuration = !durationFilter || tour.duration.toLowerCase().includes(durationFilter.toLowerCase());
+    const matchesPrice = tour.price >= priceRange[0] && tour.price <= priceRange[1];
+    const keyword = searchQuery.destination.trim().toLowerCase();
+    const matchesDestination = !keyword || tour.title.toLowerCase().includes(keyword) || tour.location.toLowerCase().includes(keyword);
+    return matchesDuration && matchesPrice && matchesDestination;
+  });
 
   return (
     <div className={`min-h-screen bg-slate-50/50 font-sans transition-colors duration-300 ${theme === 'dark' ? 'dark bg-slate-950 text-white' : 'text-slate-900'}`}>
@@ -212,6 +239,23 @@ export default function HomePage() {
                     placeholder="Điểm đi"
                   />
                 </div>
+                {searchQuery.startLocation.trim() && startLocationSuggestions.length > 0 && (
+                  <div className="absolute left-0 right-0 top-full mt-2 z-20 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl dark:border-slate-800 dark:bg-slate-900">
+                    {startLocationSuggestions.map((tour) => (
+                      <button
+                        key={`start-${tour.id}`}
+                        onClick={() => setSearchQuery(prev => ({ ...prev, startLocation: tour.location }))}
+                        className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-slate-50 dark:hover:bg-slate-800/60"
+                      >
+                        <img src={tour.image} alt={tour.title} className="size-11 rounded-xl object-cover" />
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-bold text-slate-900 dark:text-white">{tour.title}</p>
+                          <p className="truncate text-xs text-slate-500 dark:text-slate-400">{tour.location}</p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* End Point */}
@@ -227,6 +271,23 @@ export default function HomePage() {
                     placeholder="Bạn muốn đi đâu?"
                   />
                 </div>
+                {searchQuery.destination.trim() && destinationSuggestions.length > 0 && (
+                  <div className="absolute left-0 right-0 top-full mt-2 z-20 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl dark:border-slate-800 dark:bg-slate-900">
+                    {destinationSuggestions.map((tour) => (
+                      <button
+                        key={tour.id}
+                        onClick={() => setSearchQuery(prev => ({ ...prev, destination: tour.location }))}
+                        className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-slate-50 dark:hover:bg-slate-800/60"
+                      >
+                        <img src={tour.image} alt={tour.title} className="size-11 rounded-xl object-cover" />
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-bold text-slate-900 dark:text-white">{tour.title}</p>
+                          <p className="truncate text-xs text-slate-500 dark:text-slate-400">{tour.location}</p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Calendar Date */}
@@ -253,16 +314,9 @@ export default function HomePage() {
               </button>
             </div>
 
-            {/* Quick Tag Recommendations */}
             <div className="mt-5 text-left flex flex-wrap items-center gap-2.5">
-              <span className="text-xs font-bold text-slate-500 dark:text-slate-400 mr-1.5">Tìm kiếm nổi bật:</span>
-              {[
-                "TOUR XUYÊN VIỆT",
-                "WORLD CUP 2026",
-                "TOUR CAO CẤP",
-                "TOUR CARAVAN",
-                "TƯ VẤN DU HỌC"
-              ].map((tag) => (
+              <span className="text-xs font-bold text-slate-500 dark:text-slate-400 mr-1.5">Gợi ý nhanh:</span>
+              {['Hà Nội', 'Hạ Long', 'Paris', 'Dubai', 'Kyoto'].map((tag) => (
                 <button
                   key={tag}
                   onClick={() => handleQuickTagClick(tag)}
@@ -311,6 +365,25 @@ export default function HomePage() {
                     <span>50.000.000đ</span>
                     <span>100.000.000đ+</span>
                   </div>
+
+                  <div className="mt-5">
+                    <p className="mb-3 text-xs font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Chuyến đi bao nhiêu ngày đêm</p>
+                    <div className="flex flex-wrap gap-2">
+                      {['1 ngày', '2 ngày 1 đêm', '3 ngày 2 đêm', '4 ngày 3 đêm', '5 ngày 4 đêm'].map((option) => (
+                        <button
+                          key={option}
+                          onClick={() => setDurationFilter(option === durationFilter ? '' : option)}
+                          className={`rounded-full px-4 py-2 text-xs font-bold transition-colors ${
+                            durationFilter === option
+                              ? 'bg-blue-900 text-white dark:bg-blue-600'
+                              : 'bg-white text-slate-700 dark:bg-slate-900 dark:text-slate-300 border border-slate-200 dark:border-slate-800'
+                          }`}
+                        >
+                          {option}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
@@ -337,7 +410,7 @@ export default function HomePage() {
             </div>
             
             <button
-              onClick={() => navigate('/tours')}
+              onClick={() => navigate('/#tours')}
               className="group flex items-center gap-2 text-sm font-extrabold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors uppercase tracking-wider shrink-0 cursor-pointer"
             >
               Xem tất cả tour
@@ -352,7 +425,7 @@ export default function HomePage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {tours.slice(0, 3).map((tour) => (
+              {filteredTours.map((tour) => (
                 <div
                   key={tour.id}
                   onClick={() => navigate(`/tour/${tour.id}`)}
@@ -374,6 +447,18 @@ export default function HomePage() {
                         {tour.badge}
                       </span>
                     )}
+
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const next = toggleFavorite(tour);
+                        setFavoriteIds(next.map((item) => item.id));
+                      }}
+                      className="absolute top-4 right-4 size-11 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white dark:hover:bg-slate-800 transition-colors shadow-md cursor-pointer border border-white/20"
+                      aria-label={favoriteIds.includes(tour.id) ? 'Bỏ yêu thích' : 'Thêm vào yêu thích'}
+                    >
+                      <Heart className={`size-5 ${favoriteIds.includes(tour.id) ? 'fill-red-500 text-red-500' : 'text-slate-700 dark:text-slate-300'}`} />
+                    </button>
 
                     <span className="absolute bottom-4 left-4 bg-slate-950/65 backdrop-blur-sm text-white px-3.5 py-1.5 rounded-full text-xs font-bold tracking-wide">
                       🕒 {tour.duration}
@@ -425,110 +510,157 @@ export default function HomePage() {
             </div>
           )}
 
+          {!loading && filteredTours.length > 3 && (
+            <div className="mt-16">
+              <div className="flex items-end justify-between gap-4 mb-8">
+                <div className="text-left">
+                  <span className="inline-block px-4 py-1.5 text-xs font-extrabold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 rounded-full border border-blue-100/30 uppercase tracking-widest">
+                    Tất cả tour
+                  </span>
+                  <h3 className="mt-4 text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white font-serif leading-tight">
+                    Danh sách tour đầy đủ
+                  </h3>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {filteredTours.slice(3).map((tour) => (
+                  <div
+                    key={`all-${tour.id}`}
+                    onClick={() => navigate(`/tour/${tour.id}`)}
+                    className="bg-white dark:bg-slate-900 rounded-3xl overflow-hidden shadow-lg border border-slate-100/40 dark:border-slate-800/40 hover:shadow-2xl hover:-translate-y-1.5 transition-all duration-300 cursor-pointer group flex flex-col h-full"
+                  >
+                    <div className="relative h-72 w-full overflow-hidden">
+                      <ImageWithFallback
+                        src={tour.image}
+                        alt={tour.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const next = toggleFavorite(tour);
+                          setFavoriteIds(next.map((item) => item.id));
+                        }}
+                        className="absolute top-4 right-4 size-11 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white dark:hover:bg-slate-800 transition-colors shadow-md cursor-pointer border border-white/20"
+                        aria-label={favoriteIds.includes(tour.id) ? 'Bỏ yêu thích' : 'Thêm vào yêu thích'}
+                      >
+                        <Heart className={`size-5 ${favoriteIds.includes(tour.id) ? 'fill-red-500 text-red-500' : 'text-slate-700 dark:text-slate-300'}`} />
+                      </button>
+                    </div>
+
+                    <div className="p-6 text-left flex flex-col flex-1">
+                      <div className="flex items-center gap-1.5 mb-3 font-bold text-sm">
+                        <Star className="size-4.5 fill-amber-400 text-amber-400" />
+                        <span className="text-slate-800 dark:text-slate-200">{tour.rating}</span>
+                        <span className="text-slate-400 dark:text-slate-500 font-medium">({tour.reviews} đánh giá)</span>
+                      </div>
+                      <h3 className="text-xl font-extrabold text-slate-900 dark:text-white mb-2 leading-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                        {tour.title}
+                      </h3>
+                      <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed mb-6 font-medium line-clamp-2">
+                        {tour.description}
+                      </p>
+                      <div className="flex items-center justify-between pt-5 border-t border-slate-100 dark:border-slate-800 mt-auto">
+                        <div>
+                          <span className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 tracking-wider">Giá từ</span>
+                          <p className="text-xl font-black text-blue-900 dark:text-blue-400 leading-none mt-1">
+                            {tour.price.toLocaleString('vi-VN')}đ
+                          </p>
+                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/tour/${tour.id}`);
+                          }}
+                          className="size-11 bg-blue-900 hover:bg-blue-950 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-full flex items-center justify-center transition-all shadow-md group-hover:scale-105 cursor-pointer shrink-0"
+                        >
+                          <ArrowRight className="size-5.5" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
         </div>
       </section>
 
-      {/* 4. Top Destinations Section */}
-      <section id="destinations" className="py-24 bg-slate-100/50 dark:bg-slate-900/30 transition-colors">
+      {/* 4. All Tours Section */}
+      <section id="all-tours" className="py-24 bg-slate-100/50 dark:bg-slate-900/30 transition-colors">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          
           <div className="text-center max-w-3xl mx-auto mb-16">
             <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white font-serif leading-tight">
-              Điểm Đến Hàng Đầu
+              Tất Cả Tour
             </h2>
             <p className="mt-4 text-base text-slate-500 dark:text-slate-400 font-medium leading-relaxed">
-              Những vùng đất mới lạ đang chờ bước chân bạn đến khám phá. Bắt đầu hành trình của bạn ngay hôm nay.
+              Danh sách tour đầy đủ để bạn xem và chọn ngay trên một trang duy nhất.
             </p>
           </div>
 
-          {/* Staggered Masonry-like Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-6 h-auto md:h-[620px]">
-            
-            {/* Left tall card - Kyoto */}
-            <div 
-              onClick={() => handleQuickTagClick("Kyoto")}
-              className="md:col-span-6 relative rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl group cursor-pointer h-[320px] md:h-full transition-all duration-300"
-            >
-              <ImageWithFallback
-                src="https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=1200&q=80"
-                alt="Kyoto Bamboo Forest"
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent"></div>
-              
-              {/* Bottom text */}
-              <div className="absolute bottom-6 left-6 right-6 text-left text-white">
-                <h3 className="text-2xl font-black font-serif tracking-wide">Kyoto, Nhật Bản</h3>
-                <p className="text-white/80 text-sm mt-1 font-semibold">Vẻ đẹp tĩnh lặng của thời gian</p>
-              </div>
-            </div>
-
-            {/* Right container */}
-            <div className="md:col-span-6 flex flex-col gap-6 h-full">
-              
-              {/* Right-Top wide card - Paris */}
-              <div 
-                onClick={() => handleQuickTagClick("Paris")}
-                className="relative rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl group cursor-pointer h-[220px] md:h-[290px] transition-all duration-300"
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {filteredTours.map((tour) => (
+              <div
+                key={`all-tour-${tour.id}`}
+                onClick={() => navigate(`/tour/${tour.id}`)}
+                className="bg-white dark:bg-slate-900 rounded-3xl overflow-hidden shadow-lg border border-slate-100/40 dark:border-slate-800/40 hover:shadow-2xl hover:-translate-y-1.5 transition-all duration-300 cursor-pointer group flex flex-col h-full"
               >
-                <ImageWithFallback
-                  src="https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=1200&q=80"
-                  alt="Paris Eiffel Tower"
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent"></div>
-                
-                <div className="absolute bottom-6 left-6 right-6 text-left text-white">
-                  <h3 className="text-2xl font-black font-serif tracking-wide">Paris, Pháp</h3>
-                  <p className="text-white/80 text-sm mt-1 font-semibold">Thành phố ánh sáng và nghệ thuật</p>
-                </div>
-              </div>
-
-              {/* Right-Bottom side-by-side grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 flex-1">
-                
-                {/* Rome */}
-                <div 
-                  onClick={() => handleQuickTagClick("Rome")}
-                  className="relative rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl group cursor-pointer h-[200px] sm:h-full transition-all duration-300"
-                >
+                <div className="relative h-72 w-full overflow-hidden">
                   <ImageWithFallback
-                    src="https://images.unsplash.com/photo-1552832230-c0197dd311b5?auto=format&fit=crop&w=800&q=80"
-                    alt="Rome Colosseum"
+                    src={tour.image}
+                    alt={tour.title}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent"></div>
-                  
-                  <div className="absolute bottom-5 left-5 right-5 text-left text-white">
-                    <h3 className="text-xl font-black font-serif tracking-wide">Rome</h3>
-                    <p className="text-white/80 text-xs mt-1 font-semibold">Dấu ấn cổ xưa kì vĩ</p>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const next = toggleFavorite(tour);
+                      setFavoriteIds(next.map((item) => item.id));
+                    }}
+                    className="absolute top-4 right-4 size-11 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white dark:hover:bg-slate-800 transition-colors shadow-md cursor-pointer border border-white/20"
+                    aria-label={favoriteIds.includes(tour.id) ? 'Bỏ yêu thích' : 'Thêm vào yêu thích'}
+                  >
+                    <Heart className={`size-5 ${favoriteIds.includes(tour.id) ? 'fill-red-500 text-red-500' : 'text-slate-700 dark:text-slate-300'}`} />
+                  </button>
+                  <span className="absolute bottom-4 left-4 bg-slate-950/65 backdrop-blur-sm text-white px-3.5 py-1.5 rounded-full text-xs font-bold tracking-wide">
+                    🕒 {tour.duration}
+                  </span>
+                </div>
+                <div className="p-6 text-left flex flex-col flex-1">
+                  <div className="flex items-center gap-1.5 mb-3 font-bold text-sm">
+                    <Star className="size-4.5 fill-amber-400 text-amber-400" />
+                    <span className="text-slate-800 dark:text-slate-200">{tour.rating}</span>
+                    <span className="text-slate-400 dark:text-slate-500 font-medium">({tour.reviews} đánh giá)</span>
+                  </div>
+                  <h3 className="text-xl font-extrabold text-slate-900 dark:text-white mb-2 leading-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                    {tour.title}
+                  </h3>
+                  <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed mb-6 font-medium line-clamp-2">
+                    {tour.description}
+                  </p>
+                  <div className="flex items-center justify-between pt-5 border-t border-slate-100 dark:border-slate-800 mt-auto">
+                    <div>
+                      <span className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 tracking-wider">Giá từ</span>
+                      <p className="text-xl font-black text-blue-900 dark:text-blue-400 leading-none mt-1">
+                        {tour.price.toLocaleString('vi-VN')}đ
+                      </p>
+                    </div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/tour/${tour.id}`);
+                      }}
+                      className="size-11 bg-blue-900 hover:bg-blue-950 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-full flex items-center justify-center transition-all shadow-md group-hover:scale-105 cursor-pointer shrink-0"
+                    >
+                      <ArrowRight className="size-5.5" />
+                    </button>
                   </div>
                 </div>
-
-                {/* Dubai */}
-                <div 
-                  onClick={() => handleQuickTagClick("Dubai")}
-                  className="relative rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl group cursor-pointer h-[200px] sm:h-full transition-all duration-300"
-                >
-                  <ImageWithFallback
-                    src="https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=800&q=80"
-                    alt="Dubai Skyline"
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent"></div>
-                  
-                  <div className="absolute bottom-5 left-5 right-5 text-left text-white">
-                    <h3 className="text-xl font-black font-serif tracking-wide">Dubai</h3>
-                    <p className="text-white/80 text-xs mt-1 font-semibold">Sự xa hoa vượt thời đại</p>
-                  </div>
-                </div>
-
               </div>
-
-            </div>
-
+            ))}
           </div>
-
         </div>
       </section>
 

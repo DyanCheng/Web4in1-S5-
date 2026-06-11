@@ -498,7 +498,11 @@ export default function VehiclePage() {
                     return (
                       <article
                         key={vehicle.id}
-                        className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition-shadow hover:shadow-md dark:border-slate-800 dark:bg-slate-900"
+                        className={`rounded-xl border bg-white p-6 shadow-sm transition-shadow hover:shadow-md dark:bg-slate-900 ${
+                          selectedVehicle?.id === vehicle.id
+                            ? 'border-blue-500 ring-2 ring-blue-100 dark:border-blue-400 dark:ring-blue-950'
+                            : 'border-slate-200 dark:border-slate-800'
+                        }`}
                       >
                         <div className="grid grid-cols-1 gap-6 md:grid-cols-[1fr_230px]">
                           <div>
@@ -561,10 +565,14 @@ export default function VehiclePage() {
                             </div>
 
                             <button
-                              onClick={() => setNotice(`Bạn đã chọn vé ${vehicle.provider} từ ${vehicle.from} đến ${vehicle.to}.`)}
-                              className="mt-5 rounded-lg bg-blue-800 px-8 py-3 text-sm font-black text-white shadow-md hover:bg-blue-900"
+                              onClick={() => selectVehicle(vehicle)}
+                              className={`mt-5 rounded-lg px-8 py-3 text-sm font-black text-white shadow-md ${
+                                selectedVehicle?.id === vehicle.id
+                                  ? 'bg-emerald-600 hover:bg-emerald-700'
+                                  : 'bg-blue-800 hover:bg-blue-900'
+                              }`}
                             >
-                              Chọn vé
+                              {selectedVehicle?.id === vehicle.id ? 'Đã chọn' : 'Chọn vé'}
                             </button>
 
                             <span className="mt-5 rounded-full bg-cyan-100 px-3 py-1 text-xs font-black text-slate-700 dark:bg-cyan-950 dark:text-cyan-200">

@@ -8,6 +8,7 @@ import { Package, FileText, User, Download, Trash2, Star, Calendar, Loader2 } fr
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useTheme } from '@/contexts/ThemeContext';
+import { getExperiencedTourIds } from '@/lib/tourStorage';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:5200';
 
@@ -20,6 +21,7 @@ export default function DashboardPage() {
   const [bookings, setBookings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [experiencedTourIds, setExperiencedTourIds] = useState<string[]>([]);
 
   const fetchBookings = async () => {
     if (!user) return;
@@ -66,6 +68,10 @@ export default function DashboardPage() {
       fetchBookings();
     }
   }, [user, router]);
+
+  useEffect(() => {
+    setExperiencedTourIds(getExperiencedTourIds());
+  }, []);
 
   const [reviews, setReviews] = useState([
     {
@@ -350,6 +356,11 @@ export default function DashboardPage() {
                     <h3 className="text-lg font-extrabold text-slate-900 dark:text-white mb-6 font-serif">Viết đánh giá hành trình mới</h3>
                     
                     <form className="space-y-5" onSubmit={(e) => { e.preventDefault(); alert('Đã gửi đánh giá thành công!'); }}>
+                      {experiencedTourIds.length === 0 && (
+                        <p className="rounded-2xl bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700 dark:bg-amber-950/30 dark:text-amber-300">
+                          Bạn cần đánh dấu đã trải nghiệm một tour trước khi gửi comment.
+                        </p>
+                      )}
                       <div>
                         <label className="block text-xs font-black uppercase text-slate-400 dark:text-slate-550 mb-2">Chọn hành trình</label>
                         <select className="w-full px-4 py-3 border border-slate-150 dark:border-slate-800 bg-transparent rounded-2xl outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 text-slate-800 dark:text-slate-100 font-bold text-sm bg-white dark:bg-slate-900">
@@ -382,6 +393,7 @@ export default function DashboardPage() {
 
                       <button
                         type="submit"
+                        disabled={experiencedTourIds.length === 0}
                         className="px-6 py-3 bg-blue-900 hover:bg-blue-955 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-2xl transition-colors font-bold text-xs cursor-pointer shadow"
                       >
                         Gửi đánh giá

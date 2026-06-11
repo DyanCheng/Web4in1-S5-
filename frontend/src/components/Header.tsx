@@ -4,7 +4,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCart } from '@/contexts/CartContext';
 import { useTheme } from '@/contexts/ThemeContext';
-import { ShoppingCart, Sun, Moon, Menu } from 'lucide-react';
+import { ShoppingCart, Sun, Moon, Menu, Heart } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
 export default function Header() {
@@ -25,10 +25,6 @@ export default function Header() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const getNavLink = (anchor: string) => {
-    return pathname === '/' ? anchor : `/${anchor}`;
-  };
-
   return (
     <header className={`sticky top-0 z-50 transition-all duration-300 ${
       scrolled 
@@ -47,21 +43,21 @@ export default function Header() {
           
           {/* Desktop Nav links */}
           <nav className="hidden md:flex items-center gap-8 font-bold text-sm tracking-wider uppercase text-slate-600 dark:text-slate-350">
-            <a 
-              href={getNavLink('#destinations')} 
-              className={`hover:text-blue-600 dark:hover:text-blue-400 transition-colors py-2 ${
+            <button 
+              onClick={() => navigate('/#tours')}
+              className={`hover:text-blue-600 dark:hover:text-blue-400 transition-colors py-2 uppercase font-bold text-sm tracking-wider cursor-pointer ${
                 pathname === '/' ? 'text-blue-600 dark:text-blue-400' : ''
               }`}
             >
-              Điểm đến
-            </a>
-            <button 
-              onClick={() => navigate('/tours')} 
+              Tours
+            </button>
+            <button
+              onClick={() => navigate('/favorites')}
               className={`hover:text-blue-600 dark:hover:text-blue-400 transition-colors py-2 uppercase font-bold text-sm tracking-wider cursor-pointer ${
-                pathname.startsWith('/tours') || pathname.startsWith('/tour') ? 'text-blue-600 dark:text-blue-400' : ''
+                pathname.startsWith('/favorites') ? 'text-blue-600 dark:text-blue-400' : ''
               }`}
             >
-              Tours
+              Yêu thích
             </button>
             <button
               onClick={() => navigate('/hotel')}
@@ -80,12 +76,12 @@ export default function Header() {
               Phương tiện
             </button>
             {user?.role === 'admin' && (
-              <a 
-                href={getNavLink('#partners')} 
-                className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors py-2"
+              <button 
+                onClick={() => navigate('/#partners')} 
+                className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors py-2 cursor-pointer"
               >
                 Đối tác
-              </a>
+              </button>
             )}
             {user && (user.role === 'admin' || user.role === 'hotel_owner') && (
               <button 
@@ -170,18 +166,18 @@ export default function Header() {
         {/* Mobile Menu Panel */}
         {mobileMenuOpen && (
           <div className="md:hidden mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 flex flex-col gap-3 text-left">
-            <a 
-              href={getNavLink('#destinations')} 
-              onClick={() => setMobileMenuOpen(false)}
-              className="px-3 py-2 text-sm font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg"
-            >
-              Điểm đến
-            </a>
             <button 
-              onClick={() => { navigate('/tours'); setMobileMenuOpen(false); }}
+              onClick={() => { navigate('/#tours'); setMobileMenuOpen(false); }}
               className="px-3 py-2 text-left text-sm font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg cursor-pointer"
             >
               Tours
+            </button>
+            <button
+              onClick={() => { navigate('/favorites'); setMobileMenuOpen(false); }}
+              className="px-3 py-2 text-left text-sm font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg cursor-pointer inline-flex items-center gap-2"
+            >
+              <Heart className="size-4" />
+              Yêu thích
             </button>
             <button
               onClick={() => { navigate('/hotel'); setMobileMenuOpen(false); }}
@@ -196,13 +192,12 @@ export default function Header() {
               Phương tiện
             </button>
             {user?.role === 'admin' && (
-              <a 
-                href={getNavLink('#partners')} 
-                onClick={() => setMobileMenuOpen(false)}
-                className="px-3 py-2 text-sm font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg"
+              <button 
+                onClick={() => { navigate('/#partners'); setMobileMenuOpen(false); }}
+                className="px-3 py-2 text-sm font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg text-left cursor-pointer"
               >
                 Đối tác
-              </a>
+              </button>
             )}
 
             <div className="border-t border-slate-100 dark:border-slate-800 my-2 pt-2">
