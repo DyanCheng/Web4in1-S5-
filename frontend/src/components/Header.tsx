@@ -2,20 +2,20 @@
 
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { useCart } from '@/contexts/CartContext';
 import { useTheme } from '@/contexts/ThemeContext';
-import { ShoppingCart, Sun, Moon, Menu, Heart } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { Sun, Moon, Menu, Heart, ChevronDown, Plane, Bus, Car, Shield } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
 
 export default function Header() {
   const router = useRouter();
   const pathname = usePathname();
   const navigate = (url: string) => router.push(url);
   const { user, logout } = useAuth();
-  const { items } = useCart();
   const { theme, toggleTheme } = useTheme();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
+  const moreRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -24,6 +24,34 @@ export default function Header() {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // Đóng dropdown khi click ra ngoài
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (moreRef.current && !moreRef.current.contains(e.target as Node)) {
+        setMoreOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Lấy chữ cái đầu để hiển thị trong avatar khi chưa có ảnh
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map((w) => w[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
+  const moreItems = [
+    { label: 'Vé máy bay', icon: Plane, href: '/flight' },
+    { label: 'Vé xe khách', icon: Bus, href: '/bus' },
+    { label: 'Phương tiện cho thuê', icon: Car, href: '/vehicle' },
+    { label: 'Bảo hiểm du lịch', icon: Shield, href: '/insurance' },
+  ];
 
   return (
     <header className={`sticky top-0 z-50 transition-all duration-300 ${
@@ -45,6 +73,7 @@ export default function Header() {
           
           {/* Desktop Nav links */}
           <nav className="hidden md:flex items-center gap-8 font-bold text-sm tracking-wider uppercase text-slate-600 dark:text-slate-350">
+            {/* Tours */}
             <button 
               onClick={() => navigate('/#tours')}
               className={`hover:text-blue-600 dark:hover:text-blue-400 transition-colors py-2 uppercase font-bold text-sm tracking-wider cursor-pointer ${
@@ -53,14 +82,8 @@ export default function Header() {
             >
               Tours
             </button>
-            <button
-              onClick={() => navigate('/favorites')}
-              className={`hover:text-blue-600 dark:hover:text-blue-400 transition-colors py-2 uppercase font-bold text-sm tracking-wider cursor-pointer ${
-                pathname.startsWith('/favorites') ? 'text-blue-600 dark:text-blue-400' : ''
-              }`}
-            >
-              Yêu thích
-            </button>
+
+            {/* Khách sạn */}
             <button
               onClick={() => navigate('/hotel')}
               className={`hover:text-blue-600 dark:hover:text-blue-400 transition-colors py-2 uppercase font-bold text-sm tracking-wider cursor-pointer ${
@@ -69,14 +92,55 @@ export default function Header() {
             >
               Khách sạn
             </button>
+
+            {/* Yêu thích */}
             <button
-              onClick={() => navigate('/vehicle')}
-              className={`hover:text-blue-600 dark:hover:text-blue-400 transition-colors py-2 uppercase font-bold text-sm tracking-wider cursor-pointer ${
-                pathname.startsWith('/vehicle') ? 'text-blue-600 dark:text-blue-400' : ''
+              onClick={() => navigate('/favorites')}
+              className={`hover:text-blue-600 dark:hover:text-blue-400 transition-colors py-2 uppercase font-bold text-sm tracking-wider cursor-pointer inline-flex items-center gap-1 ${
+                pathname.startsWith('/favorites') ? 'text-blue-600 dark:text-blue-400' : ''
               }`}
             >
-              Phương tiện
+              <Heart className="size-4" />
+              Yêu thích
             </button>
+
+            {/* Xem thêm dropdown */}
+            <div ref={moreRef} className="relative">
+              <button
+                onClick={() => setMoreOpen(!moreOpen)}
+                className={`hover:text-blue-600 dark:hover:text-blue-400 transition-colors py-2 uppercase font-bold text-sm tracking-wider cursor-pointer inline-flex items-center gap-1 ${
+                  moreOpen ? 'text-blue-600 dark:text-blue-400' : ''
+                }`}
+              >
+                Xem thêm
+                <ChevronDown className={`size-4 transition-transform duration-200 ${moreOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {/* Dropdown panel */}
+              {moreOpen && (
+                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 w-56 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-700 py-2 z-50 animate-fade-in">
+                  {/* Arrow */}
+                  <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-2 overflow-hidden">
+                    <div className="w-3 h-3 bg-white dark:bg-slate-800 border-l border-t border-slate-100 dark:border-slate-700 rotate-45 mx-auto mt-1" />
+                  </div>
+                  {moreItems.map(({ label, icon: Icon, href }) => (
+                    <button
+                      key={href}
+                      onClick={() => { navigate(href); setMoreOpen(false); }}
+                      className={`w-full flex items-center gap-3 px-4 py-3 text-left text-sm font-semibold normal-case tracking-normal text-slate-700 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-slate-700 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer ${
+                        pathname.startsWith(href) ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-slate-700' : ''
+                      }`}
+                    >
+                      <span className="p-1.5 bg-blue-100 dark:bg-blue-900/40 rounded-lg text-blue-600 dark:text-blue-400">
+                        <Icon className="size-4" />
+                      </span>
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
             {user?.role === 'admin' && (
               <button 
                 onClick={() => navigate('/#partners')} 
@@ -98,20 +162,7 @@ export default function Header() {
           </nav>
 
           {/* Right Action buttons */}
-          <div className="flex items-center gap-4">
-            
-            {/* Shopping Cart */}
-            <button
-              onClick={() => navigate('/cart')}
-              className="relative p-2 text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-all duration-200 cursor-pointer"
-            >
-              <ShoppingCart className="size-5" />
-              {items.length > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xxs w-5 h-5 rounded-full flex items-center justify-center font-bold animate-bounce shadow">
-                  {items.length}
-                </span>
-              )}
-            </button>
+          <div className="flex items-center gap-3">
 
             {/* Dark Mode Toggle */}
             <button
@@ -125,12 +176,25 @@ export default function Header() {
             {/* Auth Buttons */}
             {user ? (
               <div className="hidden sm:flex items-center gap-3">
+                {/* Avatar vòng tròn */}
                 <button
                   onClick={() => navigate(user.role === 'admin' ? '/admin' : user.role === 'hotel_owner' ? '/hotel-owner' : '/dashboard')}
-                  className="px-4 py-2 text-slate-700 dark:text-slate-200 hover:text-blue-600 transition-colors font-bold text-sm cursor-pointer"
+                  className="cursor-pointer group"
+                  title={user.name}
                 >
-                  {user.name}
+                  {user.avatar ? (
+                    <img
+                      src={user.avatar}
+                      alt={user.name}
+                      className="w-9 h-9 rounded-full object-cover border-2 border-blue-500 group-hover:border-blue-700 transition-all shadow-sm"
+                    />
+                  ) : (
+                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white text-xs font-bold border-2 border-blue-500 group-hover:border-blue-700 transition-all shadow-sm select-none">
+                      {getInitials(user.name)}
+                    </div>
+                  )}
                 </button>
+
                 <button
                   onClick={logout}
                   className="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-200 rounded-full transition-all text-xs font-bold cursor-pointer"
@@ -175,24 +239,38 @@ export default function Header() {
               Tours
             </button>
             <button
-              onClick={() => { navigate('/favorites'); setMobileMenuOpen(false); }}
-              className="px-3 py-2 text-left text-sm font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg cursor-pointer inline-flex items-center gap-2"
-            >
-              <Heart className="size-4" />
-              Yêu thích
-            </button>
-            <button
               onClick={() => { navigate('/hotel'); setMobileMenuOpen(false); }}
               className="px-3 py-2 text-left text-sm font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg cursor-pointer"
             >
               Khách sạn
             </button>
             <button
-              onClick={() => { navigate('/vehicle'); setMobileMenuOpen(false); }}
-              className="px-3 py-2 text-left text-sm font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg cursor-pointer"
+              onClick={() => { navigate('/favorites'); setMobileMenuOpen(false); }}
+              className="px-3 py-2 text-left text-sm font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg cursor-pointer inline-flex items-center gap-2"
             >
-              Phương tiện
+              <Heart className="size-4" />
+              Yêu thích
             </button>
+
+            {/* Xem thêm section mobile */}
+            <div className="px-3 py-2">
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Xem thêm</p>
+              <div className="flex flex-col gap-1">
+                {moreItems.map(({ label, icon: Icon, href }) => (
+                  <button
+                    key={href}
+                    onClick={() => { navigate(href); setMobileMenuOpen(false); }}
+                    className="flex items-center gap-3 px-2 py-2 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg cursor-pointer"
+                  >
+                    <span className="p-1.5 bg-blue-100 dark:bg-blue-900/40 rounded-lg text-blue-600 dark:text-blue-400">
+                      <Icon className="size-3.5" />
+                    </span>
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {user?.role === 'admin' && (
               <button 
                 onClick={() => { navigate('/#partners'); setMobileMenuOpen(false); }}
@@ -205,11 +283,19 @@ export default function Header() {
             <div className="border-t border-slate-100 dark:border-slate-800 my-2 pt-2">
               {user ? (
                 <div className="flex flex-col gap-2">
+                  {/* Avatar + tên trong mobile */}
                   <button
                     onClick={() => { navigate(user.role === 'admin' ? '/admin' : user.role === 'hotel_owner' ? '/hotel-owner' : '/dashboard'); setMobileMenuOpen(false); }}
-                    className="px-3 py-2 text-left text-sm font-bold text-blue-600 dark:text-blue-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg cursor-pointer"
+                    className="px-3 py-2 flex items-center gap-3 text-left text-sm font-bold text-blue-600 dark:text-blue-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg cursor-pointer"
                   >
-                    Tài khoản: {user.name}
+                    {user.avatar ? (
+                      <img src={user.avatar} alt={user.name} className="w-8 h-8 rounded-full object-cover border-2 border-blue-500" />
+                    ) : (
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white text-xs font-bold border-2 border-blue-500 select-none">
+                        {getInitials(user.name)}
+                      </div>
+                    )}
+                    {user.name}
                   </button>
                   <button
                     onClick={() => { logout(); setMobileMenuOpen(false); }}

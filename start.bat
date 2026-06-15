@@ -10,10 +10,10 @@ echo.
 
 :: Tat cac tien trinh cu chiem port 3000 va 5200
 echo [1/3] Dang don dep cac tien trinh cu...
-for /f "tokens=5" %%a in ('netstat -aon ^| findstr ":3000 " 2^>nul') do (
+for /f "tokens=5" %%a in ('netstat -aon ^| findstr /c:":3000 " 2^>nul') do (
     taskkill /PID %%a /F >nul 2>&1
 )
-for /f "tokens=5" %%a in ('netstat -aon ^| findstr ":5200 " 2^>nul') do (
+for /f "tokens=5" %%a in ('netstat -aon ^| findstr /c:":5200 " 2^>nul') do (
     taskkill /PID %%a /F >nul 2>&1
 )
 timeout /t 2 /nobreak >nul

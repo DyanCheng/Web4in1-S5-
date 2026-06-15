@@ -103,6 +103,8 @@ export default function HomePage() {
   const [tours, setTours] = useState<Tour[]>([]);
   const [loading, setLoading] = useState(true);
   const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
+  const [showStartSuggestions, setShowStartSuggestions] = useState(false);
+  const [showDestinationSuggestions, setShowDestinationSuggestions] = useState(false);
   const { theme } = useTheme();
   const destinationSuggestions = useMemo(() => {
     const keyword = searchQuery.destination.trim().toLowerCase();
@@ -235,16 +237,21 @@ export default function HomePage() {
                     type="text"
                     value={searchQuery.startLocation}
                     onChange={(e) => setSearchQuery(prev => ({ ...prev, startLocation: e.target.value }))}
+                    onFocus={() => setShowStartSuggestions(true)}
+                    onBlur={() => setTimeout(() => setShowStartSuggestions(false), 200)}
                     className="w-full outline-none text-sm text-slate-800 dark:text-slate-100 font-bold bg-transparent placeholder-slate-400"
                     placeholder="Điểm đi"
                   />
                 </div>
-                {searchQuery.startLocation.trim() && startLocationSuggestions.length > 0 && (
+                {showStartSuggestions && searchQuery.startLocation.trim() && startLocationSuggestions.length > 0 && (
                   <div className="absolute left-0 right-0 top-full mt-2 z-20 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl dark:border-slate-800 dark:bg-slate-900">
                     {startLocationSuggestions.map((tour) => (
                       <button
                         key={`start-${tour.id}`}
-                        onClick={() => setSearchQuery(prev => ({ ...prev, startLocation: tour.location }))}
+                        onClick={() => {
+                          setSearchQuery(prev => ({ ...prev, startLocation: tour.location }));
+                          setShowStartSuggestions(false);
+                        }}
                         className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-slate-50 dark:hover:bg-slate-800/60"
                       >
                         <img src={tour.image} alt={tour.title} className="size-11 rounded-xl object-cover" />
@@ -267,16 +274,21 @@ export default function HomePage() {
                     type="text"
                     value={searchQuery.destination}
                     onChange={(e) => setSearchQuery(prev => ({ ...prev, destination: e.target.value }))}
+                    onFocus={() => setShowDestinationSuggestions(true)}
+                    onBlur={() => setTimeout(() => setShowDestinationSuggestions(false), 200)}
                     className="w-full outline-none text-sm text-slate-800 dark:text-slate-100 font-bold bg-transparent placeholder-slate-400"
                     placeholder="Bạn muốn đi đâu?"
                   />
                 </div>
-                {searchQuery.destination.trim() && destinationSuggestions.length > 0 && (
+                {showDestinationSuggestions && searchQuery.destination.trim() && destinationSuggestions.length > 0 && (
                   <div className="absolute left-0 right-0 top-full mt-2 z-20 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl dark:border-slate-800 dark:bg-slate-900">
                     {destinationSuggestions.map((tour) => (
                       <button
                         key={tour.id}
-                        onClick={() => setSearchQuery(prev => ({ ...prev, destination: tour.location }))}
+                        onClick={() => {
+                          setSearchQuery(prev => ({ ...prev, destination: tour.location }));
+                          setShowDestinationSuggestions(false);
+                        }}
                         className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-slate-50 dark:hover:bg-slate-800/60"
                       >
                         <img src={tour.image} alt={tour.title} className="size-11 rounded-xl object-cover" />

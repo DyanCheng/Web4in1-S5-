@@ -185,6 +185,8 @@ export default function VehiclePage() {
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
   const [date, setDate] = useState('15 Th05, 2024');
+  const [returnDate, setReturnDate] = useState('22 Th05, 2024');
+  const [tripType, setTripType] = useState<'one-way' | 'round-trip'>('one-way');
   const [passengers, setPassengers] = useState('1 người, phổ thông');
   const [selectedTypes, setSelectedTypes] = useState<VehicleType[]>([]);
   const [selectedSlot, setSelectedSlot] = useState<SelectedTimeSlot>('');
@@ -220,7 +222,9 @@ export default function VehiclePage() {
   };
 
   const handleSearch = () => {
-    setNotice(`Đang tìm chuyến ${from || 'mọi điểm đi'} đến ${to || 'mọi điểm đến'} vào ${date} cho ${passengers}.`);
+    const tripLabel = tripType === 'round-trip' ? 'khứ hồi' : 'một chiều';
+    const returnInfo = tripType === 'round-trip' ? `, ngày về ${returnDate}` : '';
+    setNotice(`Đang tìm chuyến ${tripLabel} ${from || 'mọi điểm đi'} → ${to || 'mọi điểm đến'} vào ${date}${returnInfo} cho ${passengers}.`);
   };
 
   const selectVehicle = (vehicle: Vehicle) => {
@@ -245,10 +249,44 @@ export default function VehiclePage() {
       <main className="flex-1">
         <section className="bg-blue-800 dark:bg-blue-950 px-4 py-12 sm:py-16">
           <div className="max-w-7xl mx-auto">
-            <h1 className="text-3xl sm:text-4xl font-black text-white mb-8">Tìm kiếm hành trình hoàn hảo</h1>
+            <h1 className="text-3xl sm:text-4xl font-black text-white mb-6">Tìm kiếm hành trình hoàn hảo</h1>
+
+            {/* Trip type tabs */}
+            <div className="flex items-center gap-2 mb-4">
+              <button
+                onClick={() => setTripType('one-way')}
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-black transition-all duration-200 ${
+                  tripType === 'one-way'
+                    ? 'bg-white text-blue-800 shadow-md'
+                    : 'bg-white/20 text-white hover:bg-white/30'
+                }`}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M5 12h14M12 5l7 7-7 7"/>
+                </svg>
+                Một chiều
+              </button>
+              <button
+                onClick={() => setTripType('round-trip')}
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-black transition-all duration-200 ${
+                  tripType === 'round-trip'
+                    ? 'bg-white text-blue-800 shadow-md'
+                    : 'bg-white/20 text-white hover:bg-white/30'
+                }`}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 12h18M17 6l5 6-5 6M7 6L2 12l5 6"/>
+                </svg>
+                Khứ hồi
+              </button>
+            </div>
 
             <div className="rounded-xl bg-white dark:bg-slate-900 p-5 shadow-xl">
-              <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr_0.8fr_0.9fr_auto] gap-4">
+              <div className={`grid gap-4 ${
+                tripType === 'round-trip'
+                  ? 'grid-cols-1 md:grid-cols-[1fr_1fr_0.7fr_0.7fr_0.8fr_auto]'
+                  : 'grid-cols-1 md:grid-cols-[1fr_1fr_0.8fr_0.9fr_auto]'
+              }`}>
                 <label className="text-xs font-bold text-slate-500 dark:text-slate-400">
                   Điểm khởi hành
                   <span className="mt-2 flex items-center gap-2 rounded-lg border border-slate-200 dark:border-slate-800 px-3 py-3">
@@ -286,6 +324,20 @@ export default function VehiclePage() {
                     />
                   </span>
                 </label>
+
+                {tripType === 'round-trip' && (
+                  <label className="text-xs font-bold text-blue-600 dark:text-blue-400">
+                    Ngày về
+                    <span className="mt-2 flex items-center gap-2 rounded-lg border-2 border-blue-400 dark:border-blue-600 px-3 py-3 bg-blue-50 dark:bg-blue-950/30">
+                      <CalendarDays className="size-5 text-blue-500" />
+                      <input
+                        value={returnDate}
+                        onChange={(event) => setReturnDate(event.target.value)}
+                        className="w-full bg-transparent outline-none text-sm font-bold text-slate-800 dark:text-slate-100"
+                      />
+                    </span>
+                  </label>
+                )}
 
                 <label className="text-xs font-bold text-slate-500 dark:text-slate-400">
                   Hạng ghế / khách
@@ -541,13 +593,13 @@ export default function VehiclePage() {
                             </div>
 
                             <div className="mt-6 border-t border-slate-100 pt-4 dark:border-slate-800">
-                              <div className="flex flex-wrap gap-4">
+                              <div className="flex flex-wrap gap-2">
                                 {vehicle.amenities.map((amenity) => {
                                   const AmenityIcon = getAmenityIcon(amenity);
 
                                   return (
-                                    <span key={amenity} className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 dark:text-slate-400">
-                                      <AmenityIcon className="size-4" />
+                                    <span key={amenity} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-extrabold bg-blue-900 hover:bg-blue-950 dark:bg-blue-600 dark:hover:bg-blue-700 text-white shadow-sm transition-all hover:scale-105 cursor-default">
+                                      <AmenityIcon className="size-3.5" />
                                       {amenity}
                                     </span>
                                   );

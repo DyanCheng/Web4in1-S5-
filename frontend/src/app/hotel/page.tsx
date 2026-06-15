@@ -16,6 +16,13 @@ import {
   Star,
   Users,
   Wifi,
+  Waves,
+  Utensils,
+  Sparkles,
+  Dumbbell,
+  Palmtree,
+  Plane,
+  Coffee,
 } from 'lucide-react';
 
 type SortMode = 'recommended' | 'price' | 'rating';
@@ -207,6 +214,29 @@ function getScoreLabel(rating: number) {
   return 'Tốt';
 }
 
+function getFeatureIcon(feature: string) {
+  switch (feature) {
+    case 'WiFi miễn phí':
+      return <Wifi className="size-3.5" />;
+    case 'Hồ bơi':
+      return <Waves className="size-3.5" />;
+    case 'Nhà hàng':
+      return <Utensils className="size-3.5" />;
+    case 'Spa':
+      return <Sparkles className="size-3.5" />;
+    case 'Gần bãi biển':
+      return <Palmtree className="size-3.5" />;
+    case 'Đưa đón sân bay':
+      return <Plane className="size-3.5" />;
+    case 'Phòng gym':
+      return <Dumbbell className="size-3.5" />;
+    case 'Bữa sáng miễn phí':
+      return <Coffee className="size-3.5" />;
+    default:
+      return <Wifi className="size-3.5" />;
+  }
+}
+
 export default function HotelPage() {
   const { theme } = useTheme();
   const [destination, setDestination] = useState('');
@@ -215,7 +245,7 @@ export default function HotelPage() {
   const [selectedStars, setSelectedStars] = useState<number[]>([]);
   const [selectedFacilities, setSelectedFacilities] = useState<string[]>([]);
   const [selectedArea, setSelectedArea] = useState('');
-  const [maxPrice, setMaxPrice] = useState(6500000);
+  const [maxPrice, setMaxPrice] = useState(100000000);
   const [sortMode, setSortMode] = useState<SortMode>('recommended');
   const [currentPage, setCurrentPage] = useState(1);
   const [favorites, setFavorites] = useState<string[]>([]);
@@ -266,7 +296,7 @@ export default function HotelPage() {
     setSelectedStars([]);
     setSelectedFacilities([]);
     setSelectedArea('');
-    setMaxPrice(6500000);
+    setMaxPrice(100000000);
     setSortMode('recommended');
     setCurrentPage(1);
     setNotice('Đã xóa tất cả bộ lọc.');
@@ -296,7 +326,7 @@ export default function HotelPage() {
       <main className="flex-1">
         <section className="bg-blue-700 dark:bg-blue-950 px-4 py-4">
           <div className="max-w-7xl mx-auto bg-white dark:bg-slate-900 rounded-lg p-3 shadow-lg">
-            <div className="grid grid-cols-1 md:grid-cols-[1.2fr_1fr_1fr_auto] gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-[1.5fr_1.2fr_auto] gap-3">
               <label className="flex flex-col gap-1 text-xs font-black text-slate-500 dark:text-slate-400">
                 Điểm đến
                 <span className="flex items-center gap-2 rounded-md border border-slate-200 dark:border-slate-800 px-3 py-2 text-sm text-slate-800 dark:text-slate-100">
@@ -319,17 +349,6 @@ export default function HotelPage() {
                   <input
                     value={dateRange}
                     onChange={(event) => setDateRange(event.target.value)}
-                    className="w-full bg-transparent outline-none font-bold"
-                  />
-                </span>
-              </label>
-              <label className="flex flex-col gap-1 text-xs font-black text-slate-500 dark:text-slate-400">
-                Khách & phòng
-                <span className="flex items-center gap-2 rounded-md border border-slate-200 dark:border-slate-800 px-3 py-2 text-sm text-slate-800 dark:text-slate-100">
-                  <Users className="size-4 text-blue-600 shrink-0" />
-                  <input
-                    value={guestInfo}
-                    onChange={(event) => setGuestInfo(event.target.value)}
                     className="w-full bg-transparent outline-none font-bold"
                   />
                 </span>
@@ -369,9 +388,9 @@ export default function HotelPage() {
                     </p>
                     <input
                       type="range"
-                      min={900000}
-                      max={6500000}
-                      step={250000}
+                      min={0}
+                      max={100000000}
+                      step={1000000}
                       value={maxPrice}
                       onChange={(event) => {
                         setCurrentPage(1);
@@ -380,8 +399,8 @@ export default function HotelPage() {
                       className="w-full accent-blue-600"
                     />
                     <div className="flex justify-between mt-2 text-xxs font-bold text-slate-400">
-                      <span>900.000 đ</span>
-                      <span>6.500.000 đ</span>
+                      <span>0 đ</span>
+                      <span>100.000.000 đ</span>
                     </div>
                   </div>
 
@@ -553,10 +572,13 @@ export default function HotelPage() {
                           </div>
                         </div>
 
-                        <div className="mt-4 flex flex-wrap gap-3">
+                        <div className="mt-4 flex flex-wrap gap-2.5">
                           {hotel.features.map((feature) => (
-                            <span key={feature} className="inline-flex items-center gap-1 text-xs font-bold text-slate-500 dark:text-slate-400">
-                              <Wifi className="size-3.5 text-blue-600" />
+                            <span
+                              key={feature}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-extrabold bg-blue-900 hover:bg-blue-950 dark:bg-blue-600 dark:hover:bg-blue-700 text-white shadow-sm transition-all hover:scale-105"
+                            >
+                              {getFeatureIcon(feature)}
                               {feature}
                             </span>
                           ))}

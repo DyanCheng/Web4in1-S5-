@@ -6,39 +6,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { AuthLayout, AuthCard, AuthInput, HeroSection, AuthFooter } from '@/components/AuthLayout';
 
-const roles = [
-  { id: 'user', label: 'Khách hàng' },
-  { id: 'hotel_owner', label: 'Khách sạn' },
-  { id: 'admin', label: 'Admin' },
-] as const;
-
-type Role = (typeof roles)[number]['id'];
-
-const rolePaths: Record<Role, string> = {
-  admin: '/admin',
-  hotel_owner: '/hotel-owner',
-  user: '/',
-};
-
 const inputClass =
   'w-full pl-12 pr-4 py-2 sm:py-3 border border-slate-150 dark:border-slate-800 bg-transparent rounded-2xl outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 text-slate-855 dark:text-slate-100 font-bold text-sm transition-all';
-
-function RoleButton({ id, label, active, onClick }: { id: Role; label: string; active: boolean; onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`py-2 px-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer ${
-        active
-          ? 'bg-blue-900 dark:bg-blue-600 text-white shadow-md'
-          : 'bg-slate-50 dark:bg-slate-800/50 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-      }`}
-    >
-      {label}
-    </button>
-  );
-}
-
 
 export default function LoginPage() {
   const router = useRouter();
@@ -46,7 +15,6 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [role, setRole] = useState<Role>('user');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -56,8 +24,8 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      await login(email, password, role);
-      router.push(rolePaths[role]);
+      await login(email, password, 'user');
+      router.push('/');
     } catch {
       setError('Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.');
     } finally {
@@ -84,24 +52,6 @@ export default function LoginPage() {
         subtitle="Vui lòng nhập thông tin để truy cập tài khoản của bạn."
       >
         <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
-          {/* Role Selection */}
-          <div className="text-left mb-4 sm:mb-5">
-            <label className="block text-xs font-black uppercase text-slate-400 dark:text-slate-550 mb-2">
-              Đăng nhập với tư cách
-            </label>
-            <div className="grid grid-cols-3 gap-2">
-              {roles.map((item) => (
-                <RoleButton
-                  key={item.id}
-                  id={item.id}
-                  label={item.label}
-                  active={role === item.id}
-                  onClick={() => setRole(item.id)}
-                />
-              ))}
-            </div>
-          </div>
-
           {/* Demo Credentials */}
           <div className="text-left p-3 sm:p-4 bg-blue-50/50 dark:bg-blue-950/20 border border-blue-105/10 rounded-2xl text-xxs font-bold text-blue-900 dark:text-blue-400 space-y-1">
             <p className="uppercase tracking-wider font-black mb-1">Tài khoản trải nghiệm:</p>

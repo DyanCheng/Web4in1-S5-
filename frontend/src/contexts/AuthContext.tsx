@@ -9,6 +9,7 @@ interface User {
   email: string;
   name: string;
   role: 'user' | 'admin' | 'hotel_owner';
+  avatar?: string;
 }
 
 interface AuthContextType {
@@ -37,7 +38,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     const data = await response.json();
-    setUser({ id: data.id, email: data.email, name: data.name, role: data.role });
+    setUser({ id: data.id, email: data.email, name: data.name, role: data.role, avatar: data.avatar });
   };
 
   const register = async (email: string, password: string, name: string) => {
@@ -53,7 +54,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     const data = await response.json();
-    setUser({ id: data.id, email: data.email, name: data.name, role: data.role });
+    setUser({ id: data.id, email: data.email, name: data.name, role: data.role, avatar: data.avatar });
   };
 
   const logout = () => {
