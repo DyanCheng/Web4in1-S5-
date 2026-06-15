@@ -18,8 +18,8 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import Chatbot from "@/components/Chatbot";
 
 export const metadata: Metadata = {
-  title: "Travel Booking - Trải Nghiệm Du Lịch Thượng Lưu",
-  description: "Kiến tạo những hành trình di sản và trải nghiệm du lịch cá nhân hóa hàng đầu tại Việt Nam.",
+  title: "CMC Travel - Trải Nghiệm Du Lịch Thượng Lưu",
+  description: "Khám phá thế giới cùng CMC Travel - Dịch vụ du lịch cao cấp tại Việt Nam",
 };
 
 export default function RootLayout({

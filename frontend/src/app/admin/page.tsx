@@ -145,7 +145,7 @@ export default function AdminDashboard() {
       <aside className="hidden xl:flex w-[280px] flex-col border-r border-slate-200/70 dark:border-slate-800 bg-slate-100/80 dark:bg-slate-900/80 backdrop-blur-sm">
         <div className="p-8">
           <div className="text-left">
-            <h1 className="text-3xl font-black text-blue-700 dark:text-blue-400 font-serif">TravelHub</h1>
+            <h1 className="text-3xl font-black text-blue-700 dark:text-blue-400 font-serif">CMC Travel</h1>
             <p className="text-sm text-slate-500 dark:text-slate-400">Bảng quản trị</p>
           </div>
         </div>

@@ -36,9 +36,11 @@ export default function Header() {
           
           {/* Logo */}
           <div className="flex items-center gap-2 cursor-pointer group" onClick={() => navigate('/')}>
-            <span className="text-2xl font-black text-blue-900 dark:text-blue-400 font-serif italic tracking-wide group-hover:scale-105 transition-transform">
-              Travel Booking
-            </span>
+            <img 
+              src="/logo.svg" 
+              alt="CMC Travel" 
+              className="h-10 sm:h-12 w-auto group-hover:scale-105 transition-transform"
+            />
           </div>
           
           {/* Desktop Nav links */}

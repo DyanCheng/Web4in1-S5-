@@ -15,10 +15,10 @@ export default function Chatbot() {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
-      text: 'Xin chào! Tôi là trợ lý ảo của TravelHub. Tôi có thể giúp gì cho bạn?',
+      text: 'Xin chào! Tôi là trợ lý ảo của CMC Travel. Tôi có thể giúp gì cho bạn?',
       sender: 'bot',
-      timestamp: new Date()
-    }
+      timestamp: new Date(),
+    },
   ]);
   const [inputText, setInputText] = useState('');
 
@@ -26,7 +26,7 @@ export default function Chatbot() {
     'Làm thế nào để đặt tour?',
     'Chính sách hoàn tiền như thế nào?',
     'Tour nào phù hợp cho gia đình?',
-    'Có mã giảm giá nào không?'
+    'Có mã giảm giá nào không?',
   ];
 
   const handleSendMessage = () => {
@@ -36,13 +36,12 @@ export default function Chatbot() {
       id: Date.now().toString(),
       text: inputText,
       sender: 'user',
-      timestamp: new Date()
+      timestamp: new Date(),
     };
 
-    setMessages(prev => [...prev, userMessage]);
+    setMessages((prev) => [...prev, userMessage]);
     setInputText('');
 
-    // Mock bot response
     setTimeout(() => {
       let botResponse = '';
 
@@ -62,10 +61,10 @@ export default function Chatbot() {
         id: (Date.now() + 1).toString(),
         text: botResponse,
         sender: 'bot',
-        timestamp: new Date()
+        timestamp: new Date(),
       };
 
-      setMessages(prev => [...prev, botMessage]);
+      setMessages((prev) => [...prev, botMessage]);
     }, 1000);
   };
 
@@ -75,7 +74,6 @@ export default function Chatbot() {
 
   return (
     <>
-      {/* Chat Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="fixed bottom-6 right-6 z-50 size-14 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 transition-all flex items-center justify-center group"
@@ -90,17 +88,15 @@ export default function Chatbot() {
         )}
       </button>
 
-      {/* Chat Window */}
       {isOpen && (
         <div className="fixed bottom-24 right-6 z-50 w-96 h-[600px] bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden">
-          {/* Header */}
           <div className="bg-blue-600 text-white p-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="size-10 bg-white/20 rounded-full flex items-center justify-center">
                 <MessageCircle className="size-5" />
               </div>
               <div>
-                <h3 className="text-lg">TravelHub Support</h3>
+                <h3 className="text-lg">CMC Travel Support</h3>
                 <p className="text-xs text-white/80">Luôn sẵn sàng hỗ trợ</p>
               </div>
             </div>
@@ -109,13 +105,9 @@ export default function Chatbot() {
             </button>
           </div>
 
-          {/* Messages */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
             {messages.map((message) => (
-              <div
-                key={message.id}
-                className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-              >
+              <div key={message.id} className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
                 <div
                   className={`max-w-[80%] p-3 rounded-2xl ${
                     message.sender === 'user'
@@ -132,7 +124,6 @@ export default function Chatbot() {
             ))}
           </div>
 
-          {/* Quick Questions */}
           {messages.length <= 1 && (
             <div className="p-4 border-t bg-gray-50">
               <p className="text-xs text-gray-600 mb-2">Câu hỏi thường gặp:</p>
@@ -150,7 +141,6 @@ export default function Chatbot() {
             </div>
           )}
 
-          {/* Input */}
           <div className="p-4 border-t">
             <div className="flex gap-2">
               <input

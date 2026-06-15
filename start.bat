@@ -1,9 +1,10 @@
 @echo off
+setlocal
 title TravelHub - Khoi dong he thong
 color 0A
 
 echo ============================================
-echo    TRAVELHUB - Web Ban Tour Du Lich
+echo    TRAVELBOOKING - Web Ban Tour Du Lich
 echo ============================================
 echo.
 
@@ -19,7 +20,7 @@ timeout /t 2 /nobreak >nul
 
 :: Khoi dong Backend (ASP.NET Core API)
 echo [2/3] Dang khoi dong Backend API (cong 5200)...
-start "TravelHub Backend API" cmd /k "cd /d "%~dp0backend" && dotnet run --urls "http://127.0.0.1:5200""
+start "TravelHub Backend API" cmd /k "cd /d ""%~dp0backend"" && dotnet run --urls ""http://127.0.0.1:5200"""
 
 :: Doi Backend khoi dong xong
 echo      Dang cho Backend san sang...
@@ -27,7 +28,7 @@ timeout /t 5 /nobreak >nul
 
 :: Khoi dong Frontend (Next.js)
 echo [3/3] Dang khoi dong Frontend Next.js (cong 3000)...
-start "TravelHub Frontend" cmd /k "cd /d "%~dp0frontend" && npm run dev"
+start "TravelHub Frontend" cmd /k "cd /d ""%~dp0frontend"" && npm run dev"
 
 :: Doi Frontend khoi dong xong
 echo      Dang cho Frontend san sang...
@@ -38,7 +39,8 @@ echo.
 echo ============================================
 echo    Mo trinh duyet tai: http://localhost:3000
 echo ============================================
-start "" "http://localhost:3000"
+set "APP_URL=http://localhost:3000"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "try { Start-Process '%APP_URL%' -ErrorAction Stop } catch { try { Start-Process 'msedge.exe' '%APP_URL%' -ErrorAction Stop } catch { try { Start-Process 'chrome.exe' '%APP_URL%' -ErrorAction Stop } catch { Start-Process explorer.exe '%APP_URL%' } } }"
 
 echo.
 echo [OK] He thong da duoc khoi dong!
@@ -47,3 +49,4 @@ echo      Frontend: http://localhost:3000
 echo.
 echo Nhan phim bat ky de dong cua so nay...
 pause >nul
+
