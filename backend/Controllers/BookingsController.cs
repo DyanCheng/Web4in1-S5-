@@ -36,22 +36,22 @@ namespace Backend.Controllers
         public IActionResult Create([FromBody] BookingRequest request)
         {
             var tour = _dataStore.Tours.FirstOrDefault(t => t.Id == request.TourId);
-            if (tour == null)
+            if (tour == null && string.IsNullOrEmpty(request.TourTitle))
             {
-                return BadRequest(new { message = "Tour không hợp lệ" });
+                return BadRequest(new { message = "Tour hoặc thông tin đặt phòng không hợp lệ" });
             }
 
             var newBooking = new Booking
             {
                 Id = "ORD-" + Guid.NewGuid().ToString().Substring(0, 8).ToUpper(),
                 TourId = request.TourId,
-                TourTitle = tour.Title,
-                TourImage = tour.Image,
+                TourTitle = tour != null ? tour.Title : request.TourTitle,
+                TourImage = tour != null ? tour.Image : request.TourImage,
                 UserId = request.UserId,
                 UserEmail = request.UserEmail,
                 Date = request.Date,
                 Guests = request.Guests,
-                Total = tour.Price * request.Guests * request.Quantity,
+                Total = tour != null ? (tour.Price * request.Guests * request.Quantity) : (request.Total ?? 0),
                 Status = "pending"
             };
 
@@ -82,5 +82,8 @@ namespace Backend.Controllers
         public string Date { get; set; } = string.Empty;
         public int Guests { get; set; }
         public int Quantity { get; set; } = 1;
+        public string TourTitle { get; set; } = string.Empty;
+        public string TourImage { get; set; } = string.Empty;
+        public decimal? Total { get; set; }
     }
 }

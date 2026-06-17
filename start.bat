@@ -49,4 +49,3 @@ echo      Frontend: http://localhost:3000
 echo.
 echo Nhan phim bat ky de dong cua so nay...
 pause >nul
-
