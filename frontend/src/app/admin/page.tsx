@@ -1,5 +1,5 @@
 "use client";
-
+import Image from "next/image"
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -17,7 +17,6 @@ import {
   Settings,
   Shield,
   ShoppingBag,
-  Star,
   Trash2,
   Users,
   Sun,
@@ -142,7 +141,7 @@ export default function AdminDashboard() {
 
   return (
     <div className={`min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white flex ${theme === 'dark' ? 'dark' : ''}`}>
-      <aside className="hidden xl:flex w-[280px] flex-col border-r border-slate-200/70 dark:border-slate-800 bg-slate-100/80 dark:bg-slate-900/80 backdrop-blur-sm">
+      <aside className="hidden xl:flex w-70 flex-col border-r border-slate-200/70 dark:border-slate-800 bg-slate-100/80 dark:bg-slate-900/80 backdrop-blur-sm">
         <div className="p-8">
           <div className="text-left">
             <h1 className="text-3xl font-black text-blue-700 dark:text-blue-400 font-serif">CMC Travel</h1>
@@ -156,6 +155,7 @@ export default function AdminDashboard() {
             const active = activeTab === item.id;
             return (
               <button
+                aria-label={item.label}
                 key={item.id}
                 onClick={() => setActiveTab(item.id as typeof activeTab)}
                 className={`w-full flex items-center gap-3 rounded-2xl px-4 py-4 text-left font-semibold transition-colors ${
@@ -183,7 +183,7 @@ export default function AdminDashboard() {
             <Link href="/" className="block text-sm font-semibold text-slate-600 dark:text-slate-300 hover:text-blue-600">
               Về trang chủ
             </Link>
-            <button onClick={logout} className="block text-sm font-semibold text-red-500 hover:text-red-600">
+            <button aria-label="Logout" onClick={logout} className="block text-sm font-semibold text-red-500 hover:text-red-600">
               Đăng xuất
             </button>
           </div>
@@ -199,13 +199,14 @@ export default function AdminDashboard() {
             </div>
             <div className="flex items-center gap-3">
               <button
+                aria-label="Toggle theme"
                 onClick={toggleTheme}
                 className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-3 text-sm font-semibold"
               >
                 <Sun className="size-4" />
                 Giao diện
               </button>
-              <button className="inline-flex items-center gap-2 rounded-2xl bg-blue-700 px-4 py-3 text-sm font-bold text-white shadow-md">
+              <button aria-label="Create new booking" className="inline-flex items-center gap-2 rounded-2xl bg-blue-700 px-4 py-3 text-sm font-bold text-white shadow-md">
                 <Plus className="size-4" />
                 Đặt chỗ mới
               </button>
@@ -224,7 +225,7 @@ export default function AdminDashboard() {
                 {stats.map((stat) => {
                   const Icon = stat.icon;
                   return (
-                    <div key={stat.label} className={`rounded-3xl p-6 bg-gradient-to-br ${stat.accent} shadow-sm border border-white/60 dark:border-slate-800`}>
+                    <div key={stat.label} className={`rounded-3xl p-6 bg-linear-to-br ${stat.accent} shadow-sm border border-white/60 dark:border-slate-800`}>
                       <div className="flex items-start justify-between">
                         <div className="size-12 rounded-2xl bg-white/70 dark:bg-slate-900/70 flex items-center justify-center text-blue-700 dark:text-blue-300">
                           <Icon className="size-5" />
@@ -272,7 +273,7 @@ export default function AdminDashboard() {
                           <tr key={tour.id} className="hover:bg-slate-50 dark:hover:bg-slate-950/40">
                             <td className="px-6 py-4">
                               <div className="flex items-center gap-3">
-                                <img src={tour.image} alt={tour.title} className="size-12 rounded-xl object-cover" />
+                                <Image src={tour.image} alt={tour.title} className="size-12 rounded-xl object-cover" width={48} height={48} />
                                 <div>
                                   <p className="font-bold text-slate-900 dark:text-white">{tour.title}</p>
                                   <p className="text-xs text-slate-500 dark:text-slate-400">ID: {tour.id}</p>
@@ -285,10 +286,10 @@ export default function AdminDashboard() {
                             <td className="px-6 py-4 text-amber-600 dark:text-amber-500 font-bold">★ {tour.rating} ({tour.reviews})</td>
                             <td className="px-6 py-4">
                               <div className="flex items-center gap-3">
-                                <button className="text-blue-600 hover:text-blue-700">
+                                <button aria-label="Edit tour" className="text-blue-600 hover:text-blue-700">
                                   <Edit className="size-4" />
                                 </button>
-                                <button onClick={() => handleDeleteTour(tour.id)} className="text-red-500 hover:text-red-600">
+                                <button aria-label="Delete tour" onClick={() => handleDeleteTour(tour.id)} className="text-red-500 hover:text-red-600">
                                   <Trash2 className="size-4" />
                                 </button>
                               </div>
