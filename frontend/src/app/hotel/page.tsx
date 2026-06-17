@@ -10,6 +10,16 @@ import Footer from '@/components/Footer';
 import { ImageWithFallback } from '@/components/figma/ImageWithFallback';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { useIsMobile } from '@/components/ui/use-mobile';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -326,6 +336,7 @@ export default function HotelPage() {
   const [showRoomModal, setShowRoomModal] = useState(false);
   const [selectedHotel, setSelectedHotel] = useState<Hotel | null>(null);
   const [selectedRoom, setSelectedRoom] = useState<any | null>(null);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [adults, setAdults] = useState<number>(2);
   const [children, setChildren] = useState<number>(1);
   const [svcSlide, setSvcSlide] = useState<number>(0);
@@ -784,8 +795,11 @@ export default function HotelPage() {
                         <button
                           disabled={!selectedRoom}
                           onClick={() => {
-                            setNotice(`Đặt phòng thành công! CMC Travel đang chuẩn bị đơn hàng cho phòng ${selectedRoom.name} tại ${selectedHotel.name}.`);
-                            setSelectedRoom(null);
+                            if (!user) {
+                              router.push('/login');
+                              return;
+                            }
+                            setShowConfirmModal(true);
                           }}
                           className={`w-full py-2.5 rounded-lg text-xs font-black shadow-md transition-all cursor-pointer ${
                             selectedRoom
@@ -793,12 +807,44 @@ export default function HotelPage() {
                               : 'bg-[#85a8e6] text-white cursor-not-allowed opacity-100'
                           }`}
                         >
-                          Tiếp tục đặt phòng
+                          {user && selectedRoom ? 'Đặt phòng' : 'Tiếp tục đặt phòng'}
                         </button>
                         <p className="text-[10px] text-slate-400 text-center mt-2 font-medium">Bạn sẽ không bị trừ tiền ngay lúc này</p>
                       </div>
                     </div>
                   </div>
+
+                  {/* Booking Confirmation Dialog */}
+                  <AlertDialog open={showConfirmModal} onOpenChange={setShowConfirmModal}>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Xác nhận đặt phòng</AlertDialogTitle>
+                        <AlertDialogDescription asChild>
+                          <div className="space-y-2 mt-2">
+                            <p>Bạn có chắc chắn muốn đặt phòng <strong>{selectedRoom?.name}</strong> tại khách sạn <strong>{selectedHotel?.name}</strong> không?</p>
+                            <div className="bg-slate-50 dark:bg-slate-800 p-3 rounded-lg text-sm text-slate-700 dark:text-slate-300">
+                              <p>Ngày nhận phòng: <strong>{format(displayFromDate, "dd/MM/yyyy")}</strong></p>
+                              <p>Ngày trả phòng: <strong>{format(displayToDate, "dd/MM/yyyy")}</strong></p>
+                              <p>Khách: <strong>{adults} Người lớn, {children} Trẻ em</strong></p>
+                              <p className="mt-2 text-[#0b5cd5] font-black text-base">Tổng cộng: {selectedRoom ? ((selectedRoom.price + selectedRoom.taxAndFee) * computedNights).toLocaleString('vi-VN') : 0} đ</p>
+                            </div>
+                          </div>
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Hủy</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => {
+                            setNotice(`Đặt phòng thành công! CMC Travel đang chuẩn bị đơn hàng cho phòng ${selectedRoom?.name} tại ${selectedHotel?.name}.`);
+                            setSelectedRoom(null);
+                            setShowConfirmModal(false);
+                          }}
+                        >
+                          Xác nhận đặt
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
 
                   {/* Support Line */}
                   <div className="flex items-center gap-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 shadow-sm text-left">
