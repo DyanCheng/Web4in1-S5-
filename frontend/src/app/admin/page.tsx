@@ -9,6 +9,7 @@ import {
   BarChart3,
   Bell,
   CheckCircle2,
+  CreditCard,
   DollarSign,
   Edit,
   Loader2,
@@ -23,6 +24,7 @@ import {
 } from 'lucide-react';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:5200';
+const WEBHOOK_PUBLIC_URL = process.env.NEXT_PUBLIC_SEPAY_WEBHOOK_URL || BACKEND_URL;
 
 interface Tour {
   id: string;
@@ -48,10 +50,35 @@ interface Booking {
   status: string;
 }
 
+interface PaymentSummary {
+  total_revenue: number;
+  pending_count: number;
+  paid_count: number;
+  today_revenue: number;
+}
+
+interface PaymentTransaction {
+  order_payment_id: number;
+  payment_code: string;
+  user_id: number | null;
+  user_email: string;
+  user_name: string | null;
+  amount: number;
+  payment_status: string;
+  order_items: Array<{ title?: string; price?: number; quantity?: number; guests?: number; date?: string }>;
+  booking_refs: string[];
+  sepay_transaction_id: number | null;
+  paid_at: string | null;
+  created_at: string;
+}
+
+type AdminTab = 'overview' | 'tours' | 'orders' | 'payments' | 'settings';
+
 const sidebarItems = [
   { id: 'overview', label: 'Tổng quan', icon: BarChart3 },
   { id: 'tours', label: 'Quản lý tour', icon: ShoppingBag },
   { id: 'orders', label: 'Đơn đặt chỗ', icon: CheckCircle2 },
+  { id: 'payments', label: 'Thanh toán', icon: CreditCard },
   { id: 'settings', label: 'Cài đặt', icon: Settings },
 ];
 
@@ -59,26 +86,39 @@ export default function AdminDashboard() {
   const router = useRouter();
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
-  const [activeTab, setActiveTab] = useState<'overview' | 'tours' | 'orders' | 'settings'>('overview');
+  const [activeTab, setActiveTab] = useState<AdminTab>('overview');
   const [tours, setTours] = useState<Tour[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [paymentSummary, setPaymentSummary] = useState<PaymentSummary | null>(null);
+  const [paymentTransactions, setPaymentTransactions] = useState<PaymentTransaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [paymentSearch, setPaymentSearch] = useState('');
 
   const fetchData = async () => {
     try {
       setLoading(true);
-      const toursResponse = await fetch(`${BACKEND_URL}/api/tours`);
-      const bookingsResponse = await fetch(`${BACKEND_URL}/api/bookings`);
+      const [toursResponse, bookingsResponse, summaryResponse, transactionsResponse] = await Promise.all([
+        fetch(`${BACKEND_URL}/api/tours`),
+        fetch(`${BACKEND_URL}/api/bookings`),
+        fetch(`${BACKEND_URL}/api/payments/admin/summary`),
+        fetch(`${BACKEND_URL}/api/payments/admin/transactions`),
+      ]);
       const toursData = toursResponse.ok ? await toursResponse.json() : [];
       const bookingsData = bookingsResponse.ok ? await bookingsResponse.json() : [];
+      if (summaryResponse.ok) {
+        setPaymentSummary(await summaryResponse.json());
+      }
+      if (transactionsResponse.ok) {
+        setPaymentTransactions(await transactionsResponse.json());
+      }
       setTours(toursData.length ? toursData : [
-        { id: '1', title: 'Du ngoạn Vịnh Hạ Long', location: 'Quảng Ninh', price: 3500000, duration: '2 ngày 1 đêm', image: 'https://images.unsplash.com/photo-1643029891412-92f9a81a8c16', rating: 4.9, reviews: 1234 },
-        { id: '2', title: 'Thiên đường Phú Quốc', location: 'Kiên Giang', price: 5200000, duration: '4 ngày 3 đêm', image: 'https://images.unsplash.com/photo-1732243395944-cb3ff9311091', rating: 4.8, reviews: 892 },
-        { id: '3', title: 'Mù Cang Chải - Sa Pa', location: 'Lào Cai', price: 4800000, duration: '3 ngày 2 đêm', image: 'https://images.unsplash.com/photo-1649530928914-c2df337e3007', rating: 4.9, reviews: 756 },
-        { id: '4', title: 'Biển xanh Đà Nẵng', location: 'Đà Nẵng', price: 3200000, duration: '3 ngày 2 đêm', image: 'https://images.unsplash.com/photo-1723142282970-1fd415eec1ad', rating: 4.7, reviews: 1089 },
-        { id: '5', title: 'Phố cổ Hội An', location: 'Quảng Nam', price: 2800000, duration: '2 ngày 1 đêm', image: 'https://images.unsplash.com/photo-1664650440553-ab53804814b3', rating: 5.0, reviews: 1456 },
-        { id: '6', title: 'Nha Trang - Vịnh xanh', location: 'Khánh Hòa', price: 3900000, duration: '3 ngày 2 đêm', image: 'https://images.unsplash.com/photo-1533002832-1721d16b4bb9', rating: 4.8, reviews: 967 },
+        { id: '1', title: 'Du ngoạn Vịnh Hạ Long', location: 'Quảng Ninh', price: 3500000, duration: '2 ngày 1 đêm', image: '#', rating: 4.9, reviews: 1234 },
+        { id: '2', title: 'Thiên đường Phú Quốc', location: 'Kiên Giang', price: 5200000, duration: '4 ngày 3 đêm', image: '#', rating: 4.8, reviews: 892 },
+        { id: '3', title: 'Mù Cang Chải - Sa Pa', location: 'Lào Cai', price: 4800000, duration: '3 ngày 2 đêm', image: '#', rating: 4.9, reviews: 756 },
+        { id: '4', title: 'Biển xanh Đà Nẵng', location: 'Đà Nẵng', price: 3200000, duration: '3 ngày 2 đêm', image: '#', rating: 4.7, reviews: 1089 },
+        { id: '5', title: 'Phố cổ Hội An', location: 'Quảng Nam', price: 2800000, duration: '2 ngày 1 đêm', image: '#', rating: 5.0, reviews: 1456 },
+        { id: '6', title: 'Nha Trang - Vịnh xanh', location: 'Khánh Hòa', price: 3900000, duration: '3 ngày 2 đêm', image: '#', rating: 4.8, reviews: 967 },
       ]);
       setBookings(bookingsData.length ? bookingsData : [
         { id: 'ORD-1715234567890', tourId: '1', tourTitle: 'Du ngoạn Vịnh Hạ Long', tourImage: 'https://images.unsplash.com/photo-1643029891412-92f9a81a8c16', userId: '3', userEmail: 'user@travelhub.com', date: '2026-07-15', guests: 2, total: 7000000, status: 'confirmed' },
@@ -106,9 +146,29 @@ export default function AdminDashboard() {
     [searchQuery, tours]
   );
 
-  const totalRevenue = bookings.reduce((sum, booking) => sum + Number(booking.total), 0);
-  const pendingBookings = bookings.filter((booking) => booking.status !== 'confirmed').length;
-  const uniqueCustomers = new Set(bookings.map((booking) => booking.userEmail)).size;
+  const totalRevenue = paymentSummary?.total_revenue ?? bookings.reduce((sum, booking) => sum + Number(booking.total), 0);
+  const pendingBookings = paymentSummary?.pending_count ?? bookings.filter((booking) => booking.status !== 'confirmed').length;
+  const paidCount = paymentSummary?.paid_count ?? bookings.filter((booking) => booking.status === 'confirmed').length;
+  const todayRevenue = paymentSummary?.today_revenue ?? 0;
+  const uniqueCustomers = new Set([
+    ...bookings.map((booking) => booking.userEmail),
+    ...paymentTransactions.map((tx) => tx.user_email),
+  ]).size;
+
+  const filteredPayments = useMemo(
+    () =>
+      paymentTransactions.filter((tx) => {
+        const query = paymentSearch.toLowerCase();
+        const itemTitles = (tx.order_items || []).map((item) => item.title || '').join(' ').toLowerCase();
+        return (
+          tx.payment_code.toLowerCase().includes(query) ||
+          tx.user_email.toLowerCase().includes(query) ||
+          (tx.user_name || '').toLowerCase().includes(query) ||
+          itemTitles.includes(query)
+        );
+      }),
+    [paymentSearch, paymentTransactions]
+  );
 
   const handleConfirmBooking = (id: string) => {
     setBookings((prev) => prev.map((booking) => (booking.id === id ? { ...booking, status: 'confirmed' } : booking)));
@@ -133,11 +193,19 @@ export default function AdminDashboard() {
   }
 
   const stats = [
-    { label: 'Tổng doanh thu', value: `${totalRevenue.toLocaleString('vi-VN')}đ`, icon: DollarSign, accent: 'from-emerald-50 to-emerald-100 dark:from-emerald-950/50 dark:to-emerald-900/30' },
-    { label: 'Tổng lượt đặt', value: bookings.length.toString(), icon: ShoppingBag, accent: 'from-blue-50 to-blue-100 dark:from-blue-950/50 dark:to-blue-900/30' },
-    { label: 'Khách hàng', value: uniqueCustomers.toString(), icon: Users, accent: 'from-violet-50 to-violet-100 dark:from-violet-950/50 dark:to-violet-900/30' },
-    { label: 'Đang chờ xử lý', value: pendingBookings.toString(), icon: Shield, accent: 'from-amber-50 to-amber-100 dark:from-amber-950/50 dark:to-amber-900/30' },
+    { label: 'Tổng doanh thu', value: `${Number(totalRevenue).toLocaleString('vi-VN')}đ`, icon: DollarSign, accent: 'from-emerald-50 to-emerald-100 dark:from-emerald-950/50 dark:to-emerald-900/30' },
+    { label: 'Doanh thu hôm nay', value: `${Number(todayRevenue).toLocaleString('vi-VN')}đ`, icon: BarChart3, accent: 'from-blue-50 to-blue-100 dark:from-blue-950/50 dark:to-blue-900/30' },
+    { label: 'Đã thanh toán', value: paidCount.toString(), icon: CheckCircle2, accent: 'from-violet-50 to-violet-100 dark:from-violet-950/50 dark:to-violet-900/30' },
+    { label: 'Chờ thanh toán', value: pendingBookings.toString(), icon: Shield, accent: 'from-amber-50 to-amber-100 dark:from-amber-950/50 dark:to-amber-900/30' },
   ];
+
+  const tabTitles: Record<AdminTab, { title: string; subtitle: string }> = {
+    overview: { title: 'Tổng quan quản trị', subtitle: 'Chào mừng trở lại. Đây là những gì đang diễn ra hôm nay.' },
+    tours: { title: 'Quản lý tour', subtitle: 'Danh sách tour hiện có trong hệ thống.' },
+    orders: { title: 'Đơn đặt chỗ', subtitle: 'Phê duyệt hoặc hủy các đơn chờ xử lý.' },
+    payments: { title: 'Giao dịch thanh toán', subtitle: 'Theo dõi đơn SePay, trạng thái và chi tiết sản phẩm.' },
+    settings: { title: 'Cài đặt hệ thống', subtitle: 'Cấu hình chung cho nền tảng CMC Travel.' },
+  };
 
   return (
     <div className={`min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white flex ${theme === 'dark' ? 'dark' : ''}`}>
@@ -157,7 +225,7 @@ export default function AdminDashboard() {
               <button
                 aria-label={item.label}
                 key={item.id}
-                onClick={() => setActiveTab(item.id as typeof activeTab)}
+                onClick={() => setActiveTab(item.id as AdminTab)}
                 className={`w-full flex items-center gap-3 rounded-2xl px-4 py-4 text-left font-semibold transition-colors ${
                   active
                     ? 'bg-blue-100 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300'
@@ -194,8 +262,8 @@ export default function AdminDashboard() {
         <header className="sticky top-0 z-20 border-b border-slate-200/70 dark:border-slate-800 bg-slate-50/90 dark:bg-slate-950/90 backdrop-blur-sm">
           <div className="px-4 sm:px-6 lg:px-8 py-5 flex items-center justify-between gap-4">
             <div className="min-w-0">
-              <h2 className="text-2xl sm:text-3xl font-black font-serif">Tổng quan quản trị</h2>
-              <p className="text-sm text-slate-500 dark:text-slate-400">Chào mừng trở lại. Đây là những gì đang diễn ra hôm nay.</p>
+              <h2 className="text-2xl sm:text-3xl font-black font-serif">{tabTitles[activeTab].title}</h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400">{tabTitles[activeTab].subtitle}</p>
             </div>
             <div className="flex items-center gap-3">
               <button
@@ -221,6 +289,7 @@ export default function AdminDashboard() {
             </div>
           ) : (
             <>
+              {(activeTab === 'overview' || activeTab === 'payments') && (
               <section className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
                 {stats.map((stat) => {
                   const Icon = stat.icon;
@@ -238,64 +307,47 @@ export default function AdminDashboard() {
                   );
                 })}
               </section>
+              )}
 
+              {activeTab === 'overview' && (
               <section className="mt-8 grid grid-cols-1 xl:grid-cols-[1.7fr_1fr] gap-6">
                 <div className="rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 shadow-sm overflow-hidden">
-                  <div className="p-6 border-b border-slate-200/70 dark:border-slate-800 flex items-center justify-between">
-                    <div>
-                      <h3 className="text-xl font-black font-serif">Quản lý tour</h3>
-                      <p className="text-sm text-slate-500 dark:text-slate-400">Danh sách tour hiện có trong hệ thống</p>
-                    </div>
-                    <div className="relative w-full max-w-md">
-                      <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
-                      <input
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder="Tìm tour theo tên hoặc địa điểm..."
-                        className="w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-11 py-3 text-sm font-semibold outline-none"
-                      />
-                    </div>
+                  <div className="p-6 border-b border-slate-200/70 dark:border-slate-800">
+                    <h3 className="text-xl font-black font-serif">Giao dịch gần đây</h3>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">Các đơn thanh toán SePay mới nhất</p>
                   </div>
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead className="bg-slate-50 dark:bg-slate-950/60 text-slate-500 dark:text-slate-400 uppercase tracking-widest text-xs">
                         <tr>
-                          <th className="px-6 py-4 text-left">Tour</th>
-                          <th className="px-6 py-4 text-left">Địa điểm</th>
-                          <th className="px-6 py-4 text-left">Ngày đêm</th>
-                          <th className="px-6 py-4 text-left">Giá</th>
-                          <th className="px-6 py-4 text-left">Đánh giá</th>
-                          <th className="px-6 py-4 text-left">Hành động</th>
+                          <th className="px-6 py-4 text-left">Mã thanh toán</th>
+                          <th className="px-6 py-4 text-left">Khách</th>
+                          <th className="px-6 py-4 text-left">Số tiền</th>
+                          <th className="px-6 py-4 text-left">Trạng thái</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-200/70 dark:divide-slate-800">
-                        {filteredTours.map((tour) => (
-                          <tr key={tour.id} className="hover:bg-slate-50 dark:hover:bg-slate-950/40">
+                        {paymentTransactions.slice(0, 5).map((tx) => (
+                          <tr key={tx.order_payment_id} className="hover:bg-slate-50 dark:hover:bg-slate-950/40">
+                            <td className="px-6 py-4 font-bold">{tx.payment_code}</td>
+                            <td className="px-6 py-4">{tx.user_email}</td>
+                            <td className="px-6 py-4 font-black text-blue-700 dark:text-blue-400">{Number(tx.amount).toLocaleString('vi-VN')}đ</td>
                             <td className="px-6 py-4">
-                              <div className="flex items-center gap-3">
-                                <Image src={tour.image} alt={tour.title} className="size-12 rounded-xl object-cover" width={48} height={48} />
-                                <div>
-                                  <p className="font-bold text-slate-900 dark:text-white">{tour.title}</p>
-                                  <p className="text-xs text-slate-500 dark:text-slate-400">ID: {tour.id}</p>
-                                </div>
-                              </div>
-                            </td>
-                            <td className="px-6 py-4 text-slate-600 dark:text-slate-300">{tour.location}</td>
-                            <td className="px-6 py-4 text-slate-600 dark:text-slate-300">{tour.duration}</td>
-                            <td className="px-6 py-4 font-black text-blue-700 dark:text-blue-400">{tour.price.toLocaleString('vi-VN')}đ</td>
-                            <td className="px-6 py-4 text-amber-600 dark:text-amber-500 font-bold">★ {tour.rating} ({tour.reviews})</td>
-                            <td className="px-6 py-4">
-                              <div className="flex items-center gap-3">
-                                <button aria-label="Edit tour" className="text-blue-600 hover:text-blue-700">
-                                  <Edit className="size-4" />
-                                </button>
-                                <button aria-label="Delete tour" onClick={() => handleDeleteTour(tour.id)} className="text-red-500 hover:text-red-600">
-                                  <Trash2 className="size-4" />
-                                </button>
-                              </div>
+                              <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
+                                tx.payment_status === 'paid'
+                                  ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300'
+                                  : 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300'
+                              }`}>
+                                {tx.payment_status === 'paid' ? 'Đã thanh toán' : 'Chờ thanh toán'}
+                              </span>
                             </td>
                           </tr>
                         ))}
+                        {paymentTransactions.length === 0 && (
+                          <tr>
+                            <td colSpan={4} className="px-6 py-10 text-center text-slate-500 dark:text-slate-400">Chưa có giao dịch nào</td>
+                          </tr>
+                        )}
                       </tbody>
                     </table>
                   </div>
@@ -350,7 +402,72 @@ export default function AdminDashboard() {
                   </div>
                 </div>
               </section>
+              )}
 
+              {(activeTab === 'overview' || activeTab === 'tours') && (
+              <section className={`${activeTab === 'tours' ? 'mt-0' : 'mt-8'} rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 shadow-sm overflow-hidden`}>
+                <div className="p-6 border-b border-slate-200/70 dark:border-slate-800 flex items-center justify-between gap-4 flex-wrap">
+                  <div>
+                    <h3 className="text-xl font-black font-serif">Quản lý tour</h3>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">Danh sách tour hiện có trong hệ thống</p>
+                  </div>
+                  <div className="relative w-full max-w-md">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
+                    <input
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Tìm tour theo tên hoặc địa điểm..."
+                      className="w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-11 py-3 text-sm font-semibold outline-none"
+                    />
+                  </div>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-slate-50 dark:bg-slate-950/60 text-slate-500 dark:text-slate-400 uppercase tracking-widest text-xs">
+                      <tr>
+                        <th className="px-6 py-4 text-left">Tour</th>
+                        <th className="px-6 py-4 text-left">Địa điểm</th>
+                        <th className="px-6 py-4 text-left">Ngày đêm</th>
+                        <th className="px-6 py-4 text-left">Giá</th>
+                        <th className="px-6 py-4 text-left">Đánh giá</th>
+                        <th className="px-6 py-4 text-left">Hành động</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200/70 dark:divide-slate-800">
+                      {filteredTours.map((tour) => (
+                        <tr key={tour.id} className="hover:bg-slate-50 dark:hover:bg-slate-950/40">
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-3">
+                              <Image src={tour.image} alt={tour.title} className="size-12 rounded-xl object-cover" width={48} height={48} />
+                              <div>
+                                <p className="font-bold text-slate-900 dark:text-white">{tour.title}</p>
+                                <p className="text-xs text-slate-500 dark:text-slate-400">ID: {tour.id}</p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-slate-600 dark:text-slate-300">{tour.location}</td>
+                          <td className="px-6 py-4 text-slate-600 dark:text-slate-300">{tour.duration}</td>
+                          <td className="px-6 py-4 font-black text-blue-700 dark:text-blue-400">{tour.price.toLocaleString('vi-VN')}đ</td>
+                          <td className="px-6 py-4 text-amber-600 dark:text-amber-500 font-bold">★ {tour.rating} ({tour.reviews})</td>
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-3">
+                              <button aria-label="Edit tour" className="text-blue-600 hover:text-blue-700">
+                                <Edit className="size-4" />
+                              </button>
+                              <button aria-label="Delete tour" onClick={() => handleDeleteTour(tour.id)} className="text-red-500 hover:text-red-600">
+                                <Trash2 className="size-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+              )}
+
+              {(activeTab === 'overview' || activeTab === 'orders') && (
               <section className="mt-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 shadow-sm overflow-hidden">
                 <div className="p-6 border-b border-slate-200/70 dark:border-slate-800 flex items-center justify-between">
                   <div>
@@ -409,6 +526,105 @@ export default function AdminDashboard() {
                   </table>
                 </div>
               </section>
+              )}
+
+              {activeTab === 'payments' && (
+              <section className="mt-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 shadow-sm overflow-hidden">
+                <div className="p-6 border-b border-slate-200/70 dark:border-slate-800 flex items-center justify-between gap-4 flex-wrap">
+                  <div>
+                    <h3 className="text-xl font-black font-serif">Lịch sử giao dịch SePay</h3>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">{filteredPayments.length} giao dịch · {uniqueCustomers} khách hàng</p>
+                  </div>
+                  <div className="relative w-full max-w-md">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
+                    <input
+                      value={paymentSearch}
+                      onChange={(e) => setPaymentSearch(e.target.value)}
+                      placeholder="Tìm theo mã, email, sản phẩm..."
+                      className="w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-11 py-3 text-sm font-semibold outline-none"
+                    />
+                  </div>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-slate-50 dark:bg-slate-950/60 text-slate-500 dark:text-slate-400 uppercase tracking-widest text-xs">
+                      <tr>
+                        <th className="px-6 py-4 text-left">Mã thanh toán</th>
+                        <th className="px-6 py-4 text-left">Khách hàng</th>
+                        <th className="px-6 py-4 text-left">Sản phẩm</th>
+                        <th className="px-6 py-4 text-left">Số tiền</th>
+                        <th className="px-6 py-4 text-left">Trạng thái</th>
+                        <th className="px-6 py-4 text-left">SePay ID</th>
+                        <th className="px-6 py-4 text-left">Thời gian</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200/70 dark:divide-slate-800">
+                      {filteredPayments.map((tx) => (
+                        <tr key={tx.order_payment_id} className="hover:bg-slate-50 dark:hover:bg-slate-950/40 align-top">
+                          <td className="px-6 py-4 font-bold">{tx.payment_code}</td>
+                          <td className="px-6 py-4">
+                            <p className="font-semibold">{tx.user_name || '—'}</p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400">{tx.user_email}</p>
+                          </td>
+                          <td className="px-6 py-4 max-w-xs">
+                            <div className="space-y-1">
+                              {(tx.order_items || []).map((item, index) => (
+                                <p key={index} className="text-xs">
+                                  {item.title || 'Tour'} × {item.quantity || 1}
+                                  {item.guests ? ` · ${item.guests} khách` : ''}
+                                </p>
+                              ))}
+                              {(tx.booking_refs || []).length > 0 && (
+                                <p className="text-[10px] text-slate-400">Booking: {(tx.booking_refs || []).join(', ')}</p>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 font-black text-blue-700 dark:text-blue-400">{Number(tx.amount).toLocaleString('vi-VN')}đ</td>
+                          <td className="px-6 py-4">
+                            <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
+                              tx.payment_status === 'paid'
+                                ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300'
+                                : 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300'
+                            }`}>
+                              {tx.payment_status === 'paid' ? 'Đã thanh toán' : 'Chờ thanh toán'}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-xs text-slate-500">{tx.sepay_transaction_id || '—'}</td>
+                          <td className="px-6 py-4 text-xs text-slate-500">
+                            <p>Tạo: {new Date(tx.created_at).toLocaleString('vi-VN')}</p>
+                            {tx.paid_at && <p className="text-emerald-600">TT: {new Date(tx.paid_at).toLocaleString('vi-VN')}</p>}
+                          </td>
+                        </tr>
+                      ))}
+                      {filteredPayments.length === 0 && (
+                        <tr>
+                          <td colSpan={7} className="px-6 py-12 text-center text-slate-500 dark:text-slate-400">Chưa có giao dịch thanh toán</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+              )}
+
+              {activeTab === 'settings' && (
+              <section className="mt-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 shadow-sm p-8">
+                <h3 className="text-xl font-black font-serif mb-2">Cấu hình thanh toán SePay</h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
+                  Thiết lập biến môi trường <code className="text-xs bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">SEPAY_BANK_ACCOUNT</code>, webhook URL và API key trong file <code className="text-xs bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">.env</code>.
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                  <div className="rounded-2xl border border-slate-200 dark:border-slate-800 p-4">
+                    <p className="font-bold mb-1">Webhook URL</p>
+                    <p className="text-slate-500 break-all">{WEBHOOK_PUBLIC_URL}/api/payments/webhook/sepay</p>
+                  </div>
+                  <div className="rounded-2xl border border-slate-200 dark:border-slate-800 p-4">
+                    <p className="font-bold mb-1">Môi trường dev</p>
+                    <p className="text-slate-500">Dùng nút &quot;Mô phỏng thanh toán&quot; trên trang QR để test không cần chuyển khoản thật.</p>
+                  </div>
+                </div>
+              </section>
+              )}
             </>
           )}
         </div>

@@ -54,7 +54,7 @@ export default function RegisterPage() {
       await register(formData.email, formData.password, formData.name);
       router.push('/');
     } catch (err) {
-      setError('Đăng ký thất bại. Vui lòng thử lại.');
+      setError(err instanceof Error ? err.message : 'Đăng ký thất bại. Vui lòng thử lại.');
     } finally {
       setLoading(false);
     }

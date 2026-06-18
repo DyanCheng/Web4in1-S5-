@@ -1,5 +1,4 @@
-using System;
-using System.Collections.Generic;
+using System.Linq;
 using Backend.Models;
 
 namespace Backend.Services
@@ -148,6 +147,14 @@ namespace Backend.Services
                 Total = 15600000,
                 Status = "pending"
             });
+        }
+
+        public bool ConfirmBooking(string bookingId)
+        {
+            var booking = Bookings.FirstOrDefault(b => b.Id == bookingId);
+            if (booking == null) return false;
+            booking.Status = "confirmed";
+            return true;
         }
     }
 }
