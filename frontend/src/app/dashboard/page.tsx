@@ -1,28 +1,60 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
-import { Package, FileText, User, Download, Trash2, Star, Calendar, Loader2 } from 'lucide-react';
+import { Package, FileText, User, Download, Trash2, Star, Calendar, Loader2, Ticket, Key, Camera } from 'lucide-react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useTheme } from '@/contexts/ThemeContext';
-import { getExperiencedTourIds } from '@/lib/tourStorage';
+import { getExperiencedTourIds, getUserReviews, addUserReview, hasReviewedTourTitle } from '@/lib/tourStorage';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:5200';
 
 export default function DashboardPage() {
   const router = useRouter();
   const navigate = (url: string) => router.push(url);
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const { theme } = useTheme();
   const [activeTab, setActiveTab] = useState('bookings');
   const [bookings, setBookings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [experiencedTourIds, setExperiencedTourIds] = useState<string[]>([]);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [showAvatarModal, setShowAvatarModal] = useState(false);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  
+  const [newReviewTour, setNewReviewTour] = useState('');
+  const [newReviewRating, setNewReviewRating] = useState(5);
+  const [newReviewComment, setNewReviewComment] = useState('');
 
+  useEffect(() => {
+    if (user?.avatar) {
+      setAvatarPreview(user.avatar);
+    }
+  }, [user]);
+
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const newAvatar = reader.result as string;
+        setAvatarPreview(newAvatar);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSaveAvatar = () => {
+    if (avatarPreview) {
+      updateUser({ avatar: avatarPreview });
+    }
+    setShowAvatarModal(false);
+  };
   const fetchBookings = async () => {
     if (!user) return;
     try {
@@ -73,15 +105,46 @@ export default function DashboardPage() {
     setExperiencedTourIds(getExperiencedTourIds());
   }, []);
 
-  const [reviews, setReviews] = useState([
-    {
-      id: 1,
-      tour: 'Phố cổ Hội An',
-      rating: 5,
-      comment: 'Tour tuyệt vời! Phố cổ Hội An lung linh đèn lồng rất đẹp. Tôi rất hài lòng với chuyến đi này.',
-      date: '2026-04-20'
+  const [reviews, setReviews] = useState<any[]>([]);
+
+  useEffect(() => {
+    setReviews(getUserReviews());
+  }, []);
+
+  const availableBookings = useMemo(() => {
+    return bookings.filter(b => !hasReviewedTourTitle(b.tourTitle));
+  }, [bookings, reviews]);
+
+  useEffect(() => {
+    if (availableBookings.length > 0 && newReviewTour === '') {
+      setNewReviewTour(availableBookings[0].tourTitle);
     }
-  ]);
+  }, [availableBookings, newReviewTour]);
+
+  const handleSubmitReview = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newReviewTour) {
+      alert('Không có hành trình nào để đánh giá!');
+      return;
+    }
+    if (!newReviewComment.trim()) {
+      alert('Vui lòng nhập nhận xét chi tiết!');
+      return;
+    }
+    const newReview = {
+      id: Date.now(),
+      tour: newReviewTour,
+      rating: newReviewRating,
+      comment: newReviewComment,
+      date: new Date().toLocaleDateString('vi-VN')
+    };
+    const nextReviews = addUserReview(newReview);
+    setReviews(nextReviews);
+    setNewReviewComment('');
+    setNewReviewRating(5);
+    setNewReviewTour(''); // reset để chọn tour tiếp theo
+    alert('Đã gửi đánh giá thành công!');
+  };
 
   const handleDeleteBooking = async (id: string) => {
     if (!confirm('Bạn có chắc muốn hủy đặt tour này?')) return;
@@ -136,6 +199,28 @@ export default function DashboardPage() {
           {/* Sidebar */}
           <div className="lg:col-span-1 text-left">
             <div className="bg-white dark:bg-slate-900 rounded-3xl p-4 space-y-1.5 border border-slate-100/40 dark:border-slate-800/40 shadow-sm">
+              <div className="flex flex-col items-center p-4 mb-2 border-b border-slate-100/60 dark:border-slate-800/60">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAvatarPreview(user?.avatar || null);
+                    setShowAvatarModal(true);
+                  }}
+                  className="w-20 h-20 rounded-full overflow-hidden border-4 border-slate-50 dark:border-slate-800 shadow-md flex items-center justify-center bg-blue-50 dark:bg-blue-900/30 hover:opacity-80 transition-opacity cursor-pointer shrink-0 mb-3"
+                  title="Xem và thay đổi ảnh đại diện"
+                >
+                  {user?.avatar ? (
+                    <img src={user.avatar} alt="Avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-3xl font-black text-blue-500">{user?.name?.[0]?.toUpperCase() || 'U'}</span>
+                  )}
+                </button>
+                <h3 className="text-lg font-black text-slate-800 dark:text-slate-100 text-center leading-tight">{user?.name}</h3>
+                <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1 cursor-pointer hover:underline text-center" onClick={() => setShowAvatarModal(true)}>
+                  Đổi ảnh đại diện
+                </p>
+              </div>
+
               <button
                 onClick={() => setActiveTab('bookings')}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-colors font-bold text-sm cursor-pointer ${
@@ -182,6 +267,18 @@ export default function DashboardPage() {
               >
                 <User className="size-4.5" />
                 <span>Thông tin tài khoản</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('vouchers')}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-colors font-bold text-sm cursor-pointer ${
+                  activeTab === 'vouchers'
+                    ? 'bg-blue-900 dark:bg-blue-600 text-white shadow'
+                    : 'text-slate-750 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                }`}
+              >
+                <Ticket className="size-4.5" />
+                <span>Kho Voucher</span>
               </button>
             </div>
 
@@ -336,26 +433,32 @@ export default function DashboardPage() {
                 <h2 className="text-2xl font-black text-slate-900 dark:text-white font-serif mb-6">Đánh giá của tôi</h2>
                 
                 <div className="space-y-4">
-                  {reviews.map((review) => (
-                    <div key={review.id} className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-100/40 dark:border-slate-800/40 shadow-sm">
-                      <div className="flex items-start justify-between mb-2">
-                        <h3 className="text-lg font-extrabold text-slate-900 dark:text-white leading-tight">{review.tour}</h3>
-                        <span className="text-xs text-slate-400 dark:text-slate-500 font-bold">{review.date}</span>
-                      </div>
-                      <div className="flex gap-0.5 mb-3">
-                        {[...Array(review.rating)].map((_, i) => (
-                          <Star key={i} className="size-4 fill-amber-400 text-amber-400" />
-                        ))}
-                      </div>
-                      <p className="text-slate-655 dark:text-slate-300 text-sm font-medium italic">“{review.comment}”</p>
+                  {reviews.length === 0 ? (
+                    <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-100/40 dark:border-slate-800/40 shadow-sm text-center py-10">
+                      <p className="text-slate-500 font-bold">Bạn chưa có đánh giá nào.</p>
                     </div>
-                  ))}
+                  ) : (
+                    reviews.map((review) => (
+                      <div key={review.id} className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-100/40 dark:border-slate-800/40 shadow-sm">
+                        <div className="flex items-start justify-between mb-2">
+                          <h3 className="text-lg font-extrabold text-slate-900 dark:text-white leading-tight">{review.tour}</h3>
+                          <span className="text-xs text-slate-400 dark:text-slate-500 font-bold">{review.date}</span>
+                        </div>
+                        <div className="flex gap-0.5 mb-3">
+                          {[...Array(review.rating)].map((_, i) => (
+                            <Star key={i} className="size-4 fill-amber-400 text-amber-400" />
+                          ))}
+                        </div>
+                        <p className="text-slate-655 dark:text-slate-300 text-sm font-medium italic">“{review.comment}”</p>
+                      </div>
+                    ))
+                  )}
 
                   {/* Add Review Form */}
                   <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 border border-slate-100/40 dark:border-slate-800/40 shadow-sm">
                     <h3 className="text-lg font-extrabold text-slate-900 dark:text-white mb-6 font-serif">Viết đánh giá hành trình mới</h3>
                     
-                    <form className="space-y-5" onSubmit={(e) => { e.preventDefault(); alert('Đã gửi đánh giá thành công!'); }}>
+                    <form className="space-y-5" onSubmit={handleSubmitReview}>
                       {experiencedTourIds.length === 0 && (
                         <p className="rounded-2xl bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700 dark:bg-amber-950/30 dark:text-amber-300">
                           Bạn cần đánh dấu đã trải nghiệm một tour trước khi gửi comment.
@@ -363,11 +466,14 @@ export default function DashboardPage() {
                       )}
                       <div>
                         <label className="block text-xs font-black uppercase text-slate-400 dark:text-slate-550 mb-2">Chọn hành trình</label>
-                        <select className="w-full px-4 py-3 border border-slate-150 dark:border-slate-800 bg-transparent rounded-2xl outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 text-slate-800 dark:text-slate-100 font-bold text-sm bg-white dark:bg-slate-900">
-                          <option>Du ngoạn Vịnh Hạ Long</option>
-                          <option>Thiên đường Phú Quốc</option>
-                          <option>Phố cổ Hội An</option>
-                          <option>Biển xanh Đà Nẵng</option>
+                        <select 
+                          value={newReviewTour}
+                          onChange={(e) => setNewReviewTour(e.target.value)}
+                          className="w-full px-4 py-3 border border-slate-150 dark:border-slate-800 bg-transparent rounded-2xl outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 text-slate-800 dark:text-slate-100 font-bold text-sm bg-white dark:bg-slate-900">
+                          {availableBookings.map((b) => (
+                            <option key={b.id} value={b.tourTitle}>{b.tourTitle}</option>
+                          ))}
+                          {availableBookings.length === 0 && <option value="">Bạn đã đánh giá tất cả các tour đã đi</option>}
                         </select>
                       </div>
                       
@@ -375,8 +481,12 @@ export default function DashboardPage() {
                         <label className="block text-xs font-black uppercase text-slate-400 dark:text-slate-555 mb-2">Mức độ hài lòng</label>
                         <div className="flex gap-1.5">
                           {[1, 2, 3, 4, 5].map((star) => (
-                            <button key={star} type="button" className="hover:scale-110 transition-transform cursor-pointer">
-                              <Star className="size-8 fill-amber-400 text-amber-400" />
+                            <button 
+                              key={star} 
+                              type="button" 
+                              onClick={() => setNewReviewRating(star)}
+                              className="hover:scale-110 transition-transform cursor-pointer">
+                              <Star className={`size-8 ${star <= newReviewRating ? 'fill-amber-400 text-amber-400' : 'text-slate-200 dark:text-slate-700'}`} />
                             </button>
                           ))}
                         </div>
@@ -386,6 +496,8 @@ export default function DashboardPage() {
                         <label className="block text-xs font-black uppercase text-slate-400 dark:text-slate-555 mb-2">Nhận xét chi tiết</label>
                         <textarea
                           rows={4}
+                          value={newReviewComment}
+                          onChange={(e) => setNewReviewComment(e.target.value)}
                           className="w-full px-4 py-3 border border-slate-150 dark:border-slate-800 bg-transparent rounded-2xl outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 text-slate-800 dark:text-slate-100 font-bold text-sm"
                           placeholder="Chia sẻ trải nghiệm hành trình của bạn..."
                         ></textarea>
@@ -410,6 +522,8 @@ export default function DashboardPage() {
                 <h2 className="text-2xl font-black text-slate-900 dark:text-white font-serif mb-6">Thông tin tài khoản</h2>
                 
                 <form className="space-y-5" onSubmit={(e) => { e.preventDefault(); alert('Cập nhật thông tin thành công!'); }}>
+
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div>
                       <label className="block text-xs font-black uppercase text-slate-400 dark:text-slate-555 mb-2">Họ và tên</label>
@@ -420,12 +534,11 @@ export default function DashboardPage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-black uppercase text-slate-400 dark:text-slate-555 mb-2">Email đăng ký</label>
+                      <label className="block text-xs font-black uppercase text-slate-400 dark:text-slate-555 mb-2">Số điện thoại</label>
                       <input
-                        type="email"
-                        defaultValue={user.email}
-                        className="w-full px-4 py-3 border border-slate-155 dark:border-slate-800 bg-transparent rounded-2xl outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 text-slate-400 dark:text-slate-500 font-bold text-sm transition-all"
-                        disabled
+                        type="tel"
+                        placeholder="+84 XXX XXX XXX"
+                        className="w-full px-4 py-3 border border-slate-155 dark:border-slate-800 bg-transparent rounded-2xl outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 text-slate-800 dark:text-slate-100 font-bold text-sm transition-all"
                       />
                     </div>
                     <div>
@@ -453,13 +566,74 @@ export default function DashboardPage() {
                     />
                   </div>
 
+                  <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-800">
+                    <h3 className="text-lg font-black text-slate-900 dark:text-white font-serif mb-4 flex items-center gap-2">
+                      <Key className="size-5 text-blue-600" /> Thông tin đăng nhập
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                      <div>
+                        <label className="block text-xs font-black uppercase text-slate-400 dark:text-slate-555 mb-2">Email / Tên đăng nhập</label>
+                        <input
+                          type="email"
+                          defaultValue={user.email}
+                          className="w-full px-4 py-3 border border-slate-155 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 rounded-2xl outline-none text-slate-500 dark:text-slate-400 font-bold text-sm cursor-not-allowed"
+                          disabled
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-black uppercase text-slate-400 dark:text-slate-555 mb-2">Mật khẩu mới (Bỏ trống nếu không đổi)</label>
+                        <input
+                          type="password"
+                          placeholder="••••••••"
+                          className="w-full px-4 py-3 border border-slate-155 dark:border-slate-800 bg-transparent rounded-2xl outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 text-slate-800 dark:text-slate-100 font-bold text-sm transition-all"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
                   <button
                     type="submit"
-                    className="px-6 py-3 bg-blue-900 hover:bg-blue-955 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-2xl transition-colors font-bold text-xs cursor-pointer shadow"
+                    className="px-6 py-3 bg-blue-900 hover:bg-blue-955 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-2xl transition-colors font-bold text-xs cursor-pointer shadow mt-4"
                   >
                     Lưu các thay đổi
                   </button>
                 </form>
+              </div>
+            )}
+
+            {/* Vouchers Tab */}
+            {activeTab === 'vouchers' && (
+              <div className="space-y-6">
+                <h2 className="text-2xl font-black text-slate-900 dark:text-white font-serif mb-6 flex items-center gap-2">
+                  <Ticket className="size-6 text-blue-600" />
+                  Kho Voucher & Mã giảm giá
+                </h2>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  {[
+                    { id: 'SUMMER2026', title: 'Giảm 20% Tour Biển Đảo', desc: 'Áp dụng cho tất cả các tour Phú Quốc, Nha Trang', expiry: '31/08/2026', color: 'bg-blue-50 text-blue-600 border-blue-200', tag: 'Mới nhất' },
+                    { id: 'WELCOME500', title: 'Giảm 500.000đ Bạn Mới', desc: 'Cho đơn hàng đầu tiên từ 5.000.000đ', expiry: '31/12/2026', color: 'bg-amber-50 text-amber-600 border-amber-200', tag: 'Sắp hết hạn' },
+                    { id: 'LUXURYVIP', title: 'Giảm 15% Khách sạn 5 Sao', desc: 'Áp dụng khi đặt phòng nghỉ dưỡng cao cấp', expiry: '30/09/2026', color: 'bg-emerald-50 text-emerald-600 border-emerald-200', tag: 'VIP' }
+                  ].map(voucher => (
+                    <div key={voucher.id} className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-100/40 dark:border-slate-800/40 shadow-sm relative overflow-hidden flex flex-col justify-between">
+                      <div className={`absolute top-0 right-0 px-3 py-1 text-[10px] font-black uppercase rounded-bl-xl ${voucher.color} dark:bg-slate-800 dark:border-slate-700`}>{voucher.tag}</div>
+                      <div>
+                        <h3 className="text-lg font-extrabold text-slate-900 dark:text-white mt-2 leading-tight">{voucher.title}</h3>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 font-medium">{voucher.desc}</p>
+                      </div>
+                      <div className="mt-5 flex items-center justify-between border-t border-slate-100 dark:border-slate-800 pt-4">
+                        <div>
+                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">MÃ CODE</p>
+                          <p className="font-mono font-bold text-slate-800 dark:text-slate-200">{voucher.id}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">HSD</p>
+                          <p className="text-xs font-bold text-slate-800 dark:text-slate-200">{voucher.expiry}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>
@@ -467,6 +641,68 @@ export default function DashboardPage() {
       </div>
 
       <Footer />
+
+      {/* Avatar View & Edit Modal */}
+      {showAvatarModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 w-full max-w-xs sm:max-w-sm shadow-2xl animate-fade-in text-center border border-slate-100 dark:border-slate-800">
+            <h3 className="text-lg font-black text-slate-900 dark:text-white mb-6">Ảnh đại diện</h3>
+            
+            <div className="w-40 h-40 sm:w-48 sm:h-48 mx-auto rounded-full overflow-hidden border-4 border-slate-100 dark:border-slate-800 shadow-inner flex items-center justify-center bg-blue-50 dark:bg-blue-900/30 mb-8">
+              {avatarPreview ? (
+                <img src={avatarPreview} alt="Avatar" className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-6xl font-black text-blue-500">{user?.name?.[0]?.toUpperCase() || 'U'}</span>
+              )}
+            </div>
+
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={handleSaveAvatar}
+                className="w-full py-3 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-700 transition-colors cursor-pointer shadow-sm mb-2"
+              >
+                Lưu ảnh đại diện
+              </button>
+              <button
+                onClick={() => galleryInputRef.current?.click()}
+                className="w-full py-3 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-bold rounded-2xl hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors flex justify-center items-center gap-2 cursor-pointer shadow-sm"
+              >
+                <Camera className="size-4" />
+                Thay ảnh (Thư viện)
+              </button>
+              <button
+                onClick={() => cameraInputRef.current?.click()}
+                className="w-full py-3 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors flex justify-center items-center gap-2 cursor-pointer shadow-sm"
+              >
+                <Camera className="size-4" />
+                Chụp ảnh mới
+              </button>
+              <button
+                onClick={() => setShowAvatarModal(false)}
+                className="w-full py-3 mt-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 font-bold transition-colors cursor-pointer"
+              >
+                Đóng lại
+              </button>
+            </div>
+
+            <input
+              type="file"
+              accept="image/*"
+              ref={galleryInputRef}
+              className="hidden"
+              onChange={handleAvatarChange}
+            />
+            <input
+              type="file"
+              accept="image/*"
+              capture="user"
+              ref={cameraInputRef}
+              className="hidden"
+              onChange={handleAvatarChange}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

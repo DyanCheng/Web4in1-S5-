@@ -24,8 +24,17 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      await login(email, password, 'user');
-      router.push('/');
+      // Gọi login không truyền role (để backend tự xác định qua email/mật khẩu)
+      // Nhưng frontend vẫn cần truyền role để khớp signature nếu dùng default 'user'
+      const loggedInUser = await login(email, password, '');
+      
+      if (loggedInUser.role === 'admin') {
+        router.push('/admin');
+      } else if (loggedInUser.role === 'hotel_owner') {
+        router.push('/hotel-owner');
+      } else {
+        router.push('/');
+      }
     } catch {
       setError('Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.');
     } finally {

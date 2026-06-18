@@ -8,7 +8,8 @@ import { MapPin, Calendar, Users, Star, Clock, CheckCircle, X, Heart, Share2, Lo
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useTheme } from '@/contexts/ThemeContext';
-import { isFavorite, toggleFavorite, isTourExperienced, markTourExperienced } from '@/lib/tourStorage';
+import { useAuth } from '@/contexts/AuthContext';
+import { isFavorite, toggleFavorite, isTourExperienced, markTourExperienced, addUserReview, hasReviewedTourId } from '@/lib/tourStorage';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:5200';
 
@@ -30,6 +31,7 @@ export default function TourDetailPage() {
   const navigate = (url: string) => router.push(url);
   const { addToCart } = useCart();
   const { theme } = useTheme();
+  const { user } = useAuth();
   const [tour, setTour] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState('');
@@ -40,6 +42,7 @@ export default function TourDetailPage() {
   const [reviewNotice, setReviewNotice] = useState('');
   const [myRating, setMyRating] = useState(5);
   const [myComment, setMyComment] = useState('');
+  const [hasReviewed, setHasReviewed] = useState(false);
   const [reviews, setReviews] = useState<Review[]>([
     { id: 1, name: 'Nguyễn Văn A', rating: 5, date: '2026-04-15', comment: 'Tour tuyệt vời! Mọi thứ đều hoàn hảo từ A-Z. Hướng dẫn viên rất nhiệt tình.', avatar: '👨' },
     { id: 2, name: 'Trần Thị B', rating: 5, date: '2026-04-10', comment: 'Trải nghiệm đáng nhớ! Cảnh đẹp, dịch vụ tốt, giá hợp lý.', avatar: '👩' },
@@ -50,6 +53,7 @@ export default function TourDetailPage() {
   useEffect(() => {
     setSaved(isFavorite(id));
     setExperienced(isTourExperienced(id));
+    setHasReviewed(hasReviewedTourId(id));
     const fetchTour = async () => {
       try {
         const response = await fetch(`${BACKEND_URL}/api/tours/${id}`);
@@ -100,7 +104,6 @@ export default function TourDetailPage() {
   const handleMarkExperienced = () => {
     markTourExperienced(tour.id);
     setExperienced(true);
-    setReviewNotice('Tour này đã được ghi nhận là đã trải nghiệm. Bạn có thể đánh giá ngay bên dưới.');
   };
 
   const handleSubmitReview = (event: FormEvent) => {
@@ -117,8 +120,10 @@ export default function TourDetailPage() {
       { id: Date.now(), name: 'Bạn', rating: myRating, date: new Date().toISOString().slice(0, 10), comment: myComment.trim(), avatar: '🙂' },
       ...current,
     ]);
+    addUserReview({ id: Date.now(), tourId: id, tour: tour.title, rating: myRating, comment: myComment.trim(), date: new Date().toLocaleDateString('vi-VN') });
+    setHasReviewed(true);
     setMyComment('');
-    setReviewNotice('Đã gửi đánh giá thành công.');
+    setReviewNotice('Đã gửi đánh giá thành công. Cảm ơn những chia sẻ của bạn!');
   };
 
   if (loading) {
@@ -229,9 +234,11 @@ export default function TourDetailPage() {
             <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 border border-slate-100/40 dark:border-slate-800/40 shadow-sm text-left">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
                 <h2 className="text-2xl font-black text-slate-900 dark:text-white font-serif leading-tight">Đánh giá từ khách hàng</h2>
-                <button onClick={handleMarkExperienced} className="inline-flex items-center justify-center rounded-full border border-blue-200 bg-blue-50 px-4 py-2 text-xs font-black text-blue-700 hover:bg-blue-100 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-300">
-                  Đánh dấu đã trải nghiệm
-                </button>
+                {user && !experienced && (
+                  <button onClick={handleMarkExperienced} className="inline-flex items-center justify-center rounded-full border border-blue-200 bg-blue-50 px-4 py-2 text-xs font-black text-blue-700 hover:bg-blue-100 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-300">
+                    Hoàn thành tour (Giả lập)
+                  </button>
+                )}
               </div>
               {reviewNotice && (
                 <div className="mb-5 rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-700 dark:border-blue-900 dark:bg-blue-950/30 dark:text-blue-300">
@@ -262,9 +269,22 @@ export default function TourDetailPage() {
 
               <form onSubmit={handleSubmitReview} className="mt-8 rounded-3xl border border-slate-100 dark:border-slate-800 p-6">
                 <h3 className="text-lg font-extrabold text-slate-900 dark:text-white mb-4 font-serif">Viết đánh giá của bạn</h3>
-                {!experienced && (
+                
+                {hasReviewed ? (
+                  <p className="mb-4 rounded-2xl bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300">
+                    Bạn đã đánh giá tour này rồi. Cảm ơn những chia sẻ của bạn!
+                  </p>
+                ) : !user ? (
                   <p className="mb-4 rounded-2xl bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700 dark:bg-amber-950/30 dark:text-amber-300">
-                    Bạn cần đánh dấu đã trải nghiệm trước khi comment.
+                    Chỉ khách hàng đã đăng nhập và hoàn thành tour mới có thể đánh giá.
+                  </p>
+                ) : !experienced ? (
+                  <p className="mb-4 rounded-2xl bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700 dark:bg-amber-950/30 dark:text-amber-300">
+                    Bạn cần đặt và hoàn thành chuyến đi này để có thể gửi đánh giá.
+                  </p>
+                ) : (
+                  <p className="mb-4 rounded-2xl bg-blue-50 border border-blue-100 px-4 py-3 text-sm font-semibold text-blue-700 dark:bg-blue-950/30 dark:border-blue-900 dark:text-blue-300">
+                    Bạn đã hoàn thành tour này! Hãy chia sẻ trải nghiệm và đánh giá của bạn nhé.
                   </p>
                 )}
                 <div className="mb-4">
@@ -281,13 +301,13 @@ export default function TourDetailPage() {
                   value={myComment}
                   onChange={(e) => setMyComment(e.target.value)}
                   rows={4}
-                  disabled={!experienced}
+                  disabled={!user || !experienced || hasReviewed}
                   placeholder="Chia sẻ trải nghiệm hành trình của bạn..."
                   className="w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-transparent px-4 py-3 text-sm font-medium outline-none disabled:cursor-not-allowed disabled:opacity-60"
                 />
                 <button
                   type="submit"
-                  disabled={!experienced}
+                  disabled={!user || !experienced || hasReviewed}
                   className="mt-4 rounded-2xl bg-blue-900 px-6 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:bg-slate-400 dark:bg-blue-600 dark:disabled:bg-slate-700"
                 >
                   Gửi comment
