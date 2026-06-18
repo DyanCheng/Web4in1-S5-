@@ -17,8 +17,12 @@ builder.Services.AddCors(options =>
 
 // Register DataStoreService as a Singleton
 builder.Services.AddSingleton<DataStoreService>();
-//Đăng ký DiscountService
+// Đăng ký DiscountService
 builder.Services.AddSingleton<DiscountService>();
+
+// 👇 THÊM DÒNG NÀY ĐỂ ĐĂNG KÝ BUS SERVICE
+builder.Services.AddScoped<IBusService, BusService>();
+
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
