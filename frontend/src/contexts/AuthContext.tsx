@@ -15,9 +15,14 @@ interface User {
 interface AuthContextType {
   user: User | null;
   login: (email: string, password: string, role?: string) => Promise<User>;
+<<<<<<< HEAD
   loginWithGoogle: (credential: string) => Promise<User>;
   register: (email: string, password: string, name: string) => Promise<User>;
+=======
+  register: (email: string, password: string, name: string) => Promise<void>;
+>>>>>>> 4918b1343dce50766289eaedd08fecac3fd8ebf3
   logout: () => void;
+  updateUser: (data: Partial<User>) => void;
   isAuthenticated: boolean;
   isLoading: boolean;
 }
@@ -51,6 +56,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  React.useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      try {
+        setUser(JSON.parse(storedUser));
+      } catch (e) {
+        console.error('Failed to parse user from localStorage', e);
+      }
+    }
+  }, []);
+
   const login = async (email: string, password: string, role: string = 'user') => {
     const response = await fetch(`${BACKEND_URL}/api/auth/login`, {
       method: 'POST',
@@ -64,6 +80,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     const data = await response.json();
+<<<<<<< HEAD
     const loggedInUser: User = {
       id: data.id,
       email: data.email,
@@ -97,6 +114,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
     persistUser(loggedInUser);
     return loggedInUser;
+=======
+    const newUser = { id: data.id, email: data.email, name: data.name, role: data.role, avatar: data.avatar };
+    
+    // Giữ lại avatar local nếu có
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      try {
+        const parsed = JSON.parse(storedUser);
+        if (parsed.email === newUser.email && parsed.avatar && !newUser.avatar) {
+          newUser.avatar = parsed.avatar;
+        }
+      } catch (e) {}
+    }
+    
+    setUser(newUser);
+    localStorage.setItem('user', JSON.stringify(newUser));
+    return newUser;
+>>>>>>> 4918b1343dce50766289eaedd08fecac3fd8ebf3
   };
 
   const register = async (email: string, password: string, name: string) => {
@@ -112,6 +147,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     const data = await response.json();
+<<<<<<< HEAD
     const registeredUser: User = {
       id: data.id,
       email: data.email,
@@ -125,6 +161,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = () => {
     persistUser(null);
+=======
+    const newUser = { id: data.id, email: data.email, name: data.name, role: data.role, avatar: data.avatar };
+    setUser(newUser);
+    localStorage.setItem('user', JSON.stringify(newUser));
+  };
+
+  const logout = () => {
+    setUser(null);
+    localStorage.removeItem('user');
+  };
+
+  const updateUser = (data: Partial<User>) => {
+    setUser(prev => {
+      if (!prev) return null;
+      const newUser = { ...prev, ...data };
+      try {
+        localStorage.setItem('user', JSON.stringify(newUser));
+      } catch (e) {
+        console.warn('Cannot save user to localStorage (maybe avatar is too large)');
+      }
+      return newUser;
+    });
+>>>>>>> 4918b1343dce50766289eaedd08fecac3fd8ebf3
   };
 
   return (
@@ -134,8 +193,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       loginWithGoogle,
       register,
       logout,
+<<<<<<< HEAD
       isAuthenticated: !!user,
       isLoading,
+=======
+      updateUser,
+      isAuthenticated: !!user
+>>>>>>> 4918b1343dce50766289eaedd08fecac3fd8ebf3
     }}>
       {children}
     </AuthContext.Provider>
