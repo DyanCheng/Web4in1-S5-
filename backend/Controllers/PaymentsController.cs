@@ -11,12 +11,14 @@ public class PaymentsController : ControllerBase
     private readonly PaymentDbService _paymentDb;
     private readonly SePayService _sePay;
     private readonly DataStoreService _dataStore;
+    private readonly TourDbService _tourDb;
 
-    public PaymentsController(PaymentDbService paymentDb, SePayService sePay, DataStoreService dataStore)
+    public PaymentsController(PaymentDbService paymentDb, SePayService sePay, DataStoreService dataStore, TourDbService tourDb)
     {
         _paymentDb = paymentDb;
         _sePay = sePay;
         _dataStore = dataStore;
+        _tourDb = tourDb;
     }
 
     [HttpPost("create")]
@@ -115,7 +117,7 @@ public class PaymentsController : ControllerBase
                 {
                     var bookingId = bookingRef.GetString();
                     if (!string.IsNullOrWhiteSpace(bookingId))
-                        _dataStore.ConfirmBooking(bookingId);
+                        await _tourDb.ConfirmBookingAsync(bookingId);
                 }
             }
 
@@ -161,7 +163,7 @@ public class PaymentsController : ControllerBase
                 {
                     var bookingId = bookingRef.GetString();
                     if (!string.IsNullOrWhiteSpace(bookingId))
-                        _dataStore.ConfirmBooking(bookingId);
+                        await _tourDb.ConfirmBookingAsync(bookingId);
                 }
             }
 

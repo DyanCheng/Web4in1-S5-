@@ -444,6 +444,8 @@ public class AuthDbService
     {
         "ADMIN" => "admin",
         "PROVIDER" => "hotel_owner",
+        "EMPLOYEE" => "employee",
+        "ACCOUNTANT" => "accountant",
         _ => "user"
     };
 }

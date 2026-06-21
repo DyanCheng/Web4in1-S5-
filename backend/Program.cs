@@ -21,6 +21,7 @@ builder.Services.AddHttpClient("Supabase");
 builder.Services.AddSingleton<AuthDbService>();
 builder.Services.AddSingleton<GoogleAuthService>();
 builder.Services.AddSingleton<PaymentDbService>();
+builder.Services.AddSingleton<TourDbService>();
 builder.Services.AddSingleton<SePayService>();
 //Đăng ký DiscountService
 builder.Services.AddSingleton<DiscountService>();

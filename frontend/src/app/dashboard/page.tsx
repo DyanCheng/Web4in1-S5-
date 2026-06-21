@@ -10,7 +10,7 @@ import Footer from '@/components/Footer';
 import { useTheme } from '@/contexts/ThemeContext';
 import { getExperiencedTourIds } from '@/lib/tourStorage';
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:5200';
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
 
 export default function DashboardPage() {
   const router = useRouter();

@@ -54,6 +54,8 @@ import {
   Headphones,
 } from 'lucide-react';
 import RoomTypeModal from '@/components/RoomTypeModal';
+import { getHotelFavorites, toggleHotelFavorite } from '@/lib/hotelStorage';
+import { useEffect } from 'react';
 
 type SortMode = 'recommended' | 'price' | 'rating';
 type BookingMode = 'hourly' | 'overnight' | 'daily';
@@ -331,6 +333,9 @@ export default function HotelPage() {
   const [sortMode, setSortMode] = useState<SortMode>('recommended');
   const [currentPage, setCurrentPage] = useState(1);
   const [favorites, setFavorites] = useState<string[]>([]);
+  useEffect(() => {
+    setFavorites(getHotelFavorites().map((h) => h.id));
+  }, []);
   const [notice, setNotice] = useState('');
   // Modal state for room selection
   const [showRoomModal, setShowRoomModal] = useState(false);
@@ -339,6 +344,7 @@ export default function HotelPage() {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [adults, setAdults] = useState<number>(2);
   const [children, setChildren] = useState<number>(1);
+  const [roomQuantity, setRoomQuantity] = useState<number>(1);
   const [svcSlide, setSvcSlide] = useState<number>(0);
 
   const hotelRooms = useMemo(() => {
@@ -507,10 +513,18 @@ export default function HotelPage() {
     setNotice('Đã xóa tất cả bộ lọc.');
   };
 
-  const toggleFavorite = (hotelId: string) => {
-    setFavorites((current) =>
-      current.includes(hotelId) ? current.filter((item) => item !== hotelId) : [...current, hotelId]
-    );
+  const toggleFavorite = (hotel: Hotel) => {
+    const nextFavorites = toggleHotelFavorite({
+      id: hotel.id,
+      name: hotel.name,
+      location: hotel.location,
+      price: hotel.price,
+      image: hotel.image,
+      rating: hotel.rating,
+      reviews: hotel.reviews,
+      stars: hotel.stars
+    });
+    setFavorites(nextFavorites.map((h) => h.id));
   };
 
   const handleSearch = () => {
@@ -575,7 +589,7 @@ export default function HotelPage() {
                       Chia sẻ
                     </button>
                     <button
-                      onClick={() => toggleFavorite(selectedHotel.id)}
+                      onClick={() => toggleFavorite(selectedHotel)}
                       className={`inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-black transition-colors shadow-sm cursor-pointer ${
                         favorites.includes(selectedHotel.id)
                           ? 'border-red-200 bg-red-50 text-red-600 dark:border-red-950 dark:bg-red-950/20'
@@ -732,6 +746,15 @@ export default function HotelPage() {
 
                       {/* Guest Counter Section */}
                       <div className="flex justify-between items-center py-2 border-b border-slate-100 dark:border-slate-800">
+                        <span className="text-xs font-semibold text-slate-500">Số lượng phòng</span>
+                        <div className="flex items-center gap-2">
+                          <button onClick={() => setRoomQuantity(Math.max(1, roomQuantity - 1))} className="size-5 rounded bg-slate-100 dark:bg-slate-800 font-bold">-</button>
+                          <span className="text-xs font-black text-slate-800 dark:text-slate-100 w-4 text-center">{roomQuantity}</span>
+                          <button onClick={() => setRoomQuantity(roomQuantity + 1)} className="size-5 rounded bg-slate-100 dark:bg-slate-800 font-bold">+</button>
+                        </div>
+                      </div>
+
+                      <div className="flex justify-between items-center py-2 border-b border-slate-100 dark:border-slate-800">
                         <span className="text-xs font-semibold text-slate-500">Khách lưu trú</span>
                         <div className="flex items-center gap-1">
                           <span className="text-xs font-black text-slate-800 dark:text-slate-100">
@@ -786,7 +809,7 @@ export default function HotelPage() {
                           <span className="text-xs font-black text-slate-800 dark:text-slate-200">Tổng cộng</span>
                           <div className="text-right">
                             <span className="text-lg font-black text-[#0b5cd5] dark:text-blue-400 leading-none">
-                              {((selectedRoom ? (selectedRoom.price + selectedRoom.taxAndFee) * computedNights : 0)).toLocaleString('vi-VN')} <span className="underline underline-offset-1 decoration-[1.5px]">đ</span>
+                              {((selectedRoom ? (selectedRoom.price + selectedRoom.taxAndFee) * computedNights * roomQuantity : 0)).toLocaleString('vi-VN')} <span className="underline underline-offset-1 decoration-[1.5px]">đ</span>
                             </span>
                             <p className="text-[9px] font-medium text-slate-400 mt-0.5">Đã bao gồm tất cả thuế phí</p>
                           </div>
@@ -826,7 +849,8 @@ export default function HotelPage() {
                               <p>Ngày nhận phòng: <strong>{format(displayFromDate, "dd/MM/yyyy")}</strong></p>
                               <p>Ngày trả phòng: <strong>{format(displayToDate, "dd/MM/yyyy")}</strong></p>
                               <p>Khách: <strong>{adults} Người lớn, {children} Trẻ em</strong></p>
-                              <p className="mt-2 text-[#0b5cd5] font-black text-base">Tổng cộng: {selectedRoom ? ((selectedRoom.price + selectedRoom.taxAndFee) * computedNights).toLocaleString('vi-VN') : 0} đ</p>
+                              <p>Số lượng phòng: <strong>{roomQuantity}</strong></p>
+                              <p className="mt-2 text-[#0b5cd5] font-black text-base">Tổng cộng: {selectedRoom ? ((selectedRoom.price + selectedRoom.taxAndFee) * computedNights * roomQuantity).toLocaleString('vi-VN') : 0} đ</p>
                             </div>
                           </div>
                         </AlertDialogDescription>
@@ -835,7 +859,7 @@ export default function HotelPage() {
                         <AlertDialogCancel>Hủy</AlertDialogCancel>
                         <AlertDialogAction
                           onClick={() => {
-                            setNotice(`Đặt phòng thành công! CMC Travel đang chuẩn bị đơn hàng cho phòng ${selectedRoom?.name} tại ${selectedHotel?.name}.`);
+                            setNotice(`Đặt phòng thành công! CMC Travel đang chuẩn bị đơn hàng cho ${roomQuantity} phòng ${selectedRoom?.name} tại ${selectedHotel?.name}.`);
                             setSelectedRoom(null);
                             setShowConfirmModal(false);
                           }}

@@ -11,10 +11,20 @@ const inputClass =
   'w-full pl-12 pr-4 py-2 sm:py-3 border border-slate-150 dark:border-slate-800 bg-transparent rounded-2xl outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 text-slate-855 dark:text-slate-100 font-bold text-sm transition-all';
 
 const DEMO_ACCOUNTS = [
-  { label: 'Admin', email: 'admin@travel.com', password: '123456' },
-  { label: 'Đối tác khách sạn', email: 'provider_hotel@travel.com', password: '123456' },
-  { label: 'Khách hàng', email: 'customer@gmail.com', password: '123456' },
+  { label: 'Admin', email: 'admin@travel.com', password: '123456', redirect: '/admin' },
+  { label: 'Đối tác khách sạn', email: 'provider_hotel@travel.com', password: '123456', redirect: '/hotel-owner' },
+  { label: 'Nhân viên', email: 'employee@travel.com', password: '123456', redirect: '/employee' },
+  { label: 'Kế toán', email: 'accountant@travel.com', password: '123456', redirect: '/accountant' },
+  { label: 'Khách hàng', email: 'customer@gmail.com', password: '123456', redirect: '/' },
 ] as const;
+
+function redirectByRole(role: string, router: ReturnType<typeof useRouter>) {
+  if (role === 'admin') router.push('/admin');
+  else if (role === 'hotel_owner') router.push('/hotel-owner');
+  else if (role === 'employee') router.push('/employee');
+  else if (role === 'accountant') router.push('/accountant');
+  else router.push('/');
+}
 
 export default function LoginPage() {
   const router = useRouter();
@@ -36,8 +46,8 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      await login(email, password);
-      router.push('/');
+      const loggedInUser = await login(email, password);
+      redirectByRole(loggedInUser?.role || 'user', router);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.');
     } finally {
@@ -50,8 +60,8 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      await loginWithGoogle(credential);
-      router.push('/');
+      const loggedInUser = await loginWithGoogle(credential);
+      redirectByRole(loggedInUser?.role || 'user', router);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Đăng nhập Google thất bại.');
     } finally {

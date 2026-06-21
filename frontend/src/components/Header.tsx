@@ -149,11 +149,16 @@ export default function Header() {
                 Đối tác
               </button>
             )}
-            {user && (user.role === 'admin' || user.role === 'hotel_owner') && (
+            {user && (user?.role === 'admin' || user?.role === 'hotel_owner' || user?.role === 'employee' || user?.role === 'accountant') && (
               <button 
-                onClick={() => navigate(user.role === 'admin' ? '/admin' : '/hotel-owner')} 
+                onClick={() => {
+                  if (user?.role === 'admin') navigate('/admin');
+                  else if (user?.role === 'hotel_owner') navigate('/hotel-owner');
+                  else if (user?.role === 'employee') navigate('/employee');
+                  else if (user?.role === 'accountant') navigate('/accountant');
+                }} 
                 className={`hover:text-blue-600 dark:hover:text-blue-400 transition-colors py-2 uppercase font-bold text-sm tracking-wider cursor-pointer ${
-                  pathname === '/admin' || pathname === '/hotel-owner' ? 'text-blue-600 dark:text-blue-400' : ''
+                  pathname === '/admin' || pathname === '/hotel-owner' || pathname === '/employee' || pathname === '/accountant' ? 'text-blue-600 dark:text-blue-400' : ''
                 }`}
               >
                 Quản trị
@@ -178,7 +183,13 @@ export default function Header() {
               <div className="hidden sm:flex items-center gap-3">
                 {/* Avatar vòng tròn */}
                 <button
-                  onClick={() => navigate(user.role === 'admin' ? '/admin' : user.role === 'hotel_owner' ? '/hotel-owner' : '/dashboard')}
+                  onClick={() => {
+                    if (user?.role === 'admin') navigate('/admin');
+                    else if (user?.role === 'hotel_owner') navigate('/hotel-owner');
+                    else if (user?.role === 'employee') navigate('/employee');
+                    else if (user?.role === 'accountant') navigate('/accountant');
+                    else navigate('/dashboard');
+                  }}
                   className="cursor-pointer group"
                   title={user.name}
                 >
@@ -285,7 +296,14 @@ export default function Header() {
                 <div className="flex flex-col gap-2">
                   {/* Avatar + tên trong mobile */}
                   <button
-                    onClick={() => { navigate(user.role === 'admin' ? '/admin' : user.role === 'hotel_owner' ? '/hotel-owner' : '/dashboard'); setMobileMenuOpen(false); }}
+                    onClick={() => {
+                      if (user?.role === 'admin') navigate('/admin');
+                      else if (user?.role === 'hotel_owner') navigate('/hotel-owner');
+                      else if (user?.role === 'employee') navigate('/employee');
+                      else if (user?.role === 'accountant') navigate('/accountant');
+                      else navigate('/dashboard');
+                      setMobileMenuOpen(false);
+                    }}
                     className="px-3 py-2 flex items-center gap-3 text-left text-sm font-bold text-blue-600 dark:text-blue-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg cursor-pointer"
                   >
                     {user.avatar ? (

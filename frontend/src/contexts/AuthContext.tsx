@@ -8,15 +8,15 @@ interface User {
   id: string;
   email: string;
   name: string;
-  role: 'user' | 'admin' | 'hotel_owner';
+  role: 'user' | 'admin' | 'hotel_owner' | 'employee' | 'accountant';
   avatar?: string;
 }
 
 interface AuthContextType {
   user: User | null;
-  login: (email: string, password: string, role?: string) => Promise<void>;
-  loginWithGoogle: (credential: string) => Promise<void>;
-  register: (email: string, password: string, name: string) => Promise<void>;
+  login: (email: string, password: string, role?: string) => Promise<User>;
+  loginWithGoogle: (credential: string) => Promise<User>;
+  register: (email: string, password: string, name: string) => Promise<User>;
   logout: () => void;
   isAuthenticated: boolean;
   isLoading: boolean;
@@ -64,13 +64,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     const data = await response.json();
-    persistUser({
+    const loggedInUser: User = {
       id: data.id,
       email: data.email,
       name: data.name,
       role: data.role,
       avatar: data.avatar,
-    });
+    };
+    persistUser(loggedInUser);
+    return loggedInUser;
   };
 
   const loginWithGoogle = async (credential: string) => {
@@ -86,13 +88,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     const data = await response.json();
-    persistUser({
+    const loggedInUser: User = {
       id: data.id,
       email: data.email,
       name: data.name,
       role: data.role,
       avatar: data.avatar,
-    });
+    };
+    persistUser(loggedInUser);
+    return loggedInUser;
   };
 
   const register = async (email: string, password: string, name: string) => {
@@ -108,13 +112,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     const data = await response.json();
-    persistUser({
+    const registeredUser: User = {
       id: data.id,
       email: data.email,
       name: data.name,
       role: data.role,
       avatar: data.avatar,
-    });
+    };
+    persistUser(registeredUser);
+    return registeredUser;
   };
 
   const logout = () => {
