@@ -1,8 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
+import { apiUrl, parseJsonResponse } from '@/lib/backendUrl';
 
 interface User {
   id: string;
@@ -22,8 +21,28 @@ interface AuthContextType {
   isLoading: boolean;
 }
 
+interface AuthResponse {
+  id: string;
+  email: string;
+  name: string;
+  role: User['role'];
+  avatar?: string;
+  message?: string;
+}
+
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const STORAGE_KEY = 'cmc_travel_user';
+
+async function readAuthResponse(
+  response: Response,
+  fallbackMessage: string
+): Promise<AuthResponse> {
+  const data = await parseJsonResponse<AuthResponse>(response);
+  if (!response.ok) {
+    throw new Error(data.message || fallbackMessage);
+  }
+  return data;
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -52,18 +71,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const login = async (email: string, password: string, role: string = 'user') => {
-    const response = await fetch(`${BACKEND_URL}/api/auth/login`, {
+    const response = await fetch(apiUrl('/api/auth/login'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password, role }),
     });
 
-    if (!response.ok) {
-      const err = await response.json();
-      throw new Error(err.message || 'Đăng nhập thất bại');
-    }
-
-    const data = await response.json();
+    const data = await readAuthResponse(response, 'Đăng nhập thất bại');
     persistUser({
       id: data.id,
       email: data.email,
@@ -74,18 +88,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const loginWithGoogle = async (credential: string) => {
-    const response = await fetch(`${BACKEND_URL}/api/auth/google`, {
+    const response = await fetch(apiUrl('/api/auth/google'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ credential }),
     });
 
-    if (!response.ok) {
-      const err = await response.json();
-      throw new Error(err.message || 'Đăng nhập Google thất bại');
-    }
-
-    const data = await response.json();
+    const data = await readAuthResponse(response, 'Đăng nhập Google thất bại');
     persistUser({
       id: data.id,
       email: data.email,
@@ -96,18 +105,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const register = async (email: string, password: string, name: string) => {
-    const response = await fetch(`${BACKEND_URL}/api/auth/register`, {
+    const response = await fetch(apiUrl('/api/auth/register'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password, name }),
     });
 
-    if (!response.ok) {
-      const err = await response.json();
-      throw new Error(err.message || 'Đăng ký thất bại');
-    }
-
-    const data = await response.json();
+    const data = await readAuthResponse(response, 'Đăng ký thất bại');
     persistUser({
       id: data.id,
       email: data.email,

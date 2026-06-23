@@ -22,9 +22,12 @@ import {
   Users,
   Sun,
 } from 'lucide-react';
+import { apiUrl, getBackendUrl, normalizeBackendUrl } from '@/lib/backendUrl';
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:5200';
-const WEBHOOK_PUBLIC_URL = process.env.NEXT_PUBLIC_SEPAY_WEBHOOK_URL || BACKEND_URL;
+const WEBHOOK_PUBLIC_URL = normalizeBackendUrl(
+  process.env.NEXT_PUBLIC_SEPAY_WEBHOOK_URL,
+  getBackendUrl()
+);
 
 interface Tour {
   id: string;
@@ -99,10 +102,10 @@ export default function AdminDashboard() {
     try {
       setLoading(true);
       const [toursResponse, bookingsResponse, summaryResponse, transactionsResponse] = await Promise.all([
-        fetch(`${BACKEND_URL}/api/tours`),
-        fetch(`${BACKEND_URL}/api/bookings`),
-        fetch(`${BACKEND_URL}/api/payments/admin/summary`),
-        fetch(`${BACKEND_URL}/api/payments/admin/transactions`),
+        fetch(apiUrl('/api/tours')),
+        fetch(apiUrl('/api/bookings')),
+        fetch(apiUrl('/api/payments/admin/summary')),
+        fetch(apiUrl('/api/payments/admin/transactions')),
       ]);
       const toursData = toursResponse.ok ? await toursResponse.json() : [];
       const bookingsData = bookingsResponse.ok ? await bookingsResponse.json() : [];

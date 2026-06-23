@@ -31,8 +31,7 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useTheme } from '@/contexts/ThemeContext';
 import { getFavorites, toggleFavorite } from '@/lib/tourStorage';
-
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:5200';
+import { apiUrl } from '@/lib/backendUrl';
 
 interface Tour {
   id: string;
@@ -125,7 +124,7 @@ export default function HomePage() {
   useEffect(() => {
     const fetchTours = async () => {
       try {
-        const response = await fetch(`${BACKEND_URL}/api/tours`);
+        const response = await fetch(apiUrl('/api/tours'));
         if (response.ok) {
           const data = await response.json();
           // Filter or combine with our premium cards to keep the premium layout

@@ -6,8 +6,7 @@ import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { Hotel, Plus, Edit, Trash2, Calendar, DollarSign, Users, Loader2, Sun, Moon } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
-
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:5200';
+import { apiUrl } from '@/lib/backendUrl';
 
 interface Room {
   id: number;
@@ -48,7 +47,7 @@ export default function HotelOwnerDashboard() {
     try {
       setLoading(true);
       setError('');
-      const response = await fetch(`${BACKEND_URL}/api/rooms`);
+      const response = await fetch(apiUrl('/api/rooms'));
       if (!response.ok) throw new Error('Không thể kết nối máy chủ');
       const data = await response.json();
       setRooms(data);
@@ -76,7 +75,7 @@ export default function HotelOwnerDashboard() {
   const handleAddRoom = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const response = await fetch(`${BACKEND_URL}/api/rooms`, {
+      const response = await fetch(apiUrl('/api/rooms'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -113,7 +112,7 @@ export default function HotelOwnerDashboard() {
   const handleDeleteRoom = async (id: number) => {
     if (!confirm('Bạn có chắc muốn xóa phòng này?')) return;
     try {
-      const response = await fetch(`${BACKEND_URL}/api/rooms/${id}`, {
+      const response = await fetch(apiUrl(`/api/rooms/${id}`), {
         method: 'DELETE',
       });
       if (!response.ok) throw new Error('Xóa thất bại');
