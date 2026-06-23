@@ -114,6 +114,22 @@ namespace Backend.Services
                 Excluded = new List<string> { "VinWonders", "Tắm bùn", "Bữa trưa, tối" }
             });
 
+            Tours.Add(new Tour
+            {
+                Id = "7",
+                Title = "Tour Demo Thanh Toán",
+                Location = "Hà Nội",
+                Price = 15000,
+                Duration = "1 ngày",
+                Image = "https://images.unsplash.com/photo-1559592410-7c496ece05f5",
+                Rating = 5.0,
+                Reviews = 0,
+                Description = "Tour demo giá 15.000đ dùng để thử nghiệm đặt tour và thanh toán SePay. Phù hợp kiểm tra luồng đặt chỗ, tạo mã QR và xác nhận thanh toán.",
+                Highlights = new List<string> { "Tham quan Hồ Gươm", "Đi bộ phố cổ", "Thử nghiệm thanh toán 15.000đ", "Xác nhận email tự động" },
+                Included = new List<string> { "Hướng dẫn viên", "Nước uống", "Bảo hiểm cơ bản" },
+                Excluded = new List<string> { "Ăn trưa", "Chi phí cá nhân" }
+            });
+
             // Seed Rooms
             Rooms.Add(new Room { Id = 1, Name = "Deluxe Ocean View", Type = "Deluxe", Price = 3980000, Status = "available", Beds = 2, Guests = 4 });
             Rooms.Add(new Room { Id = 2, Name = "Premium Suite", Type = "Suite", Price = 5980000, Status = "booked", Beds = 1, Guests = 2 });

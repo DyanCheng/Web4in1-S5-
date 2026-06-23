@@ -1,6 +1,21 @@
 import type { NextConfig } from "next";
 
+const backendUrl =
+  process.env.BACKEND_INTERNAL_URL ||
+  process.env.BACKEND_URL ||
+  process.env.NEXT_PUBLIC_BACKEND_URL ||
+  "http://localhost:5000";
+
 const nextConfig: NextConfig = {
+  async rewrites() {
+    return [
+      {
+        source: "/api/payments/webhook/:path*",
+        destination: `${backendUrl}/api/payments/webhook/:path*`,
+      },
+    ];
+  },
+
   // Image optimization
   images: {
     formats: ["image/avif", "image/webp"],

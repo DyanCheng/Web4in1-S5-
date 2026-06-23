@@ -1,3 +1,5 @@
+using System.Text.RegularExpressions;
+
 namespace Backend.Services;
 
 public class SePayService
@@ -46,7 +48,22 @@ public class SePayService
         if (string.IsNullOrWhiteSpace(authorizationHeader))
             return false;
 
-        return authorizationHeader == $"Apikey {_webhookApiKey}"
-            || authorizationHeader == _webhookApiKey;
+        var normalized = authorizationHeader.Trim();
+        return normalized.Equals($"Apikey {_webhookApiKey}", StringComparison.OrdinalIgnoreCase)
+            || normalized.Equals($"APIKey {_webhookApiKey}", StringComparison.OrdinalIgnoreCase)
+            || normalized.Equals(_webhookApiKey, StringComparison.Ordinal);
+    }
+
+    public string? ExtractPaymentCode(string? code, string? content)
+    {
+        if (!string.IsNullOrWhiteSpace(code))
+            return code.Trim();
+
+        if (string.IsNullOrWhiteSpace(content) || string.IsNullOrWhiteSpace(_paymentCodePrefix))
+            return null;
+
+        var pattern = $@"{Regex.Escape(_paymentCodePrefix)}[A-Z0-9]+";
+        var match = Regex.Match(content, pattern, RegexOptions.IgnoreCase);
+        return match.Success ? match.Value.ToUpperInvariant() : null;
     }
 }

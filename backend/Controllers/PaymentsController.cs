@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Backend.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -11,12 +12,21 @@ public class PaymentsController : ControllerBase
     private readonly PaymentDbService _paymentDb;
     private readonly SePayService _sePay;
     private readonly DataStoreService _dataStore;
+    private readonly EmailService _emailService;
+    private readonly ILogger<PaymentsController> _logger;
 
-    public PaymentsController(PaymentDbService paymentDb, SePayService sePay, DataStoreService dataStore)
+    public PaymentsController(
+        PaymentDbService paymentDb,
+        SePayService sePay,
+        DataStoreService dataStore,
+        EmailService emailService,
+        ILogger<PaymentsController> logger)
     {
         _paymentDb = paymentDb;
         _sePay = sePay;
         _dataStore = dataStore;
+        _emailService = emailService;
+        _logger = logger;
     }
 
     [HttpPost("create")]
@@ -90,39 +100,43 @@ public class PaymentsController : ControllerBase
     [HttpPost("webhook/sepay")]
     public async Task<IActionResult> SePayWebhook([FromBody] SePayWebhookPayload payload)
     {
+        _logger.LogInformation(
+            "SePay webhook received: id={Id}, code={Code}, amount={Amount}",
+            payload.Id, payload.Code, payload.TransferAmount);
+
         if (!_sePay.IsWebhookAuthorized(Request.Headers.Authorization))
             return Unauthorized(new { success = false });
 
-        if (payload.TransferType != "in")
+        if (!string.Equals(payload.TransferType, "in", StringComparison.OrdinalIgnoreCase))
             return Ok(new { success = true });
 
-        var paymentCode = payload.Code;
+        var paymentCode = _sePay.ExtractPaymentCode(payload.Code, payload.Content);
         if (string.IsNullOrWhiteSpace(paymentCode))
+        {
+            _logger.LogWarning("SePay webhook ignored: no payment code in payload");
             return Ok(new { success = true });
+        }
 
         try
         {
+            var existing = await _paymentDb.GetOrderPaymentByCodeAsync(paymentCode);
+            var wasAlreadyPaid = IsPaymentPaid(existing);
+
             var result = await _paymentDb.ConfirmOrderPaymentAsync(
                 paymentCode,
                 payload.Id,
                 payload.TransferAmount,
                 payload);
 
-            if (result.TryGetProperty("booking_refs", out var bookingRefs)
-                && bookingRefs.ValueKind == JsonValueKind.Array)
-            {
-                foreach (var bookingRef in bookingRefs.EnumerateArray())
-                {
-                    var bookingId = bookingRef.GetString();
-                    if (!string.IsNullOrWhiteSpace(bookingId))
-                        _dataStore.ConfirmBooking(bookingId);
-                }
-            }
+            ConfirmBookings(result);
+            var emailData = await GetPaymentDataForEmailAsync(result, paymentCode);
+            await TrySendPaymentConfirmationEmailAsync(emailData, payload, wasAlreadyPaid, paymentCode);
 
             return Ok(new { success = true });
         }
-        catch
+        catch (Exception ex)
         {
+            _logger.LogError(ex, "SePay webhook processing failed for {PaymentCode}", paymentCode);
             return Ok(new { success = true });
         }
     }
@@ -153,17 +167,12 @@ public class PaymentsController : ControllerBase
                 TransactionDate = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
             };
 
+            var wasAlreadyPaid = IsPaymentPaid(payment);
             var result = await _paymentDb.ConfirmOrderPaymentAsync(paymentCode, payload.Id, amount, payload);
 
-            if (result.TryGetProperty("booking_refs", out var bookingRefs) && bookingRefs.ValueKind == JsonValueKind.Array)
-            {
-                foreach (var bookingRef in bookingRefs.EnumerateArray())
-                {
-                    var bookingId = bookingRef.GetString();
-                    if (!string.IsNullOrWhiteSpace(bookingId))
-                        _dataStore.ConfirmBooking(bookingId);
-                }
-            }
+            ConfirmBookings(result);
+            var emailData = await GetPaymentDataForEmailAsync(result, paymentCode);
+            await TrySendPaymentConfirmationEmailAsync(emailData, payload, wasAlreadyPaid, paymentCode);
 
             return Ok(new { success = true, simulated = true });
         }
@@ -204,6 +213,100 @@ public class PaymentsController : ControllerBase
             return StatusCode(503, new { message = ex.Message });
         }
     }
+
+    private void ConfirmBookings(JsonElement result)
+    {
+        if (!result.TryGetProperty("booking_refs", out var bookingRefs)
+            || bookingRefs.ValueKind != JsonValueKind.Array)
+            return;
+
+        foreach (var bookingRef in bookingRefs.EnumerateArray())
+        {
+            var bookingId = bookingRef.GetString();
+            if (!string.IsNullOrWhiteSpace(bookingId))
+                _dataStore.ConfirmBooking(bookingId);
+        }
+    }
+
+    private async Task<JsonElement> GetPaymentDataForEmailAsync(JsonElement confirmResult, string paymentCode)
+    {
+        if (IsPaymentPaid(confirmResult)
+            && confirmResult.TryGetProperty("user_email", out _))
+            return confirmResult;
+
+        var refreshed = await _paymentDb.GetOrderPaymentByCodeAsync(paymentCode);
+        return refreshed ?? confirmResult;
+    }
+
+    private static bool IsPaymentPaid(JsonElement? payment)
+    {
+        return payment != null
+            && payment.Value.TryGetProperty("payment_status", out var status)
+            && string.Equals(status.GetString(), "paid", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private async Task TrySendPaymentConfirmationEmailAsync(
+        JsonElement result,
+        SePayWebhookPayload payload,
+        bool wasAlreadyPaid,
+        string paymentCode)
+    {
+        if (wasAlreadyPaid)
+        {
+            _logger.LogInformation("Skip email for {PaymentCode}: already paid", paymentCode);
+            return;
+        }
+
+        if (!result.TryGetProperty("payment_status", out var status)
+            || !string.Equals(status.GetString(), "paid", StringComparison.OrdinalIgnoreCase))
+        {
+            _logger.LogWarning("Skip email for {PaymentCode}: status is not paid", paymentCode);
+            return;
+        }
+
+        if (!result.TryGetProperty("user_email", out var emailProp))
+            return;
+
+        var email = emailProp.GetString();
+        if (string.IsNullOrWhiteSpace(email))
+            return;
+
+        var amount = result.TryGetProperty("amount", out var amountProp)
+            ? amountProp.GetDecimal()
+            : payload.TransferAmount;
+
+        var transactionDate = !string.IsNullOrWhiteSpace(payload.TransactionDate)
+            ? payload.TransactionDate
+            : result.TryGetProperty("paid_at", out var paidAt) && paidAt.ValueKind != JsonValueKind.Null
+                ? paidAt.GetString() ?? DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
+                : DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+
+        var description = !string.IsNullOrWhiteSpace(payload.Description)
+            ? payload.Description
+            : !string.IsNullOrWhiteSpace(payload.Content)
+                ? payload.Content
+                : $"Thanh toán đơn hàng {paymentCode}";
+
+        JsonElement? orderItems = result.TryGetProperty("order_items", out var items) ? items : null;
+
+        try
+        {
+            await _emailService.SendPaymentConfirmationAsync(new PaymentConfirmationEmail
+            {
+                ToEmail = email,
+                ToName = result.TryGetProperty("user_name", out var nameProp) ? nameProp.GetString() : null,
+                PaymentCode = paymentCode,
+                Amount = amount,
+                TransactionDate = transactionDate,
+                Description = description,
+                OrderItems = orderItems
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send payment confirmation email for {PaymentCode}", paymentCode);
+        }
+    }
 }
 
 public class CreatePaymentRequest
@@ -218,16 +321,39 @@ public class CreatePaymentRequest
 
 public class SePayWebhookPayload
 {
+    [JsonPropertyName("id")]
     public long Id { get; set; }
+
+    [JsonPropertyName("gateway")]
     public string Gateway { get; set; } = string.Empty;
+
+    [JsonPropertyName("transactionDate")]
     public string TransactionDate { get; set; } = string.Empty;
+
+    [JsonPropertyName("accountNumber")]
     public string AccountNumber { get; set; } = string.Empty;
+
+    [JsonPropertyName("subAccount")]
     public string? SubAccount { get; set; }
+
+    [JsonPropertyName("code")]
     public string? Code { get; set; }
+
+    [JsonPropertyName("content")]
     public string Content { get; set; } = string.Empty;
+
+    [JsonPropertyName("transferType")]
     public string TransferType { get; set; } = "in";
+
+    [JsonPropertyName("description")]
     public string Description { get; set; } = string.Empty;
+
+    [JsonPropertyName("transferAmount")]
     public decimal TransferAmount { get; set; }
+
+    [JsonPropertyName("accumulated")]
     public decimal Accumulated { get; set; }
+
+    [JsonPropertyName("referenceCode")]
     public string? ReferenceCode { get; set; }
 }
