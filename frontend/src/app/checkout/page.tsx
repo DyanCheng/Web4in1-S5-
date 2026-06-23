@@ -9,8 +9,7 @@ import { QrCode, Tag, Loader2 } from 'lucide-react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useTheme } from '@/contexts/ThemeContext';
-
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:5200';
+import { apiUrl } from '@/lib/backendUrl';
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -68,7 +67,7 @@ export default function CheckoutPage() {
       }));
 
       for (const item of items) {
-        const response = await fetch(`${BACKEND_URL}/api/bookings`, {
+        const response = await fetch(apiUrl('/api/bookings'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -91,7 +90,7 @@ export default function CheckoutPage() {
       }
 
       const finalAmount = total - discountAmount;
-      const paymentResponse = await fetch(`${BACKEND_URL}/api/payments/create`, {
+      const paymentResponse = await fetch(apiUrl('/api/payments/create'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

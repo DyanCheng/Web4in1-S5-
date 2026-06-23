@@ -9,8 +9,7 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useTheme } from '@/contexts/ThemeContext';
 import { isFavorite, toggleFavorite, isTourExperienced, markTourExperienced } from '@/lib/tourStorage';
-
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:5200';
+import { apiUrl } from '@/lib/backendUrl';
 
 const fallbackTours: Record<string, any> = {
   '1': { id: '1', title: 'Du ngoạn Vịnh Hạ Long', location: 'Quảng Ninh', price: 3500000, duration: '2 ngày 1 đêm', image: 'https://images.unsplash.com/photo-1643029891412-92f9a81a8c16', rating: 4.9, reviews: 1234, description: 'Khám phá kỳ quan thiên nhiên thế giới với hàng ngàn đảo đá vôi kỳ vĩ.', highlights: ['Du thuyền 5 sao ngủ đêm trên vịnh', 'Thăm hang Sửng Sốt, động Thiên Cung', 'Chèo kayak khám phá làng chài', 'Câu mực đêm trên biển', 'Buffet hải sản tươi sống', 'Tập Thái Cực Quyền trên boong tàu'], included: ['Xe đưa đón từ Hà Nội', 'Du thuyền 5 sao', '2 bữa ăn chính + bữa sáng', 'Vé thăm quan', 'Hướng dẫn viên tiếng Việt', 'Bảo hiểm du lịch'], excluded: ['Chi phí cá nhân', 'Đồ uống có cồn', 'Tip hướng dẫn viên'] },
@@ -53,7 +52,7 @@ export default function TourDetailPage() {
     setExperienced(isTourExperienced(id));
     const fetchTour = async () => {
       try {
-        const response = await fetch(`${BACKEND_URL}/api/tours/${id}`);
+        const response = await fetch(apiUrl(`/api/tours/${id}`));
         if (!response.ok) throw new Error('Tour not found');
         setTour(await response.json());
       } catch {
