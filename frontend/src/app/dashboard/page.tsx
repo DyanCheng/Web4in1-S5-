@@ -4,18 +4,24 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
-import { Plane, Package, FileText, User, Download, Trash2, Star, Calendar, MapPin, Loader2 } from 'lucide-react';
+import { Package, FileText, User, Download, Trash2, Star, Calendar, Loader2 } from 'lucide-react';
+import Header from '@/components/Header';
+import Footer from '@/components/Footer';
+import { useTheme } from '@/contexts/ThemeContext';
+import { getExperiencedTourIds } from '@/lib/tourStorage';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:5200';
 
 export default function DashboardPage() {
   const router = useRouter();
   const navigate = (url: string) => router.push(url);
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
+  const { theme } = useTheme();
   const [activeTab, setActiveTab] = useState('bookings');
   const [bookings, setBookings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [experiencedTourIds, setExperiencedTourIds] = useState<string[]>([]);
 
   const fetchBookings = async () => {
     if (!user) return;
@@ -63,6 +69,10 @@ export default function DashboardPage() {
     }
   }, [user, router]);
 
+  useEffect(() => {
+    setExperiencedTourIds(getExperiencedTourIds());
+  }, []);
+
   const [reviews, setReviews] = useState([
     {
       id: 1,
@@ -100,179 +110,165 @@ export default function DashboardPage() {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center text-gray-700">
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center text-slate-700 dark:text-slate-400 font-bold">
         Đang chuyển hướng đăng nhập...
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
-              <Plane className="size-8 text-blue-600" />
-              <span className="text-2xl text-gray-900 font-bold">TravelHub</span>
-            </div>
+    <div className={`min-h-screen bg-slate-50/50 dark:bg-slate-955 font-sans transition-colors duration-300 flex flex-col ${
+      theme === 'dark' ? 'dark text-white' : 'text-slate-900'
+    }`}>
+      <Header />
 
-            <div className="flex items-center gap-4">
-              <span className="text-gray-700 font-medium">{user.name}</span>
-              <button
-                onClick={logout}
-                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-semibold cursor-pointer"
-              >
-                Đăng xuất
-              </button>
-            </div>
-          </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 flex-1 w-full">
+        <div className="text-left mb-10">
+          <span className="inline-block px-4 py-1.5 text-xs font-extrabold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 rounded-full border border-blue-100/30 uppercase tracking-widest mb-3">
+            Tài khoản cá nhân
+          </span>
+          <h1 className="text-3xl sm:text-4xl font-extrabold font-serif leading-tight text-slate-900 dark:text-white">
+            Dashboard Của Tôi
+          </h1>
         </div>
-      </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <h1 className="text-3xl text-gray-900 mb-8 font-bold text-left">Dashboard của tôi</h1>
-
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-10">
           {/* Sidebar */}
           <div className="lg:col-span-1 text-left">
-            <div className="bg-white rounded-xl p-4 space-y-2 border border-gray-100 shadow-sm">
+            <div className="bg-white dark:bg-slate-900 rounded-3xl p-4 space-y-1.5 border border-slate-100/40 dark:border-slate-800/40 shadow-sm">
               <button
                 onClick={() => setActiveTab('bookings')}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors font-semibold cursor-pointer ${
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-colors font-bold text-sm cursor-pointer ${
                   activeTab === 'bookings'
-                    ? 'bg-blue-600 text-white'
-                    : 'text-gray-700 hover:bg-gray-100'
+                    ? 'bg-blue-900 dark:bg-blue-600 text-white shadow'
+                    : 'text-slate-750 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50'
                 }`}
               >
-                <Package className="size-5" />
-                <span>Đặt tour của tôi</span>
+                <Package className="size-4.5" />
+                <span>Đặt hành trình của tôi</span>
               </button>
 
               <button
                 onClick={() => setActiveTab('invoices')}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors font-semibold cursor-pointer ${
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-colors font-bold text-sm cursor-pointer ${
                   activeTab === 'invoices'
-                    ? 'bg-blue-600 text-white'
-                    : 'text-gray-700 hover:bg-gray-100'
+                    ? 'bg-blue-900 dark:bg-blue-600 text-white shadow'
+                    : 'text-slate-750 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50'
                 }`}
               >
-                <FileText className="size-5" />
-                <span>Hóa đơn</span>
+                <FileText className="size-4.5" />
+                <span>Lịch sử hóa đơn</span>
               </button>
 
               <button
                 onClick={() => setActiveTab('reviews')}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors font-semibold cursor-pointer ${
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-colors font-bold text-sm cursor-pointer ${
                   activeTab === 'reviews'
-                    ? 'bg-blue-600 text-white'
-                    : 'text-gray-700 hover:bg-gray-100'
+                    ? 'bg-blue-900 dark:bg-blue-600 text-white shadow'
+                    : 'text-slate-750 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50'
                 }`}
               >
-                <Star className="size-5" />
-                <span>Đánh giá của tôi</span>
+                <Star className="size-4.5" />
+                <span>Đánh giá đã gửi</span>
               </button>
 
               <button
                 onClick={() => setActiveTab('profile')}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors font-semibold cursor-pointer ${
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-colors font-bold text-sm cursor-pointer ${
                   activeTab === 'profile'
-                    ? 'bg-blue-600 text-white'
-                    : 'text-gray-700 hover:bg-gray-100'
+                    ? 'bg-blue-900 dark:bg-blue-600 text-white shadow'
+                    : 'text-slate-750 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50'
                 }`}
               >
-                <User className="size-5" />
-                <span>Thông tin cá nhân</span>
+                <User className="size-4.5" />
+                <span>Thông tin tài khoản</span>
               </button>
             </div>
 
             <Link
-              href="/"
-              className="block mt-4 text-center text-blue-600 hover:text-blue-700 font-semibold cursor-pointer"
+              href="/tours"
+              className="block mt-6 text-center text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline"
             >
-              ← Quay về trang chủ
+              ← Trở lại khám phá tours
             </Link>
           </div>
 
-          {/* Content */}
+          {/* Content Column */}
           <div className="lg:col-span-3 text-left">
+            
             {/* Bookings Tab */}
             {activeTab === 'bookings' && (
-              <div className="space-y-4">
-                <h2 className="text-2xl text-gray-900 mb-4 font-bold">Tour đã đặt</h2>
+              <div className="space-y-6">
+                <h2 className="text-2xl font-black text-slate-900 dark:text-white font-serif leading-tight mb-4">Các hành trình đã đặt</h2>
                 
                 {loading ? (
-                  <div className="flex justify-center items-center py-12 bg-white rounded-xl border border-gray-100 shadow-sm">
+                  <div className="flex justify-center items-center py-20 bg-white dark:bg-slate-900 rounded-3xl border border-slate-100/40 dark:border-slate-800/40 shadow-sm">
                     <Loader2 className="size-8 animate-spin text-blue-600" />
-                    <span className="ml-3 text-gray-600 font-medium">Đang tải lịch sử đặt tour...</span>
+                    <span className="ml-3 text-slate-500 dark:text-slate-400 font-bold">Đang tải lịch sử...</span>
                   </div>
                 ) : bookings.length === 0 ? (
-                  <div className="text-center py-12 bg-white rounded-xl border border-gray-100 shadow-sm">
-                    <p className="text-gray-500 mb-4 font-semibold">Bạn chưa đặt tour nào</p>
+                  <div className="text-center py-16 bg-white dark:bg-slate-900 rounded-3xl border border-slate-100/40 dark:border-slate-800/40 p-8 shadow-sm">
+                    <p className="text-slate-550 dark:text-slate-400 mb-6 font-semibold">Bạn chưa đăng ký đặt tour nào</p>
                     <Link
                       href="/tours"
-                      className="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold"
+                      className="px-6 py-2.5 bg-blue-900 dark:bg-blue-600 text-white rounded-full transition-all font-bold text-sm shadow inline-block"
                     >
-                      Khám phá tour ngay
+                      Tìm kiếm tour ngay
                     </Link>
                   </div>
                 ) : (
                   bookings.map((booking) => (
-                    <div key={booking.id} className="bg-white rounded-xl p-6 border border-gray-100 shadow-sm">
-                      <div className="flex flex-col md:flex-row gap-4">
-                        <div className="w-full md:w-32 h-32 rounded-lg overflow-hidden flex-shrink-0">
-                          <img src={booking.tourImage} alt={booking.tourTitle} className="w-full h-full object-cover" />
+                    <div key={booking.id} className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-100/40 dark:border-slate-800/40 shadow-sm flex flex-col md:flex-row gap-6">
+                      <div className="w-full md:w-32 h-32 rounded-2xl overflow-hidden flex-shrink-0">
+                        <img src={booking.tourImage} alt={booking.tourTitle} className="w-full h-full object-cover" />
+                      </div>
+
+                      <div className="flex-1 flex flex-col justify-between">
+                        <div className="flex items-start justify-between mb-2">
+                          <h3 className="text-lg font-extrabold text-slate-900 dark:text-white leading-tight">{booking.tourTitle}</h3>
+                          <span
+                            className={`px-3 py-1 rounded-full text-xxs font-black tracking-wide uppercase ${
+                              booking.status === 'confirmed'
+                                ? 'bg-green-50 text-green-700 dark:bg-green-950/40 dark:text-green-400'
+                                : 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400'
+                            }`}
+                          >
+                            {booking.status === 'confirmed' ? 'Đã duyệt' : 'Chờ duyệt'}
+                          </span>
                         </div>
 
-                        <div className="flex-1">
-                          <div className="flex items-start justify-between mb-2">
-                            <div>
-                              <h3 className="text-xl text-gray-900 mb-1 font-bold">{booking.tourTitle}</h3>
-                            </div>
-                            <span
-                              className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                                booking.status === 'confirmed'
-                                  ? 'bg-green-100 text-green-700'
-                                  : 'bg-yellow-100 text-yellow-700'
-                              }`}
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4 text-xs font-bold">
+                          <div>
+                            <p className="text-slate-400 dark:text-slate-500 uppercase tracking-wide text-[9px] mb-0.5">Mã đơn đặt</p>
+                            <p className="text-slate-800 dark:text-slate-200 font-extrabold">{booking.id}</p>
+                          </div>
+                          <div>
+                            <p className="text-slate-400 dark:text-slate-500 uppercase tracking-wide text-[9px] mb-0.5">Khởi hành</p>
+                            <p className="text-slate-800 dark:text-slate-200">{booking.date}</p>
+                          </div>
+                          <div>
+                            <p className="text-slate-400 dark:text-slate-500 uppercase tracking-wide text-[9px] mb-0.5">Số lượng khách</p>
+                            <p className="text-slate-800 dark:text-slate-200">{booking.guests} khách</p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-800">
+                          <div className="text-2xl font-black text-blue-900 dark:text-blue-400">{Number(booking.total).toLocaleString('vi-VN')}đ</div>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => handleDownloadInvoice(booking.id)}
+                              className="px-4 py-2 bg-blue-900 dark:bg-blue-600 text-white rounded-2xl hover:bg-blue-955 dark:hover:bg-blue-700 transition-colors flex items-center gap-1.5 font-bold text-xs cursor-pointer shadow-sm"
                             >
-                              {booking.status === 'confirmed' ? 'Đã xác nhận' : 'Chờ xác nhận'}
-                            </span>
-                          </div>
-
-                          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4 text-sm font-medium">
-                            <div>
-                              <p className="text-gray-500 text-xs">Mã đơn</p>
-                              <p className="text-gray-900 font-bold">{booking.id}</p>
-                            </div>
-                            <div>
-                              <p className="text-gray-500 text-xs">Ngày khởi hành</p>
-                              <p className="text-gray-900">{booking.date}</p>
-                            </div>
-                            <div>
-                              <p className="text-gray-500 text-xs">Số người</p>
-                              <p className="text-gray-900">{booking.guests} người</p>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center justify-between pt-4 border-t">
-                            <div className="text-2xl text-blue-600 font-bold">{Number(booking.total).toLocaleString('vi-VN')}đ</div>
-                            <div className="flex gap-2">
-                              <button
-                                onClick={() => handleDownloadInvoice(booking.id)}
-                                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 font-semibold text-sm cursor-pointer"
-                              >
-                                <Download className="size-4" />
-                                Tải hóa đơn
-                              </button>
-                              <button
-                                onClick={() => handleDeleteBooking(booking.id)}
-                                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2 font-semibold text-sm cursor-pointer"
-                              >
-                                <Trash2 className="size-4" />
-                                Hủy tour
-                              </button>
-                            </div>
+                              <Download className="size-3.5" />
+                              Hóa đơn
+                            </button>
+                            <button
+                              onClick={() => handleDeleteBooking(booking.id)}
+                              className="px-4 py-2 bg-red-50 hover:bg-red-100 text-red-655 rounded-2xl transition-colors flex items-center gap-1.5 font-bold text-xs cursor-pointer"
+                            >
+                              <Trash2 className="size-3.5" />
+                              Hủy tour
+                            </button>
                           </div>
                         </div>
                       </div>
@@ -285,106 +281,120 @@ export default function DashboardPage() {
             {/* Invoices Tab */}
             {activeTab === 'invoices' && (
               <div>
-                <h2 className="text-2xl text-gray-900 mb-4 font-bold">Hóa đơn</h2>
-                <div className="bg-white rounded-xl overflow-hidden border border-gray-100 shadow-sm">
-                  <table className="w-full">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs text-gray-500 uppercase font-semibold">Mã hóa đơn</th>
-                        <th className="px-6 py-3 text-left text-xs text-gray-500 uppercase font-semibold">Tour</th>
-                        <th className="px-6 py-3 text-left text-xs text-gray-500 uppercase font-semibold">Ngày</th>
-                        <th className="px-6 py-3 text-left text-xs text-gray-500 uppercase font-semibold">Tổng tiền</th>
-                        <th className="px-6 py-3 text-left text-xs text-gray-500 uppercase font-semibold">Thao tác</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y font-medium text-sm text-gray-800">
-                      {loading ? (
+                <h2 className="text-2xl font-black text-slate-900 dark:text-white font-serif mb-6">Lịch sử hóa đơn</h2>
+                
+                <div className="bg-white dark:bg-slate-900 rounded-3xl overflow-hidden border border-slate-100/40 dark:border-slate-800/40 shadow-sm">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead className="bg-slate-50/60 dark:bg-slate-800/40 border-b border-slate-100 dark:border-slate-800">
                         <tr>
-                          <td colSpan={5} className="text-center py-6 text-gray-500">Đang tải hóa đơn...</td>
+                          <th className="px-6 py-4 text-left text-xs text-slate-400 dark:text-slate-500 uppercase tracking-widest font-black">Mã hóa đơn</th>
+                          <th className="px-6 py-4 text-left text-xs text-slate-400 dark:text-slate-500 uppercase tracking-widest font-black">Hành trình</th>
+                          <th className="px-6 py-4 text-left text-xs text-slate-400 dark:text-slate-500 uppercase tracking-widest font-black">Ngày thanh toán</th>
+                          <th className="px-6 py-4 text-left text-xs text-slate-400 dark:text-slate-500 uppercase tracking-widest font-black">Tổng chi phí</th>
+                          <th className="px-6 py-4 text-left text-xs text-slate-400 dark:text-slate-500 uppercase tracking-widest font-black">Tải xuống</th>
                         </tr>
-                      ) : bookings.length === 0 ? (
-                        <tr>
-                          <td colSpan={5} className="text-center py-6 text-gray-500">Chưa có hóa đơn nào</td>
-                        </tr>
-                      ) : (
-                        bookings.map((booking) => (
-                          <tr key={booking.id}>
-                            <td className="px-6 py-4">{booking.id}</td>
-                            <td className="px-6 py-4">{booking.tourTitle}</td>
-                            <td className="px-6 py-4">{booking.date}</td>
-                            <td className="px-6 py-4 text-blue-600 font-bold">{Number(booking.total).toLocaleString('vi-VN')}đ</td>
-                            <td className="px-6 py-4">
-                              <button
-                                onClick={() => handleDownloadInvoice(booking.id)}
-                                className="text-blue-600 hover:text-blue-700 flex items-center gap-1 font-semibold cursor-pointer"
-                              >
-                                <Download className="size-4" />
-                                Tải xuống
-                              </button>
-                            </td>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-semibold text-slate-700 dark:text-slate-300">
+                        {loading ? (
+                          <tr>
+                            <td colSpan={5} className="text-center py-8 text-slate-500 font-bold">Đang tải hóa đơn...</td>
                           </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
+                        ) : bookings.length === 0 ? (
+                          <tr>
+                            <td colSpan={5} className="text-center py-8 text-slate-500 font-bold">Chưa có hóa đơn nào</td>
+                          </tr>
+                        ) : (
+                          bookings.map((booking) => (
+                            <tr key={booking.id} className="hover:bg-slate-50/30 dark:hover:bg-slate-800/10">
+                              <td className="px-6 py-4 font-bold text-slate-900 dark:text-white">{booking.id}</td>
+                              <td className="px-6 py-4">{booking.tourTitle}</td>
+                              <td className="px-6 py-4 text-slate-500 dark:text-slate-400">{booking.date}</td>
+                              <td className="px-6 py-4 text-blue-900 dark:text-blue-400 font-black">{Number(booking.total).toLocaleString('vi-VN')}đ</td>
+                              <td className="px-6 py-4">
+                                <button
+                                  onClick={() => handleDownloadInvoice(booking.id)}
+                                  className="text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 font-bold text-xs cursor-pointer"
+                                >
+                                  <Download className="size-3.5" />
+                                  Tải PDF
+                                </button>
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </div>
             )}
 
             {/* Reviews Tab */}
             {activeTab === 'reviews' && (
-              <div>
-                <h2 className="text-2xl text-gray-900 mb-4 font-bold">Đánh giá của tôi</h2>
+              <div className="space-y-6">
+                <h2 className="text-2xl font-black text-slate-900 dark:text-white font-serif mb-6">Đánh giá của tôi</h2>
+                
                 <div className="space-y-4">
                   {reviews.map((review) => (
-                    <div key={review.id} className="bg-white rounded-xl p-6 border border-gray-100 shadow-sm">
+                    <div key={review.id} className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-100/40 dark:border-slate-800/40 shadow-sm">
                       <div className="flex items-start justify-between mb-2">
-                        <h3 className="text-lg text-gray-900 font-bold">{review.tour}</h3>
-                        <span className="text-xs text-gray-500 font-semibold">{review.date}</span>
+                        <h3 className="text-lg font-extrabold text-slate-900 dark:text-white leading-tight">{review.tour}</h3>
+                        <span className="text-xs text-slate-400 dark:text-slate-500 font-bold">{review.date}</span>
                       </div>
-                      <div className="flex gap-1 mb-2">
+                      <div className="flex gap-0.5 mb-3">
                         {[...Array(review.rating)].map((_, i) => (
-                          <Star key={i} className="size-5 fill-yellow-400 text-yellow-400" />
+                          <Star key={i} className="size-4 fill-amber-400 text-amber-400" />
                         ))}
                       </div>
-                      <p className="text-gray-700 text-sm font-medium">{review.comment}</p>
+                      <p className="text-slate-655 dark:text-slate-300 text-sm font-medium italic">“{review.comment}”</p>
                     </div>
                   ))}
 
                   {/* Add Review Form */}
-                  <div className="bg-white rounded-xl p-6 border border-gray-100 shadow-sm">
-                    <h3 className="text-lg text-gray-900 mb-4 font-bold">Viết đánh giá mới</h3>
-                    <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); alert('Đã gửi đánh giá thành công!'); }}>
+                  <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 border border-slate-100/40 dark:border-slate-800/40 shadow-sm">
+                    <h3 className="text-lg font-extrabold text-slate-900 dark:text-white mb-6 font-serif">Viết đánh giá hành trình mới</h3>
+                    
+                    <form className="space-y-5" onSubmit={(e) => { e.preventDefault(); alert('Đã gửi đánh giá thành công!'); }}>
+                      {experiencedTourIds.length === 0 && (
+                        <p className="rounded-2xl bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700 dark:bg-amber-950/30 dark:text-amber-300">
+                          Bạn cần đánh dấu đã trải nghiệm một tour trước khi gửi comment.
+                        </p>
+                      )}
                       <div>
-                        <label className="block text-sm text-gray-700 mb-2 font-semibold">Chọn tour</label>
-                        <select className="w-full px-4 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white">
+                        <label className="block text-xs font-black uppercase text-slate-400 dark:text-slate-550 mb-2">Chọn hành trình</label>
+                        <select className="w-full px-4 py-3 border border-slate-150 dark:border-slate-800 bg-transparent rounded-2xl outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 text-slate-800 dark:text-slate-100 font-bold text-sm bg-white dark:bg-slate-900">
                           <option>Du ngoạn Vịnh Hạ Long</option>
                           <option>Thiên đường Phú Quốc</option>
                           <option>Phố cổ Hội An</option>
                           <option>Biển xanh Đà Nẵng</option>
                         </select>
                       </div>
+                      
                       <div>
-                        <label className="block text-sm text-gray-700 mb-2 font-semibold">Đánh giá</label>
-                        <div className="flex gap-2">
+                        <label className="block text-xs font-black uppercase text-slate-400 dark:text-slate-555 mb-2">Mức độ hài lòng</label>
+                        <div className="flex gap-1.5">
                           {[1, 2, 3, 4, 5].map((star) => (
                             <button key={star} type="button" className="hover:scale-110 transition-transform cursor-pointer">
-                              <Star className="size-8 fill-yellow-400 text-yellow-400" />
+                              <Star className="size-8 fill-amber-400 text-amber-400" />
                             </button>
                           ))}
                         </div>
                       </div>
+
                       <div>
-                        <label className="block text-sm text-gray-700 mb-2 font-semibold">Nhận xét</label>
+                        <label className="block text-xs font-black uppercase text-slate-400 dark:text-slate-555 mb-2">Nhận xét chi tiết</label>
                         <textarea
                           rows={4}
-                          className="w-full px-4 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-                          placeholder="Chia sẻ trải nghiệm của bạn..."
+                          className="w-full px-4 py-3 border border-slate-150 dark:border-slate-800 bg-transparent rounded-2xl outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 text-slate-800 dark:text-slate-100 font-bold text-sm"
+                          placeholder="Chia sẻ trải nghiệm hành trình của bạn..."
                         ></textarea>
                       </div>
+
                       <button
                         type="submit"
-                        className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold cursor-pointer"
+                        disabled={experiencedTourIds.length === 0}
+                        className="px-6 py-3 bg-blue-900 hover:bg-blue-955 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-2xl transition-colors font-bold text-xs cursor-pointer shadow"
                       >
                         Gửi đánh giá
                       </button>
@@ -396,57 +406,58 @@ export default function DashboardPage() {
 
             {/* Profile Tab */}
             {activeTab === 'profile' && (
-              <div className="bg-white rounded-xl p-6 border border-gray-100 shadow-sm">
-                <h2 className="text-2xl text-gray-900 mb-6 font-bold">Thông tin cá nhân</h2>
-                <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); alert('Cập nhật thông tin thành công!'); }}>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 border border-slate-100/40 dark:border-slate-800/40 shadow-sm">
+                <h2 className="text-2xl font-black text-slate-900 dark:text-white font-serif mb-6">Thông tin tài khoản</h2>
+                
+                <form className="space-y-5" onSubmit={(e) => { e.preventDefault(); alert('Cập nhật thông tin thành công!'); }}>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div>
-                      <label className="block text-sm text-gray-700 mb-2 font-semibold">Họ và tên</label>
+                      <label className="block text-xs font-black uppercase text-slate-400 dark:text-slate-555 mb-2">Họ và tên</label>
                       <input
                         type="text"
                         defaultValue={user.name}
-                        className="w-full px-4 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                        className="w-full px-4 py-3 border border-slate-155 dark:border-slate-800 bg-transparent rounded-2xl outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 text-slate-800 dark:text-slate-100 font-bold text-sm transition-all"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm text-gray-700 mb-2 font-semibold">Email</label>
+                      <label className="block text-xs font-black uppercase text-slate-400 dark:text-slate-555 mb-2">Email đăng ký</label>
                       <input
                         type="email"
                         defaultValue={user.email}
-                        className="w-full px-4 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                        className="w-full px-4 py-3 border border-slate-155 dark:border-slate-800 bg-transparent rounded-2xl outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 text-slate-400 dark:text-slate-500 font-bold text-sm transition-all"
                         disabled
                       />
                     </div>
                     <div>
-                      <label className="block text-sm text-gray-700 mb-2 font-semibold">Số điện thoại</label>
+                      <label className="block text-xs font-black uppercase text-slate-400 dark:text-slate-555 mb-2">Số điện thoại</label>
                       <input
                         type="tel"
                         placeholder="+84 XXX XXX XXX"
-                        className="w-full px-4 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                        className="w-full px-4 py-3 border border-slate-155 dark:border-slate-800 bg-transparent rounded-2xl outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 text-slate-800 dark:text-slate-100 font-bold text-sm transition-all"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm text-gray-700 mb-2 font-semibold">Ngày sinh</label>
+                      <label className="block text-xs font-black uppercase text-slate-400 dark:text-slate-555 mb-2">Ngày sinh</label>
                       <input
                         type="date"
-                        className="w-full px-4 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                        className="w-full px-4 py-3 border border-slate-155 dark:border-slate-800 bg-transparent rounded-2xl outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 text-slate-850 dark:text-slate-200 font-bold text-sm transition-all"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-sm text-gray-700 mb-2 font-semibold">Địa chỉ</label>
+                    <label className="block text-xs font-black uppercase text-slate-400 dark:text-slate-555 mb-2">Địa chỉ thường trú</label>
                     <input
                       type="text"
-                      className="w-full px-4 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                      className="w-full px-4 py-3 border border-slate-155 dark:border-slate-800 bg-transparent rounded-2xl outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 text-slate-800 dark:text-slate-100 font-bold text-sm transition-all"
                     />
                   </div>
 
                   <button
                     type="submit"
-                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold cursor-pointer"
+                    className="px-6 py-3 bg-blue-900 hover:bg-blue-955 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-2xl transition-colors font-bold text-xs cursor-pointer shadow"
                   >
-                    Lưu thay đổi
+                    Lưu các thay đổi
                   </button>
                 </form>
               </div>
@@ -454,6 +465,8 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+
+      <Footer />
     </div>
   );
 }

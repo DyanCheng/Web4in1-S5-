@@ -14,11 +14,12 @@ const geistMono = Geist_Mono({
 
 import { AuthProvider } from "@/contexts/AuthContext";
 import { CartProvider } from "@/contexts/CartContext";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 import Chatbot from "@/components/Chatbot";
 
 export const metadata: Metadata = {
-  title: "TravelHub - Complete Travel Tour Platform",
-  description: "Book your favorite tours and explore beautiful destinations",
+  title: "CMC Travel - Trải Nghiệm Du Lịch Thượng Lưu",
+  description: "Khám phá thế giới cùng CMC Travel - Dịch vụ du lịch cao cấp tại Việt Nam",
 };
 
 export default function RootLayout({
@@ -28,16 +29,19 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="vi"
+      lang="vi" suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
-        <AuthProvider>
-          <CartProvider>
-            {children}
-            <Chatbot />
-          </CartProvider>
-        </AuthProvider>
+      <body suppressHydrationWarning 
+      className="min-h-full flex flex-col">
+        <ThemeProvider>
+          <AuthProvider>
+            <CartProvider>
+              {children}
+              <Chatbot />
+            </CartProvider>
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

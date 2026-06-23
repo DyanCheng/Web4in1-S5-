@@ -1,0 +1,74 @@
+<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">CMC Travel</title>
+  <desc id="desc">Travel logo with blue circle, sunrise, mountains, palm trees, airplane, and CMC TRAVEL wordmark.</desc>
+  <defs>
+    <linearGradient id="blueRing" x1="160" y1="180" x2="860" y2="840" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#29A7F7" />
+      <stop offset="45%" stop-color="#1488E3" />
+      <stop offset="100%" stop-color="#1951B8" />
+    </linearGradient>
+    <linearGradient id="sunGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FFD94D" />
+      <stop offset="100%" stop-color="#FF8B00" />
+    </linearGradient>
+    <linearGradient id="seaGrad" x1="250" y1="620" x2="760" y2="760" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#2AAEF6" />
+      <stop offset="100%" stop-color="#0E73DA" />
+    </linearGradient>
+    <linearGradient id="orangeWave" x1="520" y1="720" x2="760" y2="820" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFA31A" />
+      <stop offset="100%" stop-color="#FF6A00" />
+    </linearGradient>
+    <linearGradient id="wordBlue" x1="180" y1="0" x2="470" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#1C63D1" />
+      <stop offset="100%" stop-color="#1690EA" />
+    </linearGradient>
+    <linearGradient id="wordOrange" x1="500" y1="0" x2="860" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFB124" />
+      <stop offset="100%" stop-color="#FF6A00" />
+    </linearGradient>
+  </defs>
+
+  <rect width="1024" height="1024" fill="#FFFFFF" />
+
+  <circle cx="512" cy="430" r="250" fill="none" stroke="url(#blueRing)" stroke-width="90" stroke-linecap="round" stroke-dasharray="1360 220" stroke-dashoffset="130" />
+  <circle cx="512" cy="430" r="115" fill="url(#sunGrad)" />
+
+  <path d="M300 565 L390 485 L450 530 L512 455 L585 530 L628 500 L690 565 Z" fill="#1F5DBF" />
+  <path d="M363 565 L410 520 L448 551 L486 505 L507 525 L521 510 L548 540 L571 520 L611 565 Z" fill="#FFFFFF" opacity="0.95" />
+  <path d="M435 565 L505 495 L540 532 L565 510 L605 565 Z" fill="#1650B8" />
+  <path d="M475 565 L512 530 L533 548 L550 530 L565 565 Z" fill="#FFFFFF" opacity="0.95" />
+
+  <path d="M255 686 C315 645 402 628 512 628 C622 628 708 646 767 686 L767 705 L255 705 Z" fill="#114EA8" opacity="0.95" />
+  <path d="M255 705 C330 736 420 752 512 752 C604 752 694 736 767 705 L767 732 C690 768 601 786 512 786 C423 786 334 768 255 732 Z" fill="url(#seaGrad)" />
+  <path d="M365 722 C420 709 463 704 512 704 C567 704 616 711 665 725 C605 748 557 760 512 760 C462 760 412 750 365 722 Z" fill="#FFFFFF" opacity="0.95" />
+  <path d="M455 762 C528 756 606 768 679 805 C610 836 557 848 512 848 C467 848 414 836 345 804 C384 781 417 768 455 762 Z" fill="url(#orangeWave)" />
+  <path d="M285 788 C360 760 447 748 512 748 C585 748 674 764 739 796 C669 814 592 822 512 822 C430 822 352 808 285 788 Z" fill="#1C63D1" opacity="0.9" />
+
+  <path d="M268 664 C290 650 306 632 323 607 C346 631 356 651 353 679 C336 676 312 671 268 664 Z" fill="#163F8C" />
+  <path d="M312 635 C316 602 330 577 348 551 C364 578 370 608 367 640 C350 634 337 631 312 635 Z" fill="#163F8C" />
+  <path d="M338 553 C359 529 376 514 389 494 C402 520 405 547 400 574 C386 564 370 558 338 553 Z" fill="#163F8C" />
+  <path d="M285 646 C304 634 317 620 329 603 C339 619 342 636 340 653 C326 651 309 649 285 646 Z" fill="#163F8C" opacity="0.95" />
+  <path d="M325 596 C346 582 357 567 369 550 C381 568 385 586 384 603 C369 601 352 599 325 596 Z" fill="#163F8C" opacity="0.95" />
+
+  <path d="M675 417 C722 420 760 428 804 445 C768 465 733 481 693 494 C688 476 681 452 675 417 Z" fill="#163F8C" />
+  <path d="M684 446 C737 444 775 442 810 431 C792 460 772 489 746 519 C731 498 710 477 684 446 Z" fill="#163F8C" />
+  <path d="M742 458 C770 439 790 423 813 397 C815 422 809 447 796 474 C782 469 763 462 742 458 Z" fill="#163F8C" />
+  <path d="M700 428 C718 408 736 394 759 378 C761 401 755 421 745 441 C732 436 719 432 700 428 Z" fill="#163F8C" opacity="0.95" />
+
+  <path d="M556 501 C620 500 689 482 772 430 C730 472 655 520 585 535" fill="none" stroke="#28A7F7" stroke-width="12" stroke-linecap="round" />
+  <path d="M768 431 L792 414 L801 419 L786 439 Z" fill="#28A7F7" />
+
+  <g transform="translate(770 388) rotate(-18)">
+    <path d="M0 20 L82 0 C98 -4 113 2 120 12 L82 22 L103 54 L88 61 L57 28 L26 33 L7 47 L0 41 L18 20 Z" fill="#163F8C" />
+    <rect x="34" y="17" width="42" height="10" rx="5" fill="#163F8C" />
+    <path d="M47 20 L52 0 L63 0 L58 20 Z" fill="#163F8C" />
+    <path d="M57 24 L77 56 L66 60 L43 31 Z" fill="#163F8C" />
+  </g>
+
+  <text x="155" y="915" font-family="Arial, Helvetica, sans-serif" font-size="120" font-weight="800" letter-spacing="-4" fill="url(#wordBlue)">CMC</text>
+  <text x="472" y="915" font-family="Arial, Helvetica, sans-serif" font-size="120" font-weight="800" letter-spacing="-4" fill="url(#wordOrange)">TRAVEL</text>
+  <text x="248" y="970" font-family="Arial, Helvetica, sans-serif" font-size="34" font-weight="700" letter-spacing="9" fill="#1C63D1">EXPLORE THE WORLD</text>
+  <rect x="112" y="948" width="110" height="6" rx="3" fill="#1C63D1" />
+  <rect x="802" y="948" width="110" height="6" rx="3" fill="#1C63D1" />
+</svg>

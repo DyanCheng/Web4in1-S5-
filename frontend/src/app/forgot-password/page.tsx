@@ -1,8 +1,11 @@
 "use client";
 
 import { useState } from 'react';
-import Link from 'next/link';
-import { Plane, Mail, CheckCircle } from 'lucide-react';
+import { Mail, CheckCircle } from 'lucide-react';
+import { AuthLayout, AuthCard, AuthInput, AuthFooter } from '@/components/AuthLayout';
+
+const inputClass =
+  'w-full pl-12 pr-4 py-2 sm:py-3 border border-slate-150 dark:border-slate-800 bg-transparent rounded-2xl outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 text-slate-855 dark:text-slate-100 font-bold text-sm transition-all';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
@@ -12,91 +15,78 @@ export default function ForgotPasswordPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-
-    // Mock sending reset email
     await new Promise(resolve => setTimeout(resolve, 1000));
-
     setSubmitted(true);
     setLoading(false);
   };
 
-  if (submitted) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center p-4">
-        <div className="max-w-md w-full">
-          <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
-              <CheckCircle className="size-8 text-green-600" />
+  return (
+    <AuthLayout showHero={false}>
+      {submitted ? (
+        <AuthCard
+          title="Kiểm tra Email"
+          subtitle=""
+        >
+          <div className="text-center space-y-4 sm:space-y-6">
+            <div className="inline-flex items-center justify-center w-14 sm:w-16 h-14 sm:h-16 bg-green-50 dark:bg-green-950/40 rounded-full mx-auto">
+              <CheckCircle className="size-7 sm:size-8 text-emerald-500" />
             </div>
 
-            <h1 className="text-2xl text-gray-900 mb-2 font-bold">Kiểm tra email của bạn</h1>
-            <p className="text-gray-600 mb-6">
-              Chúng tôi đã gửi hướng dẫn đặt lại mật khẩu đến <strong>{email}</strong>
-            </p>
+            <div>
+              <p className="text-slate-500 dark:text-slate-400 mb-4 sm:mb-6 text-sm font-semibold">
+                Chúng tôi đã gửi hướng dẫn đặt lại mật khẩu đến{' '}
+                <strong className="font-extrabold text-slate-700 dark:text-slate-300">{email}</strong>
+              </p>
 
-            <p className="text-sm text-gray-500 mb-6">
-              Nếu bạn không nhận được email trong vài phút, vui lòng kiểm tra thư mục spam.
-            </p>
+              <p className="text-xs text-slate-400 dark:text-slate-550 font-medium">
+                Vui lòng kiểm tra hộp thư đến (hoặc thư mục Spam) trong vài phút tới để tiến hành đặt lại mật khẩu của bạn.
+              </p>
+            </div>
 
-            <Link
+            <a
               href="/login"
-              className="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+              className="inline-block w-full py-2.5 sm:py-3.5 bg-blue-900 hover:bg-blue-955 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-2xl transition-all font-bold text-sm shadow-md"
             >
               Quay lại đăng nhập
-            </Link>
+            </a>
           </div>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center p-4">
-      <div className="max-w-md w-full">
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <Plane className="size-10 text-blue-600" />
-            <span className="text-3xl text-gray-900 font-bold">TravelHub</span>
-          </div>
-          <h1 className="text-2xl text-gray-900 mb-2 font-bold">Quên mật khẩu?</h1>
-          <p className="text-gray-600">Nhập email để đặt lại mật khẩu</p>
-        </div>
-
-        {/* Form */}
-        <div className="bg-white rounded-2xl shadow-xl p-8">
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="text-left">
-              <label className="block text-sm text-gray-700 mb-2 font-medium">Email</label>
+        </AuthCard>
+      ) : (
+        <AuthCard
+          title="Khôi phục mật khẩu"
+          subtitle="Nhập địa chỉ email để nhận liên kết khôi phục"
+        >
+          <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
+            <AuthInput label="Địa chỉ Email của bạn">
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 size-5 text-gray-400" />
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 size-4.5 text-blue-600 dark:text-blue-400" />
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                  className={inputClass}
                   placeholder="your@email.com"
                   required
                 />
               </div>
-            </div>
+            </AuthInput>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400 font-medium cursor-pointer"
+              className="w-full py-2.5 sm:py-3.5 bg-blue-900 hover:bg-blue-955 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-2xl transition-all disabled:bg-slate-400 dark:disabled:bg-slate-800 font-bold text-sm cursor-pointer shadow-md"
             >
-              {loading ? 'Đang gửi...' : 'Gửi email đặt lại mật khẩu'}
+              {loading ? 'Đang gửi...' : 'Gửi yêu cầu khôi phục'}
             </button>
           </form>
 
           <div className="mt-6 text-center">
-            <Link href="/login" className="text-sm text-blue-600 hover:text-blue-700 font-semibold">
+            <a href="/login" className="text-xs text-blue-600 dark:text-blue-400 hover:underline font-bold">
               ← Quay lại đăng nhập
-            </Link>
+            </a>
           </div>
-        </div>
-      </div>
-    </div>
+        </AuthCard>
+      )}
+    </AuthLayout>
   );
 }
