@@ -11,8 +11,8 @@ const nextConfig: NextConfig = {
   async rewrites() {
     return [
       {
-        source: "/api/payments/webhook/:path*",
-        destination: `${backendUrl}/api/payments/webhook/:path*`,
+        source: "/api/:path*",
+        destination: `${backendUrl}/api/:path*`,
       },
     ];
   },
