@@ -9,7 +9,7 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useTheme } from '@/contexts/ThemeContext';
 
-import { getExperiencedTourIds } from '@/lib/tourStorage';
+import { getExperiencedTourIds, getUserReviews, addUserReview, hasReviewedTourTitle } from '@/lib/tourStorage';
 import { apiUrl } from '@/lib/backendUrl';
 
 export default function DashboardPage() {

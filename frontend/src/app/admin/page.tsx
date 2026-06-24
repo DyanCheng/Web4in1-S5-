@@ -111,6 +111,7 @@ export default function AdminDashboard() {
   const [tourDialogOpen, setTourDialogOpen] = useState(false);
   const [editingTour, setEditingTour] = useState<Tour | null>(null);
   const [tourActionLoading, setTourActionLoading] = useState(false);
+  const [rooms, setRooms] = useState<Room[]>([]);
   const [roomDialogOpen, setRoomDialogOpen] = useState(false);
   const [editingRoom, setEditingRoom] = useState<Room | null>(null);
   const [roomActionLoading, setRoomActionLoading] = useState(false);
@@ -122,14 +123,16 @@ export default function AdminDashboard() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [toursResponse, bookingsResponse, summaryResponse, transactionsResponse] = await Promise.all([
+      const [toursResponse, bookingsResponse, roomsResponse, summaryResponse, transactionsResponse] = await Promise.all([
         fetch(apiUrl('/api/tours')),
         fetch(apiUrl('/api/bookings')),
+        fetch(apiUrl('/api/rooms')),
         fetch(apiUrl('/api/payments/admin/summary')),
         fetch(apiUrl('/api/payments/admin/transactions')),
       ]);
       const toursData = toursResponse.ok ? await toursResponse.json() : [];
       const bookingsData = bookingsResponse.ok ? await bookingsResponse.json() : [];
+      const roomsData = roomsResponse.ok ? await roomsResponse.json() : [];
 
       if (summaryResponse.ok) {
         setPaymentSummary(await summaryResponse.json());
@@ -151,6 +154,8 @@ export default function AdminDashboard() {
         { id: 'ORD-1715234567890', tourId: '1', tourTitle: 'Du ngoạn Vịnh Hạ Long', tourImage: 'https://images.unsplash.com/photo-1643029891412-92f9a81a8c16', userId: '3', userEmail: 'user@travelhub.com', date: '2026-07-15', guests: 2, total: 7000000, status: 'confirmed' },
         { id: 'ORD-1714123456789', tourId: '2', tourTitle: 'Thiên đường Phú Quốc', tourImage: 'https://images.unsplash.com/photo-1732243395944-cb3ff9311091', userId: '3', userEmail: 'user@travelhub.com', date: '2026-08-20', guests: 3, total: 15600000, status: 'pending' },
       ]);
+
+      setRooms(roomsData.length ? roomsData : []);
     } finally {
       setLoading(false);
     }
@@ -210,7 +215,7 @@ export default function AdminDashboard() {
     if (!confirm('Bạn muốn xóa tour này?')) return;
     setTourActionLoading(true);
     try {
-      const response = await fetch(`${BACKEND_URL}/api/tours/${id}`, {
+      const response = await fetch(`${getBackendUrl()}/api/tours/${id}`, {
         method: 'DELETE',
         headers: adminHeaders(),
       });
@@ -228,8 +233,8 @@ export default function AdminDashboard() {
 
   const handleSaveTour = async (payload: Record<string, unknown>) => {
     const url = editingTour
-      ? `${BACKEND_URL}/api/tours/${editingTour.id}`
-      : `${BACKEND_URL}/api/tours`;
+      ? `${getBackendUrl()}/api/tours/${editingTour.id}`
+      : `${getBackendUrl()}/api/tours`;
     const response = await fetch(url, {
       method: editingTour ? 'PUT' : 'POST',
       headers: adminHeaders(),
@@ -256,7 +261,7 @@ export default function AdminDashboard() {
     if (!confirm('Bạn muốn xóa phòng này?')) return;
     setRoomActionLoading(true);
     try {
-      const response = await fetch(`${BACKEND_URL}/api/rooms/${id}`, {
+      const response = await fetch(`${getBackendUrl()}/api/rooms/${id}`, {
         method: 'DELETE',
         headers: adminHeaders(),
       });
@@ -274,8 +279,8 @@ export default function AdminDashboard() {
 
   const handleSaveRoom = async (payload: Record<string, unknown>) => {
     const url = editingRoom
-      ? `${BACKEND_URL}/api/rooms/${editingRoom.id}`
-      : `${BACKEND_URL}/api/rooms`;
+      ? `${getBackendUrl()}/api/rooms/${editingRoom.id}`
+      : `${getBackendUrl()}/api/rooms`;
     const response = await fetch(url, {
       method: editingRoom ? 'PUT' : 'POST',
       headers: adminHeaders(),

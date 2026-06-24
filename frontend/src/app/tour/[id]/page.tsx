@@ -4,12 +4,13 @@ import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { ImageWithFallback } from '@/components/figma/ImageWithFallback';
 import { useCart } from '@/contexts/CartContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { MapPin, Calendar, Users, Star, Clock, CheckCircle, X, Heart, Share2, Loader2 } from 'lucide-react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useTheme } from '@/contexts/ThemeContext';
 
-import { isFavorite, toggleFavorite, isTourExperienced, markTourExperienced } from '@/lib/tourStorage';
+import { isFavorite, toggleFavorite, isTourExperienced, markTourExperienced, hasReviewedTourId, addUserReview } from '@/lib/tourStorage';
 import { apiUrl } from '@/lib/backendUrl';
 
 const fallbackTours: Record<string, any> = {
