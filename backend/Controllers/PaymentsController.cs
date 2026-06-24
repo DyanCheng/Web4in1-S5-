@@ -1,4 +1,5 @@
 using System.Text.Json;
+
 using Backend.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -11,15 +12,11 @@ public class PaymentsController : ControllerBase
     private readonly PaymentDbService _paymentDb;
     private readonly SePayService _sePay;
     private readonly DataStoreService _dataStore;
-    private readonly TourDbService _tourDb;
 
-    public PaymentsController(PaymentDbService paymentDb, SePayService sePay, DataStoreService dataStore, TourDbService tourDb)
     {
         _paymentDb = paymentDb;
         _sePay = sePay;
         _dataStore = dataStore;
-        _tourDb = tourDb;
-    }
 
     [HttpPost("create")]
     public async Task<IActionResult> CreatePayment([FromBody] CreatePaymentRequest request)
@@ -89,42 +86,14 @@ public class PaymentsController : ControllerBase
         }
     }
 
-    [HttpPost("webhook/sepay")]
-    public async Task<IActionResult> SePayWebhook([FromBody] SePayWebhookPayload payload)
-    {
-        if (!_sePay.IsWebhookAuthorized(Request.Headers.Authorization))
-            return Unauthorized(new { success = false });
 
-        if (payload.TransferType != "in")
-            return Ok(new { success = true });
-
-        var paymentCode = payload.Code;
-        if (string.IsNullOrWhiteSpace(paymentCode))
-            return Ok(new { success = true });
-
-        try
-        {
             var result = await _paymentDb.ConfirmOrderPaymentAsync(
                 paymentCode,
                 payload.Id,
                 payload.TransferAmount,
                 payload);
 
-            if (result.TryGetProperty("booking_refs", out var bookingRefs)
-                && bookingRefs.ValueKind == JsonValueKind.Array)
-            {
-                foreach (var bookingRef in bookingRefs.EnumerateArray())
-                {
-                    var bookingId = bookingRef.GetString();
-                    if (!string.IsNullOrWhiteSpace(bookingId))
-                        await _tourDb.ConfirmBookingAsync(bookingId);
-                }
-            }
 
-            return Ok(new { success = true });
-        }
-        catch
-        {
             return Ok(new { success = true });
         }
     }
@@ -132,8 +101,7 @@ public class PaymentsController : ControllerBase
     [HttpPost("simulate/{paymentCode}")]
     public async Task<IActionResult> SimulatePayment(string paymentCode)
     {
-        if (!HttpContext.RequestServices.GetRequiredService<IWebHostEnvironment>().IsDevelopment())
-            return NotFound();
+
 
         try
         {
@@ -155,17 +123,7 @@ public class PaymentsController : ControllerBase
                 TransactionDate = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
             };
 
-            var result = await _paymentDb.ConfirmOrderPaymentAsync(paymentCode, payload.Id, amount, payload);
 
-            if (result.TryGetProperty("booking_refs", out var bookingRefs) && bookingRefs.ValueKind == JsonValueKind.Array)
-            {
-                foreach (var bookingRef in bookingRefs.EnumerateArray())
-                {
-                    var bookingId = bookingRef.GetString();
-                    if (!string.IsNullOrWhiteSpace(bookingId))
-                        await _tourDb.ConfirmBookingAsync(bookingId);
-                }
-            }
 
             return Ok(new { success = true, simulated = true });
         }
@@ -206,6 +164,7 @@ public class PaymentsController : ControllerBase
             return StatusCode(503, new { message = ex.Message });
         }
     }
+
 }
 
 public class CreatePaymentRequest
@@ -220,16 +179,6 @@ public class CreatePaymentRequest
 
 public class SePayWebhookPayload
 {
-    public long Id { get; set; }
-    public string Gateway { get; set; } = string.Empty;
-    public string TransactionDate { get; set; } = string.Empty;
-    public string AccountNumber { get; set; } = string.Empty;
-    public string? SubAccount { get; set; }
-    public string? Code { get; set; }
-    public string Content { get; set; } = string.Empty;
-    public string TransferType { get; set; } = "in";
-    public string Description { get; set; } = string.Empty;
-    public decimal TransferAmount { get; set; }
-    public decimal Accumulated { get; set; }
+
     public string? ReferenceCode { get; set; }
 }

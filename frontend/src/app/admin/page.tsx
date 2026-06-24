@@ -24,9 +24,8 @@ import {
   Sun,
   Building2,
 } from 'lucide-react';
+import { apiUrl, getBackendUrl, normalizeBackendUrl } from '@/lib/backendUrl';
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
-const WEBHOOK_PUBLIC_URL = process.env.NEXT_PUBLIC_SEPAY_WEBHOOK_URL || BACKEND_URL;
 
 type Tour = TourRecord;
 
@@ -65,24 +64,14 @@ interface PaymentTransaction {
   created_at: string;
 }
 
-interface Room {
-  id: number;
-  name: string;
-  type: string;
-  price: number;
-  beds: number;
-  guests: number;
-  status: string;
-}
 
-type AdminTab = 'overview' | 'tours' | 'orders' | 'payments' | 'hotels' | 'settings';
 
 const sidebarItems = [
   { id: 'overview', label: 'Tổng quan', icon: BarChart3 },
   { id: 'tours', label: 'Quản lý tour', icon: ShoppingBag },
   { id: 'orders', label: 'Đơn đặt chỗ', icon: CheckCircle2 },
   { id: 'payments', label: 'Thanh toán', icon: CreditCard },
-  { id: 'hotels', label: 'Quản lý khách sạn', icon: Building2 },
+
   { id: 'settings', label: 'Cài đặt', icon: Settings },
 ];
 
@@ -93,45 +82,25 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<AdminTab>('overview');
   const [tours, setTours] = useState<Tour[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
-  const [rooms, setRooms] = useState<Room[]>([]);
+
   const [paymentSummary, setPaymentSummary] = useState<PaymentSummary | null>(null);
   const [paymentTransactions, setPaymentTransactions] = useState<PaymentTransaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [paymentSearch, setPaymentSearch] = useState('');
-  const [tourDialogOpen, setTourDialogOpen] = useState(false);
-  const [editingTour, setEditingTour] = useState<Tour | null>(null);
-  const [tourActionLoading, setTourActionLoading] = useState(false);
-  const [roomDialogOpen, setRoomDialogOpen] = useState(false);
-  const [editingRoom, setEditingRoom] = useState<Room | null>(null);
-  const [roomActionLoading, setRoomActionLoading] = useState(false);
 
-  const adminHeaders = () => ({
-    'Content-Type': 'application/json',
-    'X-User-Role': user?.role ?? '',
-  });
 
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [toursResponse, bookingsResponse, summaryResponse, transactionsResponse, roomsResponse] = await Promise.all([
-        fetch(`${BACKEND_URL}/api/tours`),
-        fetch(`${BACKEND_URL}/api/bookings`),
-        fetch(`${BACKEND_URL}/api/payments/admin/summary`),
-        fetch(`${BACKEND_URL}/api/payments/admin/transactions`),
-        fetch(`${BACKEND_URL}/api/rooms`),
-      ]);
-      const toursData = toursResponse.ok ? await toursResponse.json() : [];
-      const bookingsData = bookingsResponse.ok ? await bookingsResponse.json() : [];
-      const roomsData = roomsResponse.ok ? await roomsResponse.json() : [];
+
       if (summaryResponse.ok) {
         setPaymentSummary(await summaryResponse.json());
       }
       if (transactionsResponse.ok) {
         setPaymentTransactions(await transactionsResponse.json());
       }
-      setTours(toursData);
-      setRooms(roomsData);
+
       setBookings(bookingsData.length ? bookingsData : [
         { id: 'ORD-1715234567890', tourId: '1', tourTitle: 'Du ngoạn Vịnh Hạ Long', tourImage: 'https://images.unsplash.com/photo-1643029891412-92f9a81a8c16', userId: '3', userEmail: 'user@travelhub.com', date: '2026-07-15', guests: 2, total: 7000000, status: 'confirmed' },
         { id: 'ORD-1714123456789', tourId: '2', tourTitle: 'Thiên đường Phú Quốc', tourImage: 'https://images.unsplash.com/photo-1732243395944-cb3ff9311091', userId: '3', userEmail: 'user@travelhub.com', date: '2026-08-20', guests: 3, total: 15600000, status: 'pending' },
@@ -303,7 +272,7 @@ export default function AdminDashboard() {
     tours: { title: 'Quản lý tour', subtitle: 'Danh sách tour hiện có trong hệ thống.' },
     orders: { title: 'Đơn đặt chỗ', subtitle: 'Phê duyệt hoặc hủy các đơn chờ xử lý.' },
     payments: { title: 'Giao dịch thanh toán', subtitle: 'Theo dõi đơn SePay, trạng thái và chi tiết sản phẩm.' },
-    hotels: { title: 'Quản lý khách sạn', subtitle: 'Quản lý phòng và trạng thái phòng.' },
+
     settings: { title: 'Cài đặt hệ thống', subtitle: 'Cấu hình chung cho nền tảng CMC Travel.' },
   };
 
@@ -511,15 +480,7 @@ export default function AdminDashboard() {
                     <h3 className="text-xl font-black font-serif">Quản lý tour</h3>
                     <p className="text-sm text-slate-500 dark:text-slate-400">Danh sách tour hiện có trong hệ thống</p>
                   </div>
-                  <div className="flex items-center gap-3 flex-wrap">
-                    <button
-                      onClick={openCreateTour}
-                      className="inline-flex items-center gap-2 rounded-2xl bg-blue-700 px-4 py-2.5 text-sm font-bold text-white"
-                    >
-                      <Plus className="size-4" />
-                      Thêm tour mới
-                    </button>
-                    <div className="relative w-full max-w-md">
+
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
                     <input
                       value={searchQuery}
@@ -527,10 +488,7 @@ export default function AdminDashboard() {
                       placeholder="Tìm tour theo tên hoặc địa điểm..."
                       className="w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-11 py-3 text-sm font-semibold outline-none"
                     />
-                    </div>
-                  </div>
-                </div>
-                <div className="overflow-x-auto overflow-y-auto max-h-[500px]">
+
                   <table className="w-full text-sm">
                     <thead className="bg-slate-50 dark:bg-slate-950/60 text-slate-500 dark:text-slate-400 uppercase tracking-widest text-xs">
                       <tr>
@@ -547,11 +505,7 @@ export default function AdminDashboard() {
                         <tr key={tour.id} className="hover:bg-slate-50 dark:hover:bg-slate-950/40">
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
-                              {tour.image ? (
-                                <img src={tour.image} alt={tour.title} className="size-12 rounded-xl object-cover" />
-                              ) : (
-                                <div className="size-12 rounded-xl bg-slate-200 dark:bg-slate-800" />
-                              )}
+
                               <div>
                                 <p className="font-bold text-slate-900 dark:text-white">{tour.title}</p>
                                 <p className="text-xs text-slate-500 dark:text-slate-400">ID: {tour.id}</p>
@@ -564,23 +518,14 @@ export default function AdminDashboard() {
                           <td className="px-6 py-4 text-amber-600 dark:text-amber-500 font-bold">★ {tour.rating} ({tour.reviews})</td>
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
-                              <button aria-label="Edit tour" onClick={() => openEditTour(tour)} disabled={tourActionLoading} className="text-blue-600 hover:text-blue-700 disabled:opacity-50">
-                                <Edit className="size-4" />
-                              </button>
-                              <button aria-label="Delete tour" onClick={() => handleDeleteTour(tour.id)} disabled={tourActionLoading} className="text-red-500 hover:text-red-600 disabled:opacity-50">
+
                                 <Trash2 className="size-4" />
                               </button>
                             </div>
                           </td>
                         </tr>
                       ))}
-                      {filteredTours.length === 0 && (
-                        <tr>
-                          <td colSpan={6} className="px-6 py-12 text-center text-slate-500 dark:text-slate-400">
-                            Chưa có tour nào. Bấm &quot;Thêm tour mới&quot; để tạo tour đầu tiên.
-                          </td>
-                        </tr>
-                      )}
+
                     </tbody>
                   </table>
                 </div>
@@ -665,7 +610,7 @@ export default function AdminDashboard() {
                     />
                   </div>
                 </div>
-                <div className="overflow-x-auto overflow-y-auto max-h-[500px]">
+
                   <table className="w-full text-sm">
                     <thead className="bg-slate-50 dark:bg-slate-950/60 text-slate-500 dark:text-slate-400 uppercase tracking-widest text-xs">
                       <tr>
@@ -727,70 +672,6 @@ export default function AdminDashboard() {
               </section>
               )}
 
-              {activeTab === 'hotels' && (
-              <section className="mt-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 shadow-sm overflow-hidden">
-                <div className="p-6 border-b border-slate-200/70 dark:border-slate-800 flex items-center justify-between gap-4 flex-wrap">
-                  <div>
-                    <h3 className="text-xl font-black font-serif">Quản lý Phòng Khách sạn</h3>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">Danh sách các phòng hiện có trong hệ thống</p>
-                  </div>
-                  <button onClick={openCreateRoom} className="inline-flex items-center gap-2 rounded-2xl bg-blue-700 px-4 py-2.5 text-sm font-bold text-white">
-                    <Plus className="size-4" />
-                    Thêm phòng mới
-                  </button>
-                </div>
-                <div className="overflow-x-auto overflow-y-auto max-h-[500px]">
-                  <table className="w-full text-sm">
-                    <thead className="bg-slate-50 dark:bg-slate-950/60 text-slate-500 dark:text-slate-400 uppercase tracking-widest text-xs">
-                      <tr>
-                        <th className="px-6 py-4 text-left">Tên phòng</th>
-                        <th className="px-6 py-4 text-left">Loại phòng</th>
-                        <th className="px-6 py-4 text-left">Sức chứa</th>
-                        <th className="px-6 py-4 text-left">Giá mỗi đêm</th>
-                        <th className="px-6 py-4 text-left">Trạng thái</th>
-                        <th className="px-6 py-4 text-left">Hành động</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-200/70 dark:divide-slate-800">
-                      {rooms.map((room) => (
-                        <tr key={room.id} className="hover:bg-slate-50 dark:hover:bg-slate-950/40">
-                          <td className="px-6 py-4 font-bold text-slate-900 dark:text-white">{room.name}</td>
-                          <td className="px-6 py-4 text-slate-600 dark:text-slate-300">{room.type}</td>
-                          <td className="px-6 py-4 text-slate-600 dark:text-slate-300">{room.beds} giường · {room.guests} khách</td>
-                          <td className="px-6 py-4 font-black text-blue-700 dark:text-blue-400">{room.price.toLocaleString('vi-VN')}đ</td>
-                          <td className="px-6 py-4">
-                            <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
-                              room.status === 'available'
-                                ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300'
-                                : 'bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300'
-                            }`}>
-                              {room.status === 'available' ? 'Trống' : 'Đã đặt'}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="flex items-center gap-3">
-                              <button aria-label="Edit room" onClick={() => openEditRoom(room)} disabled={roomActionLoading} className="text-blue-600 hover:text-blue-700 disabled:opacity-50">
-                                <Edit className="size-4" />
-                              </button>
-                              <button aria-label="Delete room" onClick={() => handleDeleteRoom(room.id)} disabled={roomActionLoading} className="text-red-500 hover:text-red-600 disabled:opacity-50">
-                                <Trash2 className="size-4" />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                      {rooms.length === 0 && (
-                        <tr>
-                          <td colSpan={6} className="px-6 py-12 text-center text-slate-500 dark:text-slate-400">
-                            Chưa có phòng nào được tạo.
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </section>
-              )}
 
               {activeTab === 'settings' && (
               <section className="mt-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 shadow-sm p-8">
@@ -804,8 +685,7 @@ export default function AdminDashboard() {
                     <p className="text-slate-500 break-all">{WEBHOOK_PUBLIC_URL}/api/payments/webhook/sepay</p>
                   </div>
                   <div className="rounded-2xl border border-slate-200 dark:border-slate-800 p-4">
-                    <p className="font-bold mb-1">Môi trường dev</p>
-                    <p className="text-slate-500">Dùng nút &quot;Mô phỏng thanh toán&quot; trên trang QR để test không cần chuyển khoản thật.</p>
+
                   </div>
                 </div>
               </section>

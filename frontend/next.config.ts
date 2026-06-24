@@ -1,6 +1,22 @@
 import type { NextConfig } from "next";
+import { normalizeBackendUrl } from "./src/lib/backendUrl";
+
+const backendUrl = normalizeBackendUrl(
+  process.env.BACKEND_INTERNAL_URL ||
+    process.env.BACKEND_URL ||
+    process.env.NEXT_PUBLIC_BACKEND_URL
+);
 
 const nextConfig: NextConfig = {
+  async rewrites() {
+    return [
+      {
+        source: "/api/:path*",
+        destination: `${backendUrl}/api/:path*`,
+      },
+    ];
+  },
+
   // Image optimization
   images: {
     formats: ["image/avif", "image/webp"],

@@ -9,6 +9,7 @@ services:
       - /app/node_modules
     environment:
       - NEXT_PUBLIC_BACKEND_URL=http://localhost:5000
+
       - NEXT_PUBLIC_GOOGLE_CLIENT_ID=${NEXT_PUBLIC_GOOGLE_CLIENT_ID:-}
       - NEXT_PUBLIC_SEPAY_BANK_ACCOUNT=${NEXT_PUBLIC_SEPAY_BANK_ACCOUNT:-}
       - NEXT_PUBLIC_SEPAY_BANK_NAME=${NEXT_PUBLIC_SEPAY_BANK_NAME:-Vietcombank}
@@ -30,6 +31,7 @@ services:
       - SEPAY_BANK_NAME=${SEPAY_BANK_NAME:-Vietcombank}
       - SEPAY_PAYMENT_CODE_PREFIX=${SEPAY_PAYMENT_CODE_PREFIX:-CMCTOUR}
       - SEPAY_WEBHOOK_API_KEY=${SEPAY_WEBHOOK_API_KEY:-}
+
       - ConnectionStrings__DefaultConnection=${SUPABASE_DB_CONNECTION_STRING:-}
       - AI_SERVICE_URL=http://ai_service:8000
 

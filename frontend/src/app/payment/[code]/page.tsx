@@ -7,7 +7,6 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useTheme } from '@/contexts/ThemeContext';
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
 
 interface PaymentStatus {
   paymentCode: string;
@@ -29,7 +28,7 @@ export default function PaymentPage() {
   const [simulating, setSimulating] = useState(false);
 
   const fetchStatus = useCallback(async () => {
-    const response = await fetch(`${BACKEND_URL}/api/payments/${paymentCode}/status`);
+
     if (!response.ok) {
       throw new Error('Không tìm thấy đơn thanh toán');
     }
@@ -85,10 +84,7 @@ export default function PaymentPage() {
     setSimulating(true);
     setError('');
     try {
-      const response = await fetch(`${BACKEND_URL}/api/payments/simulate/${paymentCode}`, { method: 'POST' });
-      if (!response.ok) {
-        const err = await response.json().catch(() => ({}));
-        throw new Error(err.message || 'Không thể mô phỏng thanh toán');
+
       }
       const data = await fetchStatus();
       setPayment(data);

@@ -14,10 +14,6 @@ public class AuthDbService
     public AuthDbService(IConfiguration configuration, IHttpClientFactory httpClientFactory)
     {
         _connectionString = configuration.GetConnectionString("DefaultConnection");
-        _supabaseUrl = configuration["SUPABASE_URL"] ?? configuration["Supabase:Url"];
-        _supabaseKey = configuration["SUPABASE_KEY"] ?? configuration["Supabase:Key"];
-        _http = httpClientFactory.CreateClient("Supabase");
-    }
 
     public async Task<AuthResult?> LoginAsync(string email, string password)
     {
@@ -444,8 +440,7 @@ public class AuthDbService
     {
         "ADMIN" => "admin",
         "PROVIDER" => "hotel_owner",
-        "EMPLOYEE" => "employee",
-        "ACCOUNTANT" => "accountant",
+
         _ => "user"
     };
 }

@@ -1,3 +1,4 @@
+
 namespace Backend.Services;
 
 public class SePayService
@@ -46,7 +47,6 @@ public class SePayService
         if (string.IsNullOrWhiteSpace(authorizationHeader))
             return false;
 
-        return authorizationHeader == $"Apikey {_webhookApiKey}"
-            || authorizationHeader == _webhookApiKey;
+
     }
 }

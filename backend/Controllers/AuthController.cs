@@ -23,11 +23,6 @@ namespace Backend.Controllers
             {
                 var user = await _authDb.LoginAsync(request.Email, request.Password);
 
-                if (user == null)
-                {
-                    return Unauthorized(new { message = "Email hoặc mật khẩu không chính xác" });
-                }
-
                 return Ok(new
                 {
                     id = user.Id,
@@ -38,6 +33,7 @@ namespace Backend.Controllers
                 });
             }
             catch (InvalidOperationException ex)
+
             {
                 return StatusCode(503, new { message = ex.Message });
             }
@@ -60,20 +56,6 @@ namespace Backend.Controllers
                 });
             }
             catch (AuthException ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
-            catch (InvalidOperationException ex)
-            {
-                return StatusCode(503, new { message = ex.Message });
-            }
-        }
-
-        [HttpPost("google")]
-        public async Task<IActionResult> GoogleLogin([FromBody] GoogleLoginRequest request)
-        {
-            if (string.IsNullOrWhiteSpace(request.Credential))
-                return BadRequest(new { message = "Thiếu thông tin xác thực Google" });
 
             try
             {
@@ -94,12 +76,7 @@ namespace Backend.Controllers
                 });
             }
             catch (AuthException ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
-            catch (InvalidOperationException ex)
-            {
-                return StatusCode(503, new { message = ex.Message });
+
             }
         }
     }
