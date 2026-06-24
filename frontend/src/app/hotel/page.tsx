@@ -1251,7 +1251,7 @@ export default function HotelPage() {
                               </span>
                             )}
                             <button
-                              onClick={() => toggleFavorite(hotel.id)}
+                              onClick={() => toggleFavorite(hotel)}
                               className={`absolute top-3 right-3 flex size-9 items-center justify-center rounded-full bg-white shadow-md transition-colors ${
                                 favorites.includes(hotel.id) ? 'text-red-500' : 'text-slate-400 hover:text-red-500'
                               }`}
