@@ -24,10 +24,10 @@ import {
 } from 'lucide-react';
 import { apiUrl, getBackendUrl, normalizeBackendUrl } from '@/lib/backendUrl';
 
-const WEBHOOK_PUBLIC_URL = normalizeBackendUrl(
-  process.env.NEXT_PUBLIC_SEPAY_WEBHOOK_URL,
-  getBackendUrl()
-);
+const WEBHOOK_PUBLIC_URL =
+  typeof window !== 'undefined'
+    ? window.location.origin
+    : normalizeBackendUrl(process.env.NEXT_PUBLIC_SEPAY_WEBHOOK_URL, getBackendUrl());
 
 interface Tour {
   id: string;
@@ -622,8 +622,9 @@ export default function AdminDashboard() {
                     <p className="text-slate-500 break-all">{WEBHOOK_PUBLIC_URL}/api/payments/webhook/sepay</p>
                   </div>
                   <div className="rounded-2xl border border-slate-200 dark:border-slate-800 p-4">
-                    <p className="font-bold mb-1">Môi trường dev</p>
-                    <p className="text-slate-500">Dùng nút &quot;Mô phỏng thanh toán&quot; trên trang QR để test không cần chuyển khoản thật.</p>
+                    <p className="font-bold mb-1">SePay Authorization</p>
+                    <p className="text-slate-500">Header: <code className="text-xs bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">Authorization: Apikey &lt;SEPAY_WEBHOOK_API_KEY&gt;</code></p>
+                    <p className="text-slate-500 mt-2">API key trên Railway phải trùng key bạn nhập khi tạo webhook trên SePay.</p>
                   </div>
                 </div>
               </section>

@@ -107,6 +107,13 @@ public class PaymentsController : ControllerBase
         }
     }
 
+    [HttpGet("webhook/sepay")]
+    public IActionResult SePayWebhookHealthCheck()
+    {
+        // SePay dashboard / browser may probe with GET before POST deliveries.
+        return Ok(new { success = true });
+    }
+
     [HttpPost("webhook/sepay")]
     public async Task<IActionResult> SePayWebhook([FromBody] SePayWebhookPayload payload)
     {
@@ -115,7 +122,10 @@ public class PaymentsController : ControllerBase
             payload.Id, payload.Code, payload.TransferAmount);
 
         if (!_sePay.IsWebhookAuthorized(Request.Headers.Authorization))
+        {
+            _logger.LogWarning("SePay webhook unauthorized: missing or invalid Authorization header");
             return Unauthorized(new { success = false });
+        }
 
         if (!string.Equals(payload.TransferType, "in", StringComparison.OrdinalIgnoreCase))
             return Ok(new { success = true });
