@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { Hotel, Plus, Edit, Trash2, Calendar, DollarSign, Users, Loader2, Sun, Moon } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
-import { apiUrl } from '@/lib/backendUrl';
+
 
 interface Room {
   id: number;
@@ -65,7 +65,7 @@ export default function HotelOwnerDashboard() {
   };
 
   useEffect(() => {
-    if (!user || user.role !== 'hotel_owner') {
+    if (!user || user?.role !== 'hotel_owner') {
       router.push('/login');
     } else {
       fetchRooms();
@@ -136,7 +136,7 @@ export default function HotelOwnerDashboard() {
     { label: 'Lượt đặt phòng', value: totalGuests.toString(), icon: <Users className="size-6" />, color: 'bg-orange-50 dark:bg-orange-950/40 text-orange-655 dark:text-orange-400' }
   ];
 
-  if (!user || user.role !== 'hotel_owner') {
+  if (!user || user?.role !== 'hotel_owner') {
     return (
       <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center text-slate-700 dark:text-slate-400 font-bold">
         Đang chuyển hướng quyền truy cập...

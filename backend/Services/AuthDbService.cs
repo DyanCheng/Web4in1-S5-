@@ -14,27 +14,6 @@ public class AuthDbService
     public AuthDbService(IConfiguration configuration, IHttpClientFactory httpClientFactory)
     {
         _connectionString = configuration.GetConnectionString("DefaultConnection");
-        _supabaseUrl = TrimConfig(configuration, "SUPABASE_URL", "Supabase:Url", "NEXT_PUBLIC_SUPABASE_URL");
-        _supabaseKey = TrimConfig(
-            configuration,
-            "SUPABASE_KEY",
-            "SUPABASE_ANON_KEY",
-            "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
-            "Supabase:Key");
-        _http = httpClientFactory.CreateClient("Supabase");
-    }
-
-    private static string? TrimConfig(IConfiguration configuration, params string[] keys)
-    {
-        foreach (var key in keys)
-        {
-            var value = configuration[key]?.Trim();
-            if (!string.IsNullOrWhiteSpace(value))
-                return value;
-        }
-
-        return null;
-    }
 
     public async Task<AuthResult?> LoginAsync(string email, string password)
     {
@@ -461,6 +440,7 @@ public class AuthDbService
     {
         "ADMIN" => "admin",
         "PROVIDER" => "hotel_owner",
+
         _ => "user"
     };
 }

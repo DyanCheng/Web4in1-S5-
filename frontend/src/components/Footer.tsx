@@ -1,77 +1,75 @@
 "use client";
 
-import { useRouter } from 'next/navigation';
 import { Globe, Share2 } from 'lucide-react';
 
 export default function Footer() {
-  const router = useRouter();
-
   return (
-    <footer className="bg-slate-100 dark:bg-slate-950 border-t border-slate-200/50 dark:border-slate-900 text-slate-600 dark:text-slate-455 py-16 transition-colors duration-300">
+    <footer className="bg-[#0f172a] text-slate-300 py-16 text-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-10 mb-12 text-left">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-10 mb-12 text-left">
           
-          {/* Col 1 Brand Description */}
-          <div className="md:col-span-5">
-            <img 
-              src="/logo.svg" 
-              alt="CMC Travel" 
-              className="h-12 w-auto"
-            />
-            <p className="text-slate-500 dark:text-slate-400 text-sm mt-5 leading-relaxed max-w-sm font-semibold">
-              Kiến tạo những hành trình di sản và trải nghiệm du lịch cá nhân hóa hàng đầu tại Việt Nam.
+          {/* Brand Info */}
+          <div className="md:col-span-1">
+            <h2 className="text-xl font-black text-white mb-4">CMC Travel</h2>
+            <p className="text-slate-400 leading-relaxed mb-6">
+              Nền tảng đặt tour du lịch hàng đầu Việt Nam. Chúng tôi mang đến cho bạn những trải nghiệm tuyệt vời nhất tại mọi điểm đến.
             </p>
-            
-            {/* Round Social Buttons */}
-            <div className="flex gap-3 mt-6">
-              <button className="size-9 bg-white hover:bg-slate-55 dark:bg-slate-900 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-full flex items-center justify-center transition-all cursor-pointer text-slate-600 dark:text-slate-300 shadow-sm hover:shadow">
-                <Globe className="size-4.5" />
+            <div className="flex gap-3">
+              <button className="size-8 bg-slate-800 hover:bg-slate-700 rounded-full flex items-center justify-center transition-all text-white">
+                <Globe className="size-4" />
               </button>
-              <button className="size-9 bg-white hover:bg-slate-55 dark:bg-slate-900 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-full flex items-center justify-center transition-all cursor-pointer text-slate-600 dark:text-slate-300 shadow-sm hover:shadow">
-                <Share2 className="size-4.5" />
+              <button className="size-8 bg-slate-800 hover:bg-slate-700 rounded-full flex items-center justify-center transition-all text-white">
+                <Share2 className="size-4" />
               </button>
             </div>
           </div>
 
-          {/* Col 2 Company links */}
-          <div className="md:col-span-2 md:col-start-7">
-            <h3 className="text-xs font-black uppercase text-slate-900 dark:text-white tracking-widest mb-5">Về chúng tôi</h3>
-            <ul className="space-y-3 text-sm font-bold text-slate-500 dark:text-slate-400">
-              <li><a href="#" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">Câu chuyện thương hiệu</a></li>
-              <li><a href="#" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">Đội ngũ chuyên gia</a></li>
-              <li><a href="#" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">Tin tức du lịch</a></li>
+          {/* Explore */}
+          <div>
+            <h3 className="font-bold text-white uppercase tracking-wider mb-5">Khám phá</h3>
+            <ul className="space-y-3 text-slate-400">
+              <li><a href="#" className="hover:text-blue-400 transition-colors">Vịnh Hạ Long</a></li>
+              <li><a href="#" className="hover:text-blue-400 transition-colors">Phú Quốc</a></li>
+              <li><a href="#" className="hover:text-blue-400 transition-colors">Đà Lạt</a></li>
+              <li><a href="#" className="hover:text-blue-400 transition-colors">Hội An</a></li>
             </ul>
           </div>
 
-          {/* Col 3 Services links */}
-          <div className="md:col-span-2">
-            <h3 className="text-xs font-black uppercase text-slate-900 dark:text-white tracking-widest mb-5">Dịch vụ</h3>
-            <ul className="space-y-3 text-sm font-bold text-slate-500 dark:text-slate-400">
-              <li><a href="#" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">Tour cao cấp</a></li>
-              <li><a href="#" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">Khách sạn & Resort</a></li>
-              <li><a href="#" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">Bảo hiểm du lịch</a></li>
+          {/* Info */}
+          <div>
+            <h3 className="font-bold text-white uppercase tracking-wider mb-5">Thông tin</h3>
+            <ul className="space-y-3 text-slate-400">
+              <li><a href="#" className="hover:text-blue-400 transition-colors">Về CMC Travel</a></li>
+              <li><a href="#" className="hover:text-blue-400 transition-colors">Tin tức du lịch</a></li>
+              <li><a href="#" className="hover:text-blue-400 transition-colors">Liên hệ</a></li>
             </ul>
           </div>
 
-          {/* Col 4 Support links */}
-          <div className="md:col-span-2">
-            <h3 className="text-xs font-black uppercase text-slate-900 dark:text-white tracking-widest mb-5">Hỗ trợ</h3>
-            <ul className="space-y-3 text-sm font-bold text-slate-500 dark:text-slate-400">
-              <li><a href="#" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">Trung tâm hỗ trợ</a></li>
-              <li><a href="#" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">Quy định chung</a></li>
-              <li><a href="#" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">Liên hệ</a></li>
-            </ul>
+          {/* Newsletter */}
+          <div>
+            <h3 className="font-bold text-white uppercase tracking-wider mb-5">Đăng ký nhận tin</h3>
+            <div className="flex">
+              <input 
+                type="email" 
+                placeholder="Email của bạn" 
+                className="bg-slate-800 border-none text-white px-4 py-2 text-sm rounded-l focus:outline-none w-full"
+              />
+              <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 font-bold rounded-r transition-colors">
+                Gửi
+              </button>
+            </div>
           </div>
 
         </div>
 
-        {/* Copyright row */}
-        <div className="pt-8 border-t border-slate-200 dark:border-slate-900/60 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs font-bold text-slate-400 dark:text-slate-500">
+        {/* Copyright */}
+        <div className="pt-8 border-t border-slate-800 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-slate-500">
           <p>&copy; 2026 CMC Travel. All rights reserved.</p>
           <div className="flex gap-6">
-            <a href="#" className="hover:text-slate-600 dark:hover:text-slate-350 transition-colors">Privacy Policy</a>
-            <a href="#" className="hover:text-slate-600 dark:hover:text-slate-350 transition-colors">Terms of Service</a>
+            <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
+            <a href="#" className="hover:text-white transition-colors">Terms of Service</a>
+            <a href="#" className="hover:text-white transition-colors">Cookie Policy</a>
           </div>
         </div>
 

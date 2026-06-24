@@ -9,7 +9,7 @@ import { QrCode, Tag, Loader2 } from 'lucide-react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useTheme } from '@/contexts/ThemeContext';
-import { apiUrl } from '@/lib/backendUrl';
+
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -90,7 +90,7 @@ export default function CheckoutPage() {
       }
 
       const finalAmount = total - discountAmount;
-      const paymentResponse = await fetch(apiUrl('/api/payments/create'), {
+
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

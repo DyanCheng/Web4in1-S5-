@@ -1,10 +1,11 @@
 "use client";
-import Image from "next/image"
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
+import TourFormDialog, { type TourRecord } from '@/components/admin/TourFormDialog';
+import RoomFormDialog, { type RoomRecord } from '@/components/admin/RoomFormDialog';
 import {
   BarChart3,
   Bell,
@@ -21,24 +22,12 @@ import {
   Trash2,
   Users,
   Sun,
+  Building2,
 } from 'lucide-react';
 import { apiUrl, getBackendUrl, normalizeBackendUrl } from '@/lib/backendUrl';
 
-const WEBHOOK_PUBLIC_URL =
-  typeof window !== 'undefined'
-    ? window.location.origin
-    : normalizeBackendUrl(process.env.NEXT_PUBLIC_SEPAY_WEBHOOK_URL, getBackendUrl());
 
-interface Tour {
-  id: string;
-  title: string;
-  location: string;
-  price: number;
-  rating: number;
-  reviews: number;
-  duration: string;
-  image: string;
-}
+type Tour = TourRecord;
 
 interface Booking {
   id: string;
@@ -75,13 +64,14 @@ interface PaymentTransaction {
   created_at: string;
 }
 
-type AdminTab = 'overview' | 'tours' | 'orders' | 'payments' | 'settings';
+
 
 const sidebarItems = [
   { id: 'overview', label: 'Tổng quan', icon: BarChart3 },
   { id: 'tours', label: 'Quản lý tour', icon: ShoppingBag },
   { id: 'orders', label: 'Đơn đặt chỗ', icon: CheckCircle2 },
   { id: 'payments', label: 'Thanh toán', icon: CreditCard },
+
   { id: 'settings', label: 'Cài đặt', icon: Settings },
 ];
 
@@ -92,37 +82,25 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<AdminTab>('overview');
   const [tours, setTours] = useState<Tour[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
+
   const [paymentSummary, setPaymentSummary] = useState<PaymentSummary | null>(null);
   const [paymentTransactions, setPaymentTransactions] = useState<PaymentTransaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [paymentSearch, setPaymentSearch] = useState('');
 
+
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [toursResponse, bookingsResponse, summaryResponse, transactionsResponse] = await Promise.all([
-        fetch(apiUrl('/api/tours')),
-        fetch(apiUrl('/api/bookings')),
-        fetch(apiUrl('/api/payments/admin/summary')),
-        fetch(apiUrl('/api/payments/admin/transactions')),
-      ]);
-      const toursData = toursResponse.ok ? await toursResponse.json() : [];
-      const bookingsData = bookingsResponse.ok ? await bookingsResponse.json() : [];
+
       if (summaryResponse.ok) {
         setPaymentSummary(await summaryResponse.json());
       }
       if (transactionsResponse.ok) {
         setPaymentTransactions(await transactionsResponse.json());
       }
-      setTours(toursData.length ? toursData : [
-        { id: '1', title: 'Du ngoạn Vịnh Hạ Long', location: 'Quảng Ninh', price: 3500000, duration: '2 ngày 1 đêm', image: '#', rating: 4.9, reviews: 1234 },
-        { id: '2', title: 'Thiên đường Phú Quốc', location: 'Kiên Giang', price: 5200000, duration: '4 ngày 3 đêm', image: '#', rating: 4.8, reviews: 892 },
-        { id: '3', title: 'Mù Cang Chải - Sa Pa', location: 'Lào Cai', price: 4800000, duration: '3 ngày 2 đêm', image: '#', rating: 4.9, reviews: 756 },
-        { id: '4', title: 'Biển xanh Đà Nẵng', location: 'Đà Nẵng', price: 3200000, duration: '3 ngày 2 đêm', image: '#', rating: 4.7, reviews: 1089 },
-        { id: '5', title: 'Phố cổ Hội An', location: 'Quảng Nam', price: 2800000, duration: '2 ngày 1 đêm', image: '#', rating: 5.0, reviews: 1456 },
-        { id: '6', title: 'Nha Trang - Vịnh xanh', location: 'Khánh Hòa', price: 3900000, duration: '3 ngày 2 đêm', image: '#', rating: 4.8, reviews: 967 },
-      ]);
+
       setBookings(bookingsData.length ? bookingsData : [
         { id: 'ORD-1715234567890', tourId: '1', tourTitle: 'Du ngoạn Vịnh Hạ Long', tourImage: 'https://images.unsplash.com/photo-1643029891412-92f9a81a8c16', userId: '3', userEmail: 'user@travelhub.com', date: '2026-07-15', guests: 2, total: 7000000, status: 'confirmed' },
         { id: 'ORD-1714123456789', tourId: '2', tourTitle: 'Thiên đường Phú Quốc', tourImage: 'https://images.unsplash.com/photo-1732243395944-cb3ff9311091', userId: '3', userEmail: 'user@travelhub.com', date: '2026-08-20', guests: 3, total: 15600000, status: 'pending' },
@@ -133,7 +111,7 @@ export default function AdminDashboard() {
   };
 
   useEffect(() => {
-    if (!user || user.role !== 'admin') {
+    if (!user || user?.role !== 'admin') {
       router.push('/login');
       return;
     }
@@ -182,14 +160,101 @@ export default function AdminDashboard() {
     setBookings((prev) => prev.filter((booking) => booking.id !== id));
   };
 
-  const handleDeleteTour = (id: string) => {
+  const handleDeleteTour = async (id: string) => {
     if (!confirm('Bạn muốn xóa tour này?')) return;
-    setTours((prev) => prev.filter((tour) => tour.id !== id));
+    setTourActionLoading(true);
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/tours/${id}`, {
+        method: 'DELETE',
+        headers: adminHeaders(),
+      });
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.message || 'Xóa tour thất bại');
+      }
+      await fetchData();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Xóa tour thất bại');
+    } finally {
+      setTourActionLoading(false);
+    }
   };
 
-  if (!user || user.role !== 'admin') {
+  const handleSaveTour = async (payload: Record<string, unknown>) => {
+    const url = editingTour
+      ? `${BACKEND_URL}/api/tours/${editingTour.id}`
+      : `${BACKEND_URL}/api/tours`;
+    const response = await fetch(url, {
+      method: editingTour ? 'PUT' : 'POST',
+      headers: adminHeaders(),
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.message || 'Lưu tour thất bại');
+    }
+    await fetchData();
+  };
+
+  const openCreateTour = () => {
+    setEditingTour(null);
+    setTourDialogOpen(true);
+  };
+
+  const openEditTour = (tour: Tour) => {
+    setEditingTour(tour);
+    setTourDialogOpen(true);
+  };
+
+  const handleDeleteRoom = async (id: number) => {
+    if (!confirm('Bạn muốn xóa phòng này?')) return;
+    setRoomActionLoading(true);
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/rooms/${id}`, {
+        method: 'DELETE',
+        headers: adminHeaders(),
+      });
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.message || 'Xóa phòng thất bại');
+      }
+      await fetchData();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Xóa phòng thất bại');
+    } finally {
+      setRoomActionLoading(false);
+    }
+  };
+
+  const handleSaveRoom = async (payload: Record<string, unknown>) => {
+    const url = editingRoom
+      ? `${BACKEND_URL}/api/rooms/${editingRoom.id}`
+      : `${BACKEND_URL}/api/rooms`;
+    const response = await fetch(url, {
+      method: editingRoom ? 'PUT' : 'POST',
+      headers: adminHeaders(),
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.message || 'Lưu phòng thất bại');
+    }
+    await fetchData();
+  };
+
+  const openCreateRoom = () => {
+    setEditingRoom(null);
+    setRoomDialogOpen(true);
+  };
+
+  const openEditRoom = (room: Room) => {
+    setEditingRoom(room);
+    setRoomDialogOpen(true);
+  };
+
+  if (!user || user?.role !== 'admin') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-400 font-bold">
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-955 text-slate-600 dark:text-slate-400 font-bold">
         Đang chuyển hướng quyền truy cập...
       </div>
     );
@@ -207,6 +272,7 @@ export default function AdminDashboard() {
     tours: { title: 'Quản lý tour', subtitle: 'Danh sách tour hiện có trong hệ thống.' },
     orders: { title: 'Đơn đặt chỗ', subtitle: 'Phê duyệt hoặc hủy các đơn chờ xử lý.' },
     payments: { title: 'Giao dịch thanh toán', subtitle: 'Theo dõi đơn SePay, trạng thái và chi tiết sản phẩm.' },
+
     settings: { title: 'Cài đặt hệ thống', subtitle: 'Cấu hình chung cho nền tảng CMC Travel.' },
   };
 
@@ -277,9 +343,9 @@ export default function AdminDashboard() {
                 <Sun className="size-4" />
                 Giao diện
               </button>
-              <button aria-label="Create new booking" className="inline-flex items-center gap-2 rounded-2xl bg-blue-700 px-4 py-3 text-sm font-bold text-white shadow-md">
+              <button aria-label="Create new tour" onClick={openCreateTour} className="inline-flex items-center gap-2 rounded-2xl bg-blue-700 px-4 py-3 text-sm font-bold text-white shadow-md">
                 <Plus className="size-4" />
-                Đặt chỗ mới
+                Thêm tour
               </button>
             </div>
           </div>
@@ -319,7 +385,7 @@ export default function AdminDashboard() {
                     <h3 className="text-xl font-black font-serif">Giao dịch gần đây</h3>
                     <p className="text-sm text-slate-500 dark:text-slate-400">Các đơn thanh toán SePay mới nhất</p>
                   </div>
-                  <div className="overflow-x-auto">
+                  <div className="overflow-x-auto overflow-y-auto max-h-[400px]">
                     <table className="w-full text-sm">
                       <thead className="bg-slate-50 dark:bg-slate-950/60 text-slate-500 dark:text-slate-400 uppercase tracking-widest text-xs">
                         <tr>
@@ -414,7 +480,7 @@ export default function AdminDashboard() {
                     <h3 className="text-xl font-black font-serif">Quản lý tour</h3>
                     <p className="text-sm text-slate-500 dark:text-slate-400">Danh sách tour hiện có trong hệ thống</p>
                   </div>
-                  <div className="relative w-full max-w-md">
+
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
                     <input
                       value={searchQuery}
@@ -422,9 +488,7 @@ export default function AdminDashboard() {
                       placeholder="Tìm tour theo tên hoặc địa điểm..."
                       className="w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-11 py-3 text-sm font-semibold outline-none"
                     />
-                  </div>
-                </div>
-                <div className="overflow-x-auto">
+
                   <table className="w-full text-sm">
                     <thead className="bg-slate-50 dark:bg-slate-950/60 text-slate-500 dark:text-slate-400 uppercase tracking-widest text-xs">
                       <tr>
@@ -441,7 +505,7 @@ export default function AdminDashboard() {
                         <tr key={tour.id} className="hover:bg-slate-50 dark:hover:bg-slate-950/40">
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
-                              <Image src={tour.image} alt={tour.title} className="size-12 rounded-xl object-cover" width={48} height={48} />
+
                               <div>
                                 <p className="font-bold text-slate-900 dark:text-white">{tour.title}</p>
                                 <p className="text-xs text-slate-500 dark:text-slate-400">ID: {tour.id}</p>
@@ -454,16 +518,14 @@ export default function AdminDashboard() {
                           <td className="px-6 py-4 text-amber-600 dark:text-amber-500 font-bold">★ {tour.rating} ({tour.reviews})</td>
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
-                              <button aria-label="Edit tour" className="text-blue-600 hover:text-blue-700">
-                                <Edit className="size-4" />
-                              </button>
-                              <button aria-label="Delete tour" onClick={() => handleDeleteTour(tour.id)} className="text-red-500 hover:text-red-600">
+
                                 <Trash2 className="size-4" />
                               </button>
                             </div>
                           </td>
                         </tr>
                       ))}
+
                     </tbody>
                   </table>
                 </div>
@@ -479,7 +541,7 @@ export default function AdminDashboard() {
                   </div>
                   <span className="text-sm font-bold text-slate-500 dark:text-slate-400">{bookings.length} đơn</span>
                 </div>
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto overflow-y-auto max-h-[500px]">
                   <table className="w-full text-sm">
                     <thead className="bg-slate-50 dark:bg-slate-950/60 text-slate-500 dark:text-slate-400 uppercase tracking-widest text-xs">
                       <tr>
@@ -548,7 +610,7 @@ export default function AdminDashboard() {
                     />
                   </div>
                 </div>
-                <div className="overflow-x-auto">
+
                   <table className="w-full text-sm">
                     <thead className="bg-slate-50 dark:bg-slate-950/60 text-slate-500 dark:text-slate-400 uppercase tracking-widest text-xs">
                       <tr>
@@ -610,6 +672,7 @@ export default function AdminDashboard() {
               </section>
               )}
 
+
               {activeTab === 'settings' && (
               <section className="mt-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 shadow-sm p-8">
                 <h3 className="text-xl font-black font-serif mb-2">Cấu hình thanh toán SePay</h3>
@@ -622,9 +685,7 @@ export default function AdminDashboard() {
                     <p className="text-slate-500 break-all">{WEBHOOK_PUBLIC_URL}/api/payments/webhook/sepay</p>
                   </div>
                   <div className="rounded-2xl border border-slate-200 dark:border-slate-800 p-4">
-                    <p className="font-bold mb-1">SePay Authorization</p>
-                    <p className="text-slate-500">Header: <code className="text-xs bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">Authorization: Apikey &lt;SEPAY_WEBHOOK_API_KEY&gt;</code></p>
-                    <p className="text-slate-500 mt-2">API key trên Railway phải trùng key bạn nhập khi tạo webhook trên SePay.</p>
+
                   </div>
                 </div>
               </section>
@@ -633,6 +694,19 @@ export default function AdminDashboard() {
           )}
         </div>
       </main>
+
+      <TourFormDialog
+        open={tourDialogOpen}
+        onOpenChange={setTourDialogOpen}
+        initial={editingTour}
+        onSubmit={handleSaveTour}
+      />
+      <RoomFormDialog
+        open={roomDialogOpen}
+        onOpenChange={setRoomDialogOpen}
+        initial={editingRoom}
+        onSubmit={handleSaveRoom}
+      />
     </div>
   );
 }
