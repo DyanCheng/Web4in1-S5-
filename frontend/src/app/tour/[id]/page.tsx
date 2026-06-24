@@ -8,9 +8,10 @@ import { MapPin, Calendar, Users, Star, Clock, CheckCircle, X, Heart, Share2, Lo
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useTheme } from '@/contexts/ThemeContext';
-import { isFavorite, toggleFavorite, isTourExperienced, markTourExperienced } from '@/lib/tourStorage';
+import { useAuth } from '@/contexts/AuthContext';
+import { isFavorite, toggleFavorite, isTourExperienced, markTourExperienced, addUserReview, hasReviewedTourId } from '@/lib/tourStorage';
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:5200';
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
 
 const fallbackTours: Record<string, any> = {
   '1': { id: '1', title: 'Du ngoạn Vịnh Hạ Long', location: 'Quảng Ninh', price: 3500000, duration: '2 ngày 1 đêm', image: 'https://images.unsplash.com/photo-1643029891412-92f9a81a8c16', rating: 4.9, reviews: 1234, description: 'Khám phá kỳ quan thiên nhiên thế giới với hàng ngàn đảo đá vôi kỳ vĩ.', highlights: ['Du thuyền 5 sao ngủ đêm trên vịnh', 'Thăm hang Sửng Sốt, động Thiên Cung', 'Chèo kayak khám phá làng chài', 'Câu mực đêm trên biển', 'Buffet hải sản tươi sống', 'Tập Thái Cực Quyền trên boong tàu'], included: ['Xe đưa đón từ Hà Nội', 'Du thuyền 5 sao', '2 bữa ăn chính + bữa sáng', 'Vé thăm quan', 'Hướng dẫn viên tiếng Việt', 'Bảo hiểm du lịch'], excluded: ['Chi phí cá nhân', 'Đồ uống có cồn', 'Tip hướng dẫn viên'] },
@@ -19,6 +20,14 @@ const fallbackTours: Record<string, any> = {
   '4': { id: '4', title: 'Biển xanh Đà Nẵng', location: 'Đà Nẵng', price: 3200000, duration: '3 ngày 2 đêm', image: 'https://images.unsplash.com/photo-1723142282970-1fd415eec1ad', rating: 4.7, reviews: 1089, description: 'Tận hưởng bãi biển Mỹ Khê đẹp nhất hành tinh, chiêm ngưỡng cầu Vàng nổi tiếng.', highlights: ['Biển Mỹ Khê, Non Nước', 'Cầu Vàng - Bà Nà Hills', 'Chùa Linh Ứng, Ngũ Hành Sơn', 'Phố cổ Hội An về đêm', 'Ăn tối trên du thuyền sông Hàn', 'Chợ Hàn, Cồn market'], included: ['Vé máy bay', 'Khách sạn 4 sao', 'Ăn sáng', 'Xe đưa đón', 'Vé Bà Nà Hills'], excluded: ['Bữa trưa, tối', 'Cáp treo Ngũ Hành Sơn'] },
   '5': { id: '5', title: 'Phố cổ Hội An', location: 'Quảng Nam', price: 2800000, duration: '2 ngày 1 đêm', image: 'https://images.unsplash.com/photo-1664650440553-ab53804814b3', rating: 5.0, reviews: 1456, description: 'Khám phá di sản văn hóa thế giới với phố cổ lung linh đèn lồng.', highlights: ['Phố cổ lung linh đèn lồng', 'Chùa Cầu Nhật Bản', 'Làng gốm Thanh Hà', 'Rừng dừa Bảy Mẫu', 'Thả đèn hoa đăng sông Hoài', 'Học làm bánh dân gian'], included: ['Xe đưa đón từ Đà Nẵng', 'Homestay phố cổ', 'Ăn sáng', 'Vé thăm quan', 'Hướng dẫn viên'], excluded: ['Chi phí cá nhân', 'Vé rừng dừa'] },
   '6': { id: '6', title: 'Nha Trang - Vịnh xanh', location: 'Khánh Hòa', price: 3900000, duration: '3 ngày 2 đêm', image: 'https://images.unsplash.com/photo-1533002832-1721d16b4bb9', rating: 4.8, reviews: 967, description: 'Vui chơi tại thiên đường biển Nha Trang với hoạt động lặn ngắm san hô.', highlights: ['Tour 4 đảo Nha Trang', 'Lặn ngắm san hô biển sâu', 'Tắm bùn khoáng Thap Ba', 'VinWonders Nha Trang', 'Chùa Long Sơn, tháp Bà Ponagar', 'Buffet hải sản biển'], included: ['Vé máy bay khứ hồi', 'Khách sạn 4 sao', 'Ăn sáng', 'Tour 4 đảo', 'Xe đưa đón'], excluded: ['VinWonders', 'Tắm bùn', 'Bữa trưa, tối'] },
+  '7': { id: '7', title: 'Sa Pa - Fansipan Cát Cát', location: 'Lào Cai', price: 2900000, duration: '2 ngày 1 đêm', image: 'https://images.unsplash.com/photo-1589308078059-be1415eab4c3', rating: 4.8, reviews: 512, description: 'Chinh phục đỉnh Fansipan huyền thoại bằng cáp treo hiện đại, trekking qua bản Cát Cát của người H\'Mông và thưởng thức ẩm thực Tây Bắc độc đáo.', highlights: ['Cáp treo Fansipan 3 dây', 'Bản Cát Cát mộc mạc', 'Thung lũng Mường Hoa', 'Khách sạn trung tâm Sapa', 'Thịt trâu gác bếp & rượu ngô'], included: ['Xe giường nằm Hà Nội - Sapa', 'Khách sạn 3 sao', 'Các bữa ăn theo chương trình', 'Vé tham quan Cát Cát'], excluded: ['Vé cáp treo Fansipan (800k)', 'Chi phí cá nhân', 'Đồ uống'] },
+  '8': { id: '8', title: 'Hà Giang - Mã Pí Lèng hùng vĩ', location: 'Hà Giang', price: 3600000, duration: '3 ngày 2 đêm', image: 'https://images.unsplash.com/photo-1605538032432-a9f0c8d9baac', rating: 4.9, reviews: 423, description: 'Chinh phục những con đèo uốn lượn hiểm trở, ghé thăm cột cờ Lũng Cú linh thiêng, chèo thuyền trên dòng sông Nho Quế xanh ngắt và ngắm nhìn đèo Mã Pí Lèng kỳ vĩ.', highlights: ['Đèo Mã Pí Lèng đệ nhất đèo', 'Cột cờ Lũng Cú', 'Dinh thự họ Vương cổ kính', 'Sông Nho Quế & hẻm Tu Sản', 'Ngắm đồng hoa tam giác mạch'], included: ['Xe du lịch chất lượng cao', 'Homestay/Khách sạn tiêu chuẩn', 'Ăn sáng & chính', 'Vé thuyền sông Nho Quế', 'Bảo hiểm'], excluded: ['Tiền tip HDV', 'Đồ uống phát sinh'] },
+  '9': { id: '9', title: 'Phong Nha - Động Thiên Đường', location: 'Quảng Bình', price: 4200000, duration: '3 ngày 2 đêm', image: 'https://images.unsplash.com/photo-1504457047772-27f8522422b3', rating: 4.9, reviews: 289, description: 'Khám phá hệ thống hang động thạch nhũ đẹp nhất thế giới tại Di sản Thiên nhiên Thế giới Phong Nha - Kẻ Bàng, chèo thuyền Kayak trên sông Son thanh bình.', highlights: ['Động Thiên Đường hoành tráng', 'Động Phong Nha kỳ vĩ', 'Zipline sông Chày hang Tối', 'Suối nước Moọc trong xanh', 'Ẩm thực gà đồi, cá sông Son'], included: ['Vé tàu/xe đến Đồng Hới', 'Khách sạn 3 sao gần biển', 'Vé các điểm tham quan', 'Hướng dẫn viên bản địa', 'Bữa ăn theo tour'], excluded: ['Vé máy bay', 'Thuế VAT', 'Chi tiêu cá nhân'] },
+  '10': { id: '10', title: 'Di sản Cố đô Huế lãng mạn', location: 'Thừa Thiên Huế', price: 2500000, duration: '2 ngày 1 đêm', image: 'https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9', rating: 4.8, reviews: 612, description: 'Khám phá lịch sử triều Nguyễn tại Đại Nội Huế, ngắm hoàng hôn trên sông Hương thơ mộng, ghé thăm chùa Thiên Mụ cổ kính và các lăng tẩm hoàng gia.', highlights: ['Đại Nội Huế uy nghiêm', 'Lăng Khải Định, Tự Đức', 'Chùa Thiên Mụ cổ kính', 'Ca Huế trên sông Hương', 'Thưởng thức ẩm thực cung đình'], included: ['Xe du lịch đón tiễn', 'Khách sạn 4 sao sông Hương', 'Vé tham quan các điểm', 'Ca huế sông Hương', 'Bữa trưa ẩm thực Huế'], excluded: ['Vé máy bay khứ hồi', 'Các bữa tối tự do'] },
+  '11': { id: '11', title: 'Mùa hoa anh đào Kyoto cổ kính', location: 'Kyoto, Nhật Bản', price: 42000000, duration: '5 ngày 4 đêm', image: 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e', rating: 5.0, reviews: 340, description: 'Trải nghiệm văn hóa truyền thống Nhật Bản tại cố đô cổ kính. Ngắm hoa anh đào nở rộ bên những ngôi đền gỗ hàng trăm năm tuổi, thưởng thức trà đạo tinh tế.', highlights: ['Đền Fushimi Inari ngàn cổng', 'Chùa Vàng Kinkaku-ji', 'Rừng tre Arashiyama', 'Biểu diễn trà đạo Kyoto', 'Thưởng thức ẩm thực Kaiseki'], included: ['Vé máy bay khứ hồi', 'Khách sạn 4 sao truyền thống', 'Visa du lịch Nhật Bản', 'Hướng dẫn viên suốt tuyến', 'Vé tàu Shinkansen'], excluded: ['Chi tiêu mua sắm cá nhân', 'Tiền tip HDV & tài xế'] },
+  '12': { id: '12', title: 'Paris - Kinh đô ánh sáng lãng mạn', location: 'Paris, Pháp', price: 68000000, duration: '7 ngày 6 đêm', image: 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34', rating: 4.9, reviews: 198, description: 'Chiêm ngưỡng tháp Eiffel rực rỡ về đêm, dạo bước trên đại lộ Champs-Élysées sang trọng, tham quan bảo tàng Louvre huyền thoại và đi du thuyền trên sông Seine thơ mộng.', highlights: ['Tháp Eiffel & Khải Hoàn Môn', 'Bảo tàng Louvre nổi tiếng', 'Cung điện Versailles lộng lẫy', 'Du thuyền sông Seine hoàng hôn', 'Mua sắm tại Galeries Lafayette'], included: ['Vé máy bay khứ hồi từ VN', 'Khách sạn 4-5 sao trung tâm', 'Thủ tục xin visa Schengen', 'Vé vào cổng các điểm tham quan', 'Các bữa ăn phong cách Pháp'], excluded: ['Chi phí giặt là, điện thoại', 'Tip cho HDV & tài xế'] },
+  '13': { id: '13', title: 'Dubai - Thiên đường giải trí & mua sắm', location: 'Dubai, UAE', price: 31500000, duration: '5 ngày 4 đêm', image: 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c', rating: 4.8, reviews: 277, description: 'Khám phá thành phố tương lai giữa sa mạc, chinh phục tòa nhà cao nhất thế giới Burj Khalifa, trải nghiệm xe địa hình vượt cồn cát safari và ăn tối dưới bầu trời sao.', highlights: ['Tòa tháp Burj Khalifa cao nhất', 'Đảo cọ nhân tạo Palm Jumeirah', 'Safari sa mạc & cưỡi lạc đà', 'Khách sạn 7 sao Burj Al Arab', "Trung tâm thương mại Dubai Mall"], included: ['Vé máy bay khứ hồi', 'Khách sạn 5 sao sang trọng', 'Visa nhập cảnh Dubai', 'Tour xe địa hình Safari & ăn tối', 'Xe đưa đón tiện nghi'], excluded: ['Các bữa trưa tự do', 'Chi phí cá nhân'] },
+  '14': { id: '14', title: 'Bali - Thiên đường nghỉ dưỡng nhiệt đới', location: 'Bali, Indonesia', price: 14500000, duration: '4 ngày 3 đêm', image: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4', rating: 4.9, reviews: 845, description: 'Nghỉ dưỡng tại hòn đảo tâm linh với những ngôi đền cổ kính trên mặt biển, ngắm hoàng hôn lãng mạn tại Uluwatu và vui chơi chụp ảnh tại xích đu Bali Swing nổi tiếng.', highlights: ['Đền Tanah Lot trên biển', 'Cổng trời Lempuyang linh thiêng', 'Trải nghiệm Bali Swing & tổ chim', 'Trekking ruộng bậc thang Tegalalang', 'Tắm biển Kuta cát trắng mịn'], included: ['Vé máy bay khứ hồi thẳng', 'Resort 4 sao có bể bơi vô cực', 'Vé tham quan các điểm', 'Hướng dẫn viên nói tiếng Việt', 'Các bữa ăn đặc sản địa phương'], excluded: ['Tip bắt buộc cho local guide', 'Đồ uống và các trò chơi nước'] },
 };
 
 type Review = { id: number; name: string; rating: number; date: string; comment: string; avatar: string };
@@ -30,6 +39,7 @@ export default function TourDetailPage() {
   const navigate = (url: string) => router.push(url);
   const { addToCart } = useCart();
   const { theme } = useTheme();
+  const { user } = useAuth();
   const [tour, setTour] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState('');
@@ -40,6 +50,7 @@ export default function TourDetailPage() {
   const [reviewNotice, setReviewNotice] = useState('');
   const [myRating, setMyRating] = useState(5);
   const [myComment, setMyComment] = useState('');
+  const [hasReviewed, setHasReviewed] = useState(false);
   const [reviews, setReviews] = useState<Review[]>([
     { id: 1, name: 'Nguyễn Văn A', rating: 5, date: '2026-04-15', comment: 'Tour tuyệt vời! Mọi thứ đều hoàn hảo từ A-Z. Hướng dẫn viên rất nhiệt tình.', avatar: '👨' },
     { id: 2, name: 'Trần Thị B', rating: 5, date: '2026-04-10', comment: 'Trải nghiệm đáng nhớ! Cảnh đẹp, dịch vụ tốt, giá hợp lý.', avatar: '👩' },
@@ -50,6 +61,7 @@ export default function TourDetailPage() {
   useEffect(() => {
     setSaved(isFavorite(id));
     setExperienced(isTourExperienced(id));
+    setHasReviewed(hasReviewedTourId(id));
     const fetchTour = async () => {
       try {
         const response = await fetch(`${BACKEND_URL}/api/tours/${id}`);
@@ -65,6 +77,11 @@ export default function TourDetailPage() {
   }, [id]);
 
   const reviewCount = useMemo(() => reviews.length, [reviews]);
+  const averageRating = useMemo(() => {
+    if (reviews.length === 0) return (tour?.rating || 5).toFixed(1);
+    const sum = reviews.reduce((acc, rev) => acc + rev.rating, 0);
+    return (sum / reviews.length).toFixed(1);
+  }, [reviews, tour]);
 
   const handleBooking = () => {
     if (!selectedDate) {
@@ -91,7 +108,7 @@ export default function TourDetailPage() {
       price: tour.price,
       duration: tour.duration,
       image: tour.image,
-      rating: tour.rating,
+      rating: Number(averageRating),
       reviews: tour.reviews,
     });
     setSaved(next.some((item) => item.id === tour.id));
@@ -100,7 +117,6 @@ export default function TourDetailPage() {
   const handleMarkExperienced = () => {
     markTourExperienced(tour.id);
     setExperienced(true);
-    setReviewNotice('Tour này đã được ghi nhận là đã trải nghiệm. Bạn có thể đánh giá ngay bên dưới.');
   };
 
   const handleSubmitReview = (event: FormEvent) => {
@@ -117,8 +133,10 @@ export default function TourDetailPage() {
       { id: Date.now(), name: 'Bạn', rating: myRating, date: new Date().toISOString().slice(0, 10), comment: myComment.trim(), avatar: '🙂' },
       ...current,
     ]);
+    addUserReview({ id: Date.now(), tourId: id, tour: tour.title, rating: myRating, comment: myComment.trim(), date: new Date().toLocaleDateString('vi-VN') });
+    setHasReviewed(true);
     setMyComment('');
-    setReviewNotice('Đã gửi đánh giá thành công.');
+    setReviewNotice('Đã gửi đánh giá thành công. Cảm ơn những chia sẻ của bạn!');
   };
 
   if (loading) {
@@ -150,7 +168,7 @@ export default function TourDetailPage() {
             <div className="flex flex-wrap items-center gap-6 text-sm font-bold text-slate-100">
               <div className="flex items-center gap-1.5">
                 <Star className="size-4.5 fill-amber-400 text-amber-400" />
-                <span>{tour.rating} ({reviewCount} đánh giá)</span>
+                <span>{averageRating} ({reviewCount} đánh giá)</span>
               </div>
               <span>•</span>
               <div className="flex items-center gap-1.5">
@@ -229,9 +247,11 @@ export default function TourDetailPage() {
             <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 border border-slate-100/40 dark:border-slate-800/40 shadow-sm text-left">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
                 <h2 className="text-2xl font-black text-slate-900 dark:text-white font-serif leading-tight">Đánh giá từ khách hàng</h2>
-                <button onClick={handleMarkExperienced} className="inline-flex items-center justify-center rounded-full border border-blue-200 bg-blue-50 px-4 py-2 text-xs font-black text-blue-700 hover:bg-blue-100 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-300">
-                  Đánh dấu đã trải nghiệm
-                </button>
+                {user && !experienced && (
+                  <button onClick={handleMarkExperienced} className="inline-flex items-center justify-center rounded-full border border-blue-200 bg-blue-50 px-4 py-2 text-xs font-black text-blue-700 hover:bg-blue-100 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-300">
+                    Hoàn thành tour (Giả lập)
+                  </button>
+                )}
               </div>
               {reviewNotice && (
                 <div className="mb-5 rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-700 dark:border-blue-900 dark:bg-blue-950/30 dark:text-blue-300">
@@ -262,9 +282,22 @@ export default function TourDetailPage() {
 
               <form onSubmit={handleSubmitReview} className="mt-8 rounded-3xl border border-slate-100 dark:border-slate-800 p-6">
                 <h3 className="text-lg font-extrabold text-slate-900 dark:text-white mb-4 font-serif">Viết đánh giá của bạn</h3>
-                {!experienced && (
+                
+                {hasReviewed ? (
+                  <p className="mb-4 rounded-2xl bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300">
+                    Bạn đã đánh giá tour này rồi. Cảm ơn những chia sẻ của bạn!
+                  </p>
+                ) : !user ? (
                   <p className="mb-4 rounded-2xl bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700 dark:bg-amber-950/30 dark:text-amber-300">
-                    Bạn cần đánh dấu đã trải nghiệm trước khi comment.
+                    Chỉ khách hàng đã đăng nhập và hoàn thành tour mới có thể đánh giá.
+                  </p>
+                ) : !experienced ? (
+                  <p className="mb-4 rounded-2xl bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700 dark:bg-amber-950/30 dark:text-amber-300">
+                    Bạn cần đặt và hoàn thành chuyến đi này để có thể gửi đánh giá.
+                  </p>
+                ) : (
+                  <p className="mb-4 rounded-2xl bg-blue-50 border border-blue-100 px-4 py-3 text-sm font-semibold text-blue-700 dark:bg-blue-950/30 dark:border-blue-900 dark:text-blue-300">
+                    Bạn đã hoàn thành tour này! Hãy chia sẻ trải nghiệm và đánh giá của bạn nhé.
                   </p>
                 )}
                 <div className="mb-4">
@@ -281,13 +314,13 @@ export default function TourDetailPage() {
                   value={myComment}
                   onChange={(e) => setMyComment(e.target.value)}
                   rows={4}
-                  disabled={!experienced}
+                  disabled={!user || !experienced || hasReviewed}
                   placeholder="Chia sẻ trải nghiệm hành trình của bạn..."
                   className="w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-transparent px-4 py-3 text-sm font-medium outline-none disabled:cursor-not-allowed disabled:opacity-60"
                 />
                 <button
                   type="submit"
-                  disabled={!experienced}
+                  disabled={!user || !experienced || hasReviewed}
                   className="mt-4 rounded-2xl bg-blue-900 px-6 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:bg-slate-400 dark:bg-blue-600 dark:disabled:bg-slate-700"
                 >
                   Gửi comment
