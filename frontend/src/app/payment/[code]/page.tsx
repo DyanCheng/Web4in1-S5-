@@ -7,7 +7,8 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useTheme } from '@/contexts/ThemeContext';
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
+import { apiUrl } from '@/lib/backendUrl';
+
 
 interface PaymentStatus {
   paymentCode: string;
@@ -29,7 +30,9 @@ export default function PaymentPage() {
   const [simulating, setSimulating] = useState(false);
 
   const fetchStatus = useCallback(async () => {
-    const response = await fetch(`${BACKEND_URL}/api/payments/${paymentCode}/status`);
+
+    const response = await fetch(apiUrl(`/api/payments/${paymentCode}/status`));
+
     if (!response.ok) {
       throw new Error('Không tìm thấy đơn thanh toán');
     }
@@ -85,10 +88,15 @@ export default function PaymentPage() {
     setSimulating(true);
     setError('');
     try {
-      const response = await fetch(`${BACKEND_URL}/api/payments/simulate/${paymentCode}`, { method: 'POST' });
+
+      const response = await fetch(apiUrl(`/api/payments/simulate/${paymentCode}`), { method: 'POST' });
       if (!response.ok) {
         const err = await response.json().catch(() => ({}));
-        throw new Error(err.message || 'Không thể mô phỏng thanh toán');
+        const fallback = response.status === 404
+          ? 'Mô phỏng thanh toán chưa bật trên Railway. Thêm ALLOW_PAYMENT_SIMULATION=true và redeploy backend.'
+          : 'Không thể mô phỏng thanh toán';
+        throw new Error(err.message || fallback);
+
       }
       const data = await fetchStatus();
       setPayment(data);

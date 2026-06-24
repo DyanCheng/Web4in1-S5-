@@ -117,6 +117,7 @@ namespace Backend.Services
             Tours.Add(new Tour
             {
                 Id = "7",
+
                 Title = "Sa Pa - Fansipan Cát Cát",
                 Location = "Lào Cai",
                 Price = 2900000,
@@ -400,6 +401,7 @@ namespace Backend.Services
                 Highlights = new List<string> { "Giao lộ Shibuya nhộn nhịp", "Đền Senso-ji cổ kính Asakusa", "Ngắm Phú Sĩ từ Hakone", "Akihabara - thiên đường điện tử", "Teamlab Borderless thực tế ảo", "Sushi tại chợ cá Tsukiji" },
                 Included = new List<string> { "Vé máy bay khứ hồi", "Khách sạn 4 sao trung tâm", "Visa Nhật Bản hỗ trợ", "JR Pass 7 ngày đi lại thoải mái", "Hướng dẫn viên tiếng Việt" },
                 Excluded = new List<string> { "Chi phí ăn uống tự do", "Vé Teamlab Borderless", "Mua sắm cá nhân" }
+
             });
 
             // Seed Rooms

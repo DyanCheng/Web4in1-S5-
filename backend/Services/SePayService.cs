@@ -1,3 +1,4 @@
+
 namespace Backend.Services;
 
 public class SePayService
@@ -46,7 +47,39 @@ public class SePayService
         if (string.IsNullOrWhiteSpace(authorizationHeader))
             return false;
 
-        return authorizationHeader == $"Apikey {_webhookApiKey}"
-            || authorizationHeader == _webhookApiKey;
+
+        var normalized = authorizationHeader.Trim();
+        if (normalized.Equals(_webhookApiKey, StringComparison.Ordinal))
+            return true;
+
+        // SePay: Authorization: Apikey YOUR_API_KEY
+        const string apiKeyPrefix = "apikey ";
+        if (normalized.StartsWith(apiKeyPrefix, StringComparison.OrdinalIgnoreCase))
+        {
+            var providedKey = normalized[apiKeyPrefix.Length..].Trim();
+            return providedKey.Equals(_webhookApiKey, StringComparison.Ordinal);
+        }
+
+        const string bearerPrefix = "bearer ";
+        if (normalized.StartsWith(bearerPrefix, StringComparison.OrdinalIgnoreCase))
+        {
+            var providedKey = normalized[bearerPrefix.Length..].Trim();
+            return providedKey.Equals(_webhookApiKey, StringComparison.Ordinal);
+        }
+
+        return false;
+    }
+
+    public string? ExtractPaymentCode(string? code, string? content)
+    {
+        if (!string.IsNullOrWhiteSpace(code))
+            return code.Trim();
+
+        if (string.IsNullOrWhiteSpace(content) || string.IsNullOrWhiteSpace(_paymentCodePrefix))
+            return null;
+
+        var pattern = $@"{Regex.Escape(_paymentCodePrefix)}[A-Z0-9]+";
+        var match = Regex.Match(content, pattern, RegexOptions.IgnoreCase);
+        return match.Success ? match.Value.ToUpperInvariant() : null;
     }
 }

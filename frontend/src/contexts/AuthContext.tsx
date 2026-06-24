@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
+import { apiUrl, parseJsonResponse } from '@/lib/backendUrl';
 
 interface User {
   id: string;
@@ -14,17 +14,37 @@ interface User {
 
 interface AuthContextType {
   user: User | null;
-  login: (email: string, password: string, role?: string) => Promise<User>;
-  loginWithGoogle: (credential: string) => Promise<User>;
-  register: (email: string, password: string, name: string) => Promise<User>;
+
+  login: (email: string, password: string, role?: string) => Promise<void>;
+  loginWithGoogle: (credential: string) => Promise<void>;
+  register: (email: string, password: string, name: string) => Promise<void>;
   logout: () => void;
   updateUser: (data: Partial<User>) => void;
   isAuthenticated: boolean;
   isLoading: boolean;
+
+interface AuthResponse {
+  id: string;
+  email: string;
+  name: string;
+  role: User['role'];
+  avatar?: string;
+  message?: string;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const STORAGE_KEY = 'cmc_travel_user';
+
+async function readAuthResponse(
+  response: Response,
+  fallbackMessage: string
+): Promise<AuthResponse> {
+  const data = await parseJsonResponse<AuthResponse>(response);
+  if (!response.ok) {
+    throw new Error(data.message || fallbackMessage);
+  }
+  return data;
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -32,12 +52,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     try {
-      // Migrate from old 'user' key if it exists
-      const oldStored = localStorage.getItem('user');
-      if (oldStored && !localStorage.getItem(STORAGE_KEY)) {
-        localStorage.setItem(STORAGE_KEY, oldStored);
-        localStorage.removeItem('user');
-      }
 
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
@@ -60,104 +74,78 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const login = async (email: string, password: string, role: string = 'user') => {
-    const response = await fetch(`${BACKEND_URL}/api/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password, role }),
-    });
-
-    if (!response.ok) {
-      const err = await response.json();
-      throw new Error(err.message || 'Đăng nhập thất bại');
+    let response: Response;
+    try {
+      response = await fetch(apiUrl('/api/auth/login'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, role }),
+      });
+    } catch {
+      throw new Error('Không thể kết nối máy chủ. Kiểm tra backend Railway và redeploy Vercel.');
     }
 
-    const data = await response.json();
-    const loggedInUser: User = {
+    const data = await readAuthResponse(response, 'Đăng nhập thất bại');
+    persistUser({
       id: data.id,
       email: data.email,
       name: data.name,
       role: data.role,
       avatar: data.avatar,
-    };
-
-    // Giữ lại avatar local nếu có
-    const storedUser = localStorage.getItem(STORAGE_KEY);
-    if (storedUser) {
-      try {
-        const parsed = JSON.parse(storedUser);
-        if (parsed.email === loggedInUser.email && parsed.avatar && !loggedInUser.avatar) {
-          loggedInUser.avatar = parsed.avatar;
-        }
-      } catch (e) {}
-    }
-
-    persistUser(loggedInUser);
-    return loggedInUser;
+    });
   };
 
   const loginWithGoogle = async (credential: string) => {
-    const response = await fetch(`${BACKEND_URL}/api/auth/google`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ credential }),
-    });
-
-    if (!response.ok) {
-      const err = await response.json();
-      throw new Error(err.message || 'Đăng nhập Google thất bại');
+    let response: Response;
+    try {
+      response = await fetch(apiUrl('/api/auth/google'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ credential }),
+      });
+    } catch {
+      throw new Error('Không thể kết nối máy chủ. Kiểm tra backend Railway và redeploy Vercel.');
     }
 
-    const data = await response.json();
-    const loggedInUser: User = {
+
+    const data = await readAuthResponse(response, 'Đăng nhập Google thất bại');
+    persistUser({
       id: data.id,
       email: data.email,
       name: data.name,
       role: data.role,
       avatar: data.avatar,
-    };
-    persistUser(loggedInUser);
-    return loggedInUser;
+
+    });
   };
 
   const register = async (email: string, password: string, name: string) => {
-    const response = await fetch(`${BACKEND_URL}/api/auth/register`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password, name }),
-    });
-
-    if (!response.ok) {
-      const err = await response.json();
-      throw new Error(err.message || 'Đăng ký thất bại');
+    let response: Response;
+    try {
+      response = await fetch(apiUrl('/api/auth/register'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, name }),
+      });
+    } catch {
+      throw new Error('Không thể kết nối máy chủ. Kiểm tra backend Railway và redeploy Vercel.');
     }
 
-    const data = await response.json();
-    const registeredUser: User = {
+
+    const data = await readAuthResponse(response, 'Đăng ký thất bại');
+    persistUser({
       id: data.id,
       email: data.email,
       name: data.name,
       role: data.role,
       avatar: data.avatar,
-    };
-    persistUser(registeredUser);
-    return registeredUser;
+
+    });
   };
 
   const logout = () => {
     persistUser(null);
-  };
 
-  const updateUser = (data: Partial<User>) => {
-    setUser(prev => {
-      if (!prev) return null;
-      const newUser = { ...prev, ...data };
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(newUser));
-      } catch (e) {
-        console.warn('Cannot save user to localStorage (maybe avatar is too large)');
-      }
-      return newUser;
-    });
   };
 
   return (
@@ -167,7 +155,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       loginWithGoogle,
       register,
       logout,
-      updateUser,
+
       isAuthenticated: !!user,
       isLoading,
     }}>

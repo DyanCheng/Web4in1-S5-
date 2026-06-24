@@ -23,6 +23,7 @@ namespace Backend.Controllers
             {
                 var user = await _authDb.LoginAsync(request.Email, request.Password);
 
+
                 if (user == null)
                 {
                     return Unauthorized(new { message = "Email hoặc mật khẩu không chính xác" });
@@ -38,6 +39,11 @@ namespace Backend.Controllers
                 });
             }
             catch (InvalidOperationException ex)
+
+            {
+                return StatusCode(503, new { message = ex.Message });
+            }
+            catch (AuthException ex)
             {
                 return StatusCode(503, new { message = ex.Message });
             }
@@ -60,6 +66,7 @@ namespace Backend.Controllers
                 });
             }
             catch (AuthException ex)
+
             {
                 return BadRequest(new { message = ex.Message });
             }
@@ -94,12 +101,17 @@ namespace Backend.Controllers
                 });
             }
             catch (AuthException ex)
+
             {
                 return BadRequest(new { message = ex.Message });
             }
             catch (InvalidOperationException ex)
             {
                 return StatusCode(503, new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = ex.Message });
             }
         }
     }

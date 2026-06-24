@@ -33,7 +33,7 @@ import Footer from '@/components/Footer';
 import { useTheme } from '@/contexts/ThemeContext';
 import { getFavorites, toggleFavorite } from '@/lib/tourStorage';
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
+import { apiUrl } from '@/lib/backendUrl';
 
 interface Tour {
   id: string;
@@ -235,7 +235,7 @@ export default function HomePage() {
   useEffect(() => {
     const fetchTours = async () => {
       try {
-        const response = await fetch(`${BACKEND_URL}/api/tours`);
+        const response = await fetch(apiUrl('/api/tours'));
         if (response.ok) {
           const data = await response.json();
           const combined = [...staticFeaturedTours, ...data].map((t: any, index: number) => ({
