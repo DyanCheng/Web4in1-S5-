@@ -49,9 +49,25 @@ public class SePayService
             return false;
 
         var normalized = authorizationHeader.Trim();
-        return normalized.Equals($"Apikey {_webhookApiKey}", StringComparison.OrdinalIgnoreCase)
-            || normalized.Equals($"APIKey {_webhookApiKey}", StringComparison.OrdinalIgnoreCase)
-            || normalized.Equals(_webhookApiKey, StringComparison.Ordinal);
+        if (normalized.Equals(_webhookApiKey, StringComparison.Ordinal))
+            return true;
+
+        // SePay: Authorization: Apikey YOUR_API_KEY
+        const string apiKeyPrefix = "apikey ";
+        if (normalized.StartsWith(apiKeyPrefix, StringComparison.OrdinalIgnoreCase))
+        {
+            var providedKey = normalized[apiKeyPrefix.Length..].Trim();
+            return providedKey.Equals(_webhookApiKey, StringComparison.Ordinal);
+        }
+
+        const string bearerPrefix = "bearer ";
+        if (normalized.StartsWith(bearerPrefix, StringComparison.OrdinalIgnoreCase))
+        {
+            var providedKey = normalized[bearerPrefix.Length..].Trim();
+            return providedKey.Equals(_webhookApiKey, StringComparison.Ordinal);
+        }
+
+        return false;
     }
 
     public string? ExtractPaymentCode(string? code, string? content)
