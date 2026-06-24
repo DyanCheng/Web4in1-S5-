@@ -41,6 +41,10 @@ namespace Backend.Controllers
             {
                 return StatusCode(503, new { message = ex.Message });
             }
+            catch (AuthException ex)
+            {
+                return StatusCode(503, new { message = ex.Message });
+            }
         }
 
         [HttpPost("register")]

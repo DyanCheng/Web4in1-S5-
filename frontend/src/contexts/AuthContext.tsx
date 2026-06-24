@@ -71,11 +71,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const login = async (email: string, password: string, role: string = 'user') => {
-    const response = await fetch(apiUrl('/api/auth/login'), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password, role }),
-    });
+    let response: Response;
+    try {
+      response = await fetch(apiUrl('/api/auth/login'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, role }),
+      });
+    } catch {
+      throw new Error('Không thể kết nối máy chủ. Kiểm tra backend Railway và redeploy Vercel.');
+    }
 
     const data = await readAuthResponse(response, 'Đăng nhập thất bại');
     persistUser({
@@ -88,11 +93,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const loginWithGoogle = async (credential: string) => {
-    const response = await fetch(apiUrl('/api/auth/google'), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ credential }),
-    });
+    let response: Response;
+    try {
+      response = await fetch(apiUrl('/api/auth/google'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ credential }),
+      });
+    } catch {
+      throw new Error('Không thể kết nối máy chủ. Kiểm tra backend Railway và redeploy Vercel.');
+    }
 
     const data = await readAuthResponse(response, 'Đăng nhập Google thất bại');
     persistUser({
@@ -105,11 +115,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const register = async (email: string, password: string, name: string) => {
-    const response = await fetch(apiUrl('/api/auth/register'), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password, name }),
-    });
+    let response: Response;
+    try {
+      response = await fetch(apiUrl('/api/auth/register'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, name }),
+      });
+    } catch {
+      throw new Error('Không thể kết nối máy chủ. Kiểm tra backend Railway và redeploy Vercel.');
+    }
 
     const data = await readAuthResponse(response, 'Đăng ký thất bại');
     persistUser({
