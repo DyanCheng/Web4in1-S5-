@@ -14,20 +14,30 @@ public class PaymentsController : ControllerBase
     private readonly DataStoreService _dataStore;
     private readonly EmailService _emailService;
     private readonly ILogger<PaymentsController> _logger;
+    private readonly IWebHostEnvironment _environment;
+    private readonly IConfiguration _configuration;
 
     public PaymentsController(
         PaymentDbService paymentDb,
         SePayService sePay,
         DataStoreService dataStore,
         EmailService emailService,
-        ILogger<PaymentsController> logger)
+        ILogger<PaymentsController> logger,
+        IWebHostEnvironment environment,
+        IConfiguration configuration)
     {
         _paymentDb = paymentDb;
         _sePay = sePay;
         _dataStore = dataStore;
         _emailService = emailService;
         _logger = logger;
+        _environment = environment;
+        _configuration = configuration;
     }
+
+    private bool CanSimulatePayment() =>
+        _environment.IsDevelopment()
+        || string.Equals(_configuration["ALLOW_PAYMENT_SIMULATION"], "true", StringComparison.OrdinalIgnoreCase);
 
     [HttpPost("create")]
     public async Task<IActionResult> CreatePayment([FromBody] CreatePaymentRequest request)
@@ -144,8 +154,8 @@ public class PaymentsController : ControllerBase
     [HttpPost("simulate/{paymentCode}")]
     public async Task<IActionResult> SimulatePayment(string paymentCode)
     {
-        if (!HttpContext.RequestServices.GetRequiredService<IWebHostEnvironment>().IsDevelopment())
-            return NotFound();
+        if (!CanSimulatePayment())
+            return NotFound(new { message = "Mô phỏng thanh toán chưa được bật trên server (ALLOW_PAYMENT_SIMULATION)" });
 
         try
         {

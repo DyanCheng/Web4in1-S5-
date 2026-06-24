@@ -87,7 +87,10 @@ export default function PaymentPage() {
       const response = await fetch(apiUrl(`/api/payments/simulate/${paymentCode}`), { method: 'POST' });
       if (!response.ok) {
         const err = await response.json().catch(() => ({}));
-        throw new Error(err.message || 'Không thể mô phỏng thanh toán');
+        const fallback = response.status === 404
+          ? 'Mô phỏng thanh toán chưa bật trên Railway. Thêm ALLOW_PAYMENT_SIMULATION=true và redeploy backend.'
+          : 'Không thể mô phỏng thanh toán';
+        throw new Error(err.message || fallback);
       }
       const data = await fetchStatus();
       setPayment(data);
