@@ -11,6 +11,16 @@ export interface SavedTour {
 
 const FAVORITES_KEY = 'travel-favorites';
 const EXPERIENCED_KEY = 'travel-experienced-tours';
+const REVIEWS_KEY = 'travel-user-reviews';
+
+export interface UserReview {
+  id: number;
+  tourId?: string;
+  tour: string;
+  rating: number;
+  comment: string;
+  date: string;
+}
 
 function safeParse<T>(value: string | null, fallback: T): T {
   if (!value) return fallback;
@@ -65,4 +75,23 @@ export function markTourExperienced(tourId: string) {
 
 export function isTourExperienced(tourId: string) {
   return getExperiencedTourIds().includes(tourId);
+}
+
+export function getUserReviews() {
+  return readStorage<UserReview[]>(REVIEWS_KEY, []);
+}
+
+export function addUserReview(review: UserReview) {
+  const current = getUserReviews();
+  const next = [review, ...current];
+  writeStorage(REVIEWS_KEY, next);
+  return next;
+}
+
+export function hasReviewedTourTitle(tourTitle: string) {
+  return getUserReviews().some(r => r.tour === tourTitle);
+}
+
+export function hasReviewedTourId(tourId: string) {
+  return getUserReviews().some(r => r.tourId === tourId);
 }

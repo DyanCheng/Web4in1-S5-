@@ -4,6 +4,7 @@ namespace Backend.Services;
 
 public class GoogleAuthService
 {
+
     private readonly string[] _clientIds;
 
     public GoogleAuthService(IConfiguration configuration)
@@ -22,6 +23,7 @@ public class GoogleAuthService
 
     public async Task<GoogleUserPayload> ValidateIdTokenAsync(string idToken)
     {
+
         if (_clientIds.Length == 0)
             throw new InvalidOperationException("GOOGLE_CLIENT_ID is not configured.");
 
