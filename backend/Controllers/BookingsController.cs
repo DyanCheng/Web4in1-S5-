@@ -34,13 +34,20 @@ namespace Backend.Controllers
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] BookingRequest request)
         {
-            var newBooking = await _tourDb.CreateBookingAsync(request);
-            if (newBooking == null)
+            try
             {
-                return BadRequest(new { message = "Tour hoặc thông tin đặt phòng không hợp lệ" });
-            }
+                var newBooking = await _tourDb.CreateBookingAsync(request);
+                if (newBooking == null)
+                {
+                    return BadRequest(new { message = "Tour hoặc thông tin đặt phòng không hợp lệ" });
+                }
 
-            return Ok(newBooking);
+                return Ok(newBooking);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Đã xảy ra lỗi khi tạo đơn hàng. Vui lòng thử lại sau.", error = ex.Message });
+            }
         }
 
         [HttpDelete("{id}")]
