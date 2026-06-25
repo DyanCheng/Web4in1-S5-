@@ -84,7 +84,7 @@ export default function CheckoutPage() {
 
         if (!response.ok) {
           const err = await response.json();
-          throw new Error(err.message || 'Đặt tour thất bại');
+          throw new Error(err.error || err.message || 'Đặt tour thất bại');
         }
 
         const data = await response.json();
@@ -109,7 +109,7 @@ export default function CheckoutPage() {
 
       if (!paymentResponse.ok) {
         const err = await paymentResponse.json();
-        throw new Error(err.message || 'Không thể tạo thanh toán');
+        throw new Error(err.error || err.message || 'Không thể tạo thanh toán');
       }
 
       const paymentData = await paymentResponse.json();

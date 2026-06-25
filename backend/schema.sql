@@ -452,7 +452,7 @@ BEGIN
     INSERT INTO public.tour_schedules 
       (tour_id, start_date, end_date, adult_price, total_slots, available_slots, status)
     VALUES 
-      (p_tour_id, p_date::date, p_date::date + interval '2 days', v_tour_price, 100, 100, 'active')
+      (p_tour_id, p_date::date, p_date::date + interval '2 days', v_tour_price, 100, 100, 'available')
     RETURNING schedule_id INTO v_schedule_id;
   ELSE
     SELECT adult_price INTO v_tour_price FROM public.tour_schedules WHERE schedule_id = v_schedule_id;
@@ -518,3 +518,26 @@ BEGIN
   RETURN json_build_object('success', true);
 END;
 $$;
+
+-- 4. Grants for PostgREST RPC calls from backend (anon / service_role key)
+GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;
+
+GRANT SELECT, INSERT, UPDATE ON public.users TO anon, authenticated, service_role;
+GRANT SELECT, INSERT, UPDATE ON public.tours TO anon, authenticated, service_role;
+GRANT SELECT, INSERT, UPDATE ON public.tour_schedules TO anon, authenticated, service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.bookings TO anon, authenticated, service_role;
+GRANT SELECT, INSERT, UPDATE ON public.cities TO anon, authenticated, service_role;
+GRANT SELECT, INSERT, UPDATE ON public.notifications TO anon, authenticated, service_role;
+
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated, service_role;
+
+GRANT EXECUTE ON FUNCTION public.get_tours(text) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.get_tour_by_id(bigint) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.create_tour(text, text, numeric, text, text, text, text[], text[], text[]) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.update_tour(bigint, text, text, numeric, text, text, text, text[], text[], text[]) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.delete_tour(bigint) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.get_bookings() TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.get_user_bookings(text) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.create_booking(bigint, text, text, text, int, int) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.delete_booking(text) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.confirm_booking(text) TO anon, authenticated, service_role;
