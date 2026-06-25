@@ -24,8 +24,14 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      await login(email, password, 'user');
-      router.push('/');
+      const loggedInUser = await login(email, password, 'user');
+      if (loggedInUser && loggedInUser.role === 'admin') {
+        router.push('/admin');
+      } else if (loggedInUser && loggedInUser.role === 'hotel_owner') {
+        router.push('/hotel-owner');
+      } else {
+        router.push('/');
+      }
     } catch {
       setError('Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.');
     } finally {

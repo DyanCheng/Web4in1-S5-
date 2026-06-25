@@ -34,7 +34,6 @@ export default function TourDetailPage() {
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState('');
   const [guests, setGuests] = useState(2);
-  const [showBookingModal, setShowBookingModal] = useState(false);
   const [saved, setSaved] = useState(false);
   const [experienced, setExperienced] = useState(false);
   const [reviewNotice, setReviewNotice] = useState('');
@@ -80,7 +79,7 @@ export default function TourDetailPage() {
       date: selectedDate,
       guests,
     });
-    setShowBookingModal(true);
+    navigate('/checkout');
   };
 
   const handleFavoriteToggle = () => {
@@ -347,7 +346,7 @@ export default function TourDetailPage() {
               </div>
 
               <button onClick={handleBooking} className="w-full py-3.5 bg-blue-900 hover:bg-blue-950 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-2xl transition-all mb-3 font-bold text-sm shadow-md cursor-pointer text-center">
-                Đặt Hành Trình
+                Thanh Toán Ngay
               </button>
               <p className="text-[10px] text-center text-slate-400 dark:text-slate-500 font-bold tracking-wide uppercase">
                 Hỗ trợ hủy miễn phí trước 7 ngày
@@ -356,28 +355,6 @@ export default function TourDetailPage() {
           </div>
         </div>
       </div>
-
-      {showBookingModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 max-w-sm w-full border border-slate-100/40 dark:border-slate-800/40 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
-            <div className="text-center">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-emerald-50 dark:bg-emerald-950/40 rounded-full mb-4">
-                <CheckCircle className="size-8 text-emerald-500" />
-              </div>
-              <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-2 font-serif">Thành công!</h2>
-              <p className="text-slate-500 dark:text-slate-400 mb-6 text-sm font-semibold">Hành trình đã được thêm vào giỏ hàng của bạn</p>
-              <div className="flex gap-3">
-                <button onClick={() => setShowBookingModal(false)} className="flex-1 px-4 py-2.5 border border-slate-200 dark:border-slate-800 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors font-bold text-sm text-slate-700 dark:text-slate-300 cursor-pointer">
-                  Quay lại
-                </button>
-                <button onClick={() => navigate('/cart')} className="flex-1 px-4 py-2.5 bg-blue-900 dark:bg-blue-600 text-white rounded-2xl hover:bg-blue-950 dark:hover:bg-blue-700 transition-colors font-bold text-sm cursor-pointer shadow">
-                  Giỏ hàng
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       <Footer />
     </div>

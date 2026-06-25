@@ -309,6 +309,7 @@ export default function HomePage() {
                   <label className="text-[10px] uppercase tracking-wider text-slate-400 dark:text-slate-500 block font-bold">Ngày đi</label>
                   <input
                     type="date"
+                    min={new Date().toISOString().split('T')[0]}
                     value={searchQuery.date}
                     onChange={(e) => setSearchQuery(prev => ({ ...prev, date: e.target.value }))}
                     className="w-full outline-none text-sm text-slate-800 dark:text-slate-100 font-bold bg-transparent focus:ring-0"
