@@ -392,13 +392,13 @@ export default function TourDetailPage() {
                 <CheckCircle className="size-8 text-emerald-500" />
               </div>
               <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-2 font-serif">Thành công!</h2>
-              <p className="text-slate-500 dark:text-slate-400 mb-6 text-sm font-semibold">Hành trình đã được thêm vào giỏ hàng của bạn</p>
+              <p className="text-slate-500 dark:text-slate-400 mb-6 text-sm font-semibold">Hành trình của bạn đã được đặt thành công</p>
               <div className="flex gap-3">
                 <button onClick={() => setShowBookingModal(false)} className="flex-1 px-4 py-2.5 border border-slate-200 dark:border-slate-800 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors font-bold text-sm text-slate-700 dark:text-slate-300 cursor-pointer">
                   Quay lại
                 </button>
-                <button onClick={() => navigate('/cart')} className="flex-1 px-4 py-2.5 bg-blue-900 dark:bg-blue-600 text-white rounded-2xl hover:bg-blue-950 dark:hover:bg-blue-700 transition-colors font-bold text-sm cursor-pointer shadow">
-                  Giỏ hàng
+                <button onClick={() => navigate('/checkout')} className="flex-1 px-4 py-2.5 bg-blue-900 dark:bg-blue-600 text-white rounded-2xl hover:bg-blue-950 dark:hover:bg-blue-700 transition-colors font-bold text-sm cursor-pointer shadow">
+                  Thanh toán
                 </button>
               </div>
             </div>
