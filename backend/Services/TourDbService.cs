@@ -19,7 +19,9 @@ namespace Backend.Services
         public TourDbService(IConfiguration configuration, IHttpClientFactory httpClientFactory)
         {
             _supabaseUrl = configuration["SUPABASE_URL"] ?? configuration["Supabase:Url"];
-            _supabaseKey = configuration["SUPABASE_KEY"] ?? configuration["Supabase:Key"];
+            _supabaseKey = configuration["SUPABASE_SERVICE_ROLE_KEY"]
+                ?? configuration["SUPABASE_KEY"]
+                ?? configuration["Supabase:Key"];
             _http = httpClientFactory.CreateClient("Supabase");
         }
 
