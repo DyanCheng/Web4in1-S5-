@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using System.Text.Json.Serialization;
 using Backend.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -11,7 +11,7 @@ public class PaymentsController : ControllerBase
 {
     private readonly PaymentDbService _paymentDb;
     private readonly SePayService _sePay;
-    private readonly DataStoreService _dataStore;
+    private readonly TourDbService _tourDb;
     private readonly EmailService _emailService;
     private readonly ILogger<PaymentsController> _logger;
     private readonly IWebHostEnvironment _environment;
@@ -20,7 +20,7 @@ public class PaymentsController : ControllerBase
     public PaymentsController(
         PaymentDbService paymentDb,
         SePayService sePay,
-        DataStoreService dataStore,
+        TourDbService tourDb,
         EmailService emailService,
         ILogger<PaymentsController> logger,
         IWebHostEnvironment environment,
@@ -28,7 +28,7 @@ public class PaymentsController : ControllerBase
     {
         _paymentDb = paymentDb;
         _sePay = sePay;
-        _dataStore = dataStore;
+        _tourDb = tourDb;
         _emailService = emailService;
         _logger = logger;
         _environment = environment;
@@ -43,7 +43,7 @@ public class PaymentsController : ControllerBase
     public async Task<IActionResult> CreatePayment([FromBody] CreatePaymentRequest request)
     {
         if (request.Amount <= 0)
-            return BadRequest(new { message = "Số tiền thanh toán không hợp lệ" });
+            return BadRequest(new { message = "Sß╗æ tiß╗ün thanh to├ín kh├┤ng hß╗úp lß╗ç" });
 
         try
         {
@@ -87,7 +87,7 @@ public class PaymentsController : ControllerBase
         {
             var payment = await _paymentDb.GetOrderPaymentByCodeAsync(paymentCode);
             if (payment == null)
-                return NotFound(new { message = "Không tìm thấy đơn thanh toán" });
+                return NotFound(new { message = "Kh├┤ng t├¼m thß║Ñy ─æ╞ín thanh to├ín" });
 
             return Ok(new
             {
@@ -147,7 +147,7 @@ public class PaymentsController : ControllerBase
                 payload.Id,
                 payload.TransferAmount,
                 payload);
-            ConfirmBookings(result);
+            await ConfirmBookingsAsync(result);
             var emailData = await GetPaymentDataForEmailAsync(result, paymentCode);
             await TrySendPaymentConfirmationEmailAsync(emailData, payload, wasAlreadyPaid, paymentCode);
 
@@ -164,13 +164,13 @@ public class PaymentsController : ControllerBase
     public async Task<IActionResult> SimulatePayment(string paymentCode)
     {
         if (!CanSimulatePayment())
-            return NotFound(new { message = "Mô phỏng thanh toán chưa được bật trên server (ALLOW_PAYMENT_SIMULATION)" });
+            return NotFound(new { message = "M├┤ phß╗Ång thanh to├ín ch╞░a ─æ╞░ß╗úc bß║¡t tr├¬n server (ALLOW_PAYMENT_SIMULATION)" });
 
         try
         {
             var payment = await _paymentDb.GetOrderPaymentByCodeAsync(paymentCode);
             if (payment == null)
-                return NotFound(new { message = "Không tìm thấy đơn thanh toán" });
+                return NotFound(new { message = "Kh├┤ng t├¼m thß║Ñy ─æ╞ín thanh to├ín" });
 
             var amount = payment.Value.GetProperty("amount").GetDecimal();
             var payload = new SePayWebhookPayload
@@ -188,7 +188,7 @@ public class PaymentsController : ControllerBase
             var wasAlreadyPaid = IsPaymentPaid(payment);
             var result = await _paymentDb.ConfirmOrderPaymentAsync(paymentCode, payload.Id, amount, payload);
 
-            ConfirmBookings(result);
+            await ConfirmBookingsAsync(result);
             var emailData = await GetPaymentDataForEmailAsync(result, paymentCode);
             await TrySendPaymentConfirmationEmailAsync(emailData, payload, wasAlreadyPaid, paymentCode);
 
@@ -233,7 +233,7 @@ public class PaymentsController : ControllerBase
     }
 
 
-    private void ConfirmBookings(JsonElement result)
+    private async Task ConfirmBookingsAsync(JsonElement result)
     {
         if (!result.TryGetProperty("booking_refs", out var bookingRefs)
             || bookingRefs.ValueKind != JsonValueKind.Array)
@@ -243,7 +243,7 @@ public class PaymentsController : ControllerBase
         {
             var bookingId = bookingRef.GetString();
             if (!string.IsNullOrWhiteSpace(bookingId))
-                _dataStore.ConfirmBooking(bookingId);
+                await _tourDb.ConfirmBookingAsync(bookingId);
         }
     }
 
@@ -304,7 +304,7 @@ public class PaymentsController : ControllerBase
             ? payload.Description
             : !string.IsNullOrWhiteSpace(payload.Content)
                 ? payload.Content
-                : $"Thanh toán đơn hàng {paymentCode}";
+                : $"Thanh to├ín ─æ╞ín h├áng {paymentCode}";
 
         JsonElement? orderItems = result.TryGetProperty("order_items", out var items) ? items : null;
 
