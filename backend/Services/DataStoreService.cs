@@ -9,6 +9,8 @@ namespace Backend.Services
         public List<Tour> Tours { get; } = new();
         public List<Booking> Bookings { get; } = new();
         public List<Room> Rooms { get; } = new();
+        public List<BusTrip> BusTrips { get; } = new();
+        public List<BusBooking> BusBookings { get; } = new();
 
         public DataStoreService()
         {
@@ -436,6 +438,64 @@ namespace Backend.Services
                 Guests = 3,
                 Total = 15600000,
                 Status = "pending"
+            });
+
+            // Seed Bus Trips
+            BusTrips.Add(new BusTrip
+            {
+                Id = "BT-1",
+                RouteName = "Hà Nội - Đà Nẵng",
+                DeparturePoint = "Hà Nội",
+                ArrivalPoint = "Đà Nẵng",
+                DepartureTime = DateTime.Now.Date.AddDays(1).AddHours(8),
+                ArrivalTime = DateTime.Now.Date.AddDays(1).AddHours(20),
+                Price = 450000,
+                TotalSeats = 40,
+                AvailableSeats = 38,
+                BusCompany = "Hoàng Long",
+                Description = "Xe giường nằm 40 chỗ, có wifi và nước uống miễn phí"
+            });
+            BusTrips.Add(new BusTrip
+            {
+                Id = "BT-2",
+                RouteName = "Hà Nội - Sapa",
+                DeparturePoint = "Hà Nội",
+                ArrivalPoint = "Sa Pa",
+                DepartureTime = DateTime.Now.Date.AddDays(2).AddHours(22),
+                ArrivalTime = DateTime.Now.Date.AddDays(3).AddHours(6),
+                Price = 320000,
+                TotalSeats = 40,
+                AvailableSeats = 40,
+                BusCompany = "Sapa Express",
+                Description = "Xe giường nằm đi Sapa qua đêm"
+            });
+            BusTrips.Add(new BusTrip
+            {
+                Id = "BT-3",
+                RouteName = "TP.HCM - Đà Lạt",
+                DeparturePoint = "TP.HCM",
+                ArrivalPoint = "Đà Lạt",
+                DepartureTime = DateTime.Now.Date.AddDays(1).AddHours(23),
+                ArrivalTime = DateTime.Now.Date.AddDays(2).AddHours(6),
+                Price = 280000,
+                TotalSeats = 40,
+                AvailableSeats = 35,
+                BusCompany = "Phương Trang",
+                Description = "Xe giường nằm Phương Trang đi Đà Lạt"
+            });
+            BusTrips.Add(new BusTrip
+            {
+                Id = "BT-4",
+                RouteName = "Đà Nẵng - Huế",
+                DeparturePoint = "Đà Nẵng",
+                ArrivalPoint = "Huế",
+                DepartureTime = DateTime.Now.Date.AddDays(3).AddHours(7),
+                ArrivalTime = DateTime.Now.Date.AddDays(3).AddHours(10),
+                Price = 150000,
+                TotalSeats = 40,
+                AvailableSeats = 40,
+                BusCompany = "Hải Vân Express",
+                Description = "Xe ghế ngồi qua đèo Hải Vân"
             });
         }
 
