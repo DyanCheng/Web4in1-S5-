@@ -147,7 +147,6 @@ public class PaymentsController : ControllerBase
                 payload.Id,
                 payload.TransferAmount,
                 payload);
-
             ConfirmBookings(result);
             var emailData = await GetPaymentDataForEmailAsync(result, paymentCode);
             await TrySendPaymentConfirmationEmailAsync(emailData, payload, wasAlreadyPaid, paymentCode);
@@ -186,7 +185,6 @@ public class PaymentsController : ControllerBase
                 Description = "Simulated payment",
                 TransactionDate = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
             };
-
             var wasAlreadyPaid = IsPaymentPaid(payment);
             var result = await _paymentDb.ConfirmOrderPaymentAsync(paymentCode, payload.Id, amount, payload);
 
@@ -233,6 +231,7 @@ public class PaymentsController : ControllerBase
             return StatusCode(503, new { message = ex.Message });
         }
     }
+
 
     private void ConfirmBookings(JsonElement result)
     {
@@ -341,6 +340,7 @@ public class CreatePaymentRequest
 
 public class SePayWebhookPayload
 {
+
     [JsonPropertyName("id")]
     public long Id { get; set; }
 

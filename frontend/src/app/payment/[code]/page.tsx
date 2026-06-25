@@ -6,7 +6,9 @@ import { Check, Loader2, QrCode, RefreshCw } from 'lucide-react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useTheme } from '@/contexts/ThemeContext';
+
 import { apiUrl } from '@/lib/backendUrl';
+
 
 interface PaymentStatus {
   paymentCode: string;
@@ -28,7 +30,9 @@ export default function PaymentPage() {
   const [simulating, setSimulating] = useState(false);
 
   const fetchStatus = useCallback(async () => {
+
     const response = await fetch(apiUrl(`/api/payments/${paymentCode}/status`));
+
     if (!response.ok) {
       throw new Error('Không tìm thấy đơn thanh toán');
     }
@@ -84,6 +88,7 @@ export default function PaymentPage() {
     setSimulating(true);
     setError('');
     try {
+
       const response = await fetch(apiUrl(`/api/payments/simulate/${paymentCode}`), { method: 'POST' });
       if (!response.ok) {
         const err = await response.json().catch(() => ({}));
@@ -91,6 +96,7 @@ export default function PaymentPage() {
           ? 'Mô phỏng thanh toán chưa bật trên Railway. Thêm ALLOW_PAYMENT_SIMULATION=true và redeploy backend.'
           : 'Không thể mô phỏng thanh toán';
         throw new Error(err.message || fallback);
+
       }
       const data = await fetchStatus();
       setPayment(data);

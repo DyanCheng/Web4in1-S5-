@@ -48,6 +48,7 @@ public class SePayService
         if (string.IsNullOrWhiteSpace(authorizationHeader))
             return false;
 
+
         var normalized = authorizationHeader.Trim();
         if (normalized.Equals(_webhookApiKey, StringComparison.Ordinal))
             return true;

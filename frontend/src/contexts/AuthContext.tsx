@@ -1,33 +1,35 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+
 import { apiUrl, parseJsonResponse } from '@/lib/backendUrl';
 
 interface User {
   id: string;
   email: string;
   name: string;
-  role: 'user' | 'admin' | 'hotel_owner';
+  role: 'user' | 'admin' | 'hotel_owner' | 'employee' | 'accountant';
   avatar?: string;
 }
 
 interface AuthContextType {
   user: User | null;
-  login: (email: string, password: string, role?: string) => Promise<void>;
-  loginWithGoogle: (credential: string) => Promise<void>;
+
+  login: (email: string, password: string, role?: string) => Promise<User>;
+  loginWithGoogle: (credential: string) => Promise<User>;
   register: (email: string, password: string, name: string) => Promise<void>;
   logout: () => void;
+  updateUser: (data: Partial<User>) => void;
   isAuthenticated: boolean;
   isLoading: boolean;
 }
-
-interface AuthResponse {
-  id: string;
-  email: string;
-  name: string;
-  role: User['role'];
-  avatar?: string;
-  message?: string;
+  interface AuthResponse {
+    id: string;
+    email: string;
+    name: string;
+    role: User['role'];
+    avatar?: string;
+    message?: string;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -50,6 +52,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     try {
+
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
         setUser(JSON.parse(stored));
@@ -70,7 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const login = async (email: string, password: string, role: string = 'user') => {
+  const login = async (email: string, password: string, role: string = 'user'): Promise<User> => {
     let response: Response;
     try {
       response = await fetch(apiUrl('/api/auth/login'), {
@@ -83,16 +86,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     const data = await readAuthResponse(response, 'Đăng nhập thất bại');
-    persistUser({
+    const userData: User = {
       id: data.id,
       email: data.email,
       name: data.name,
       role: data.role,
       avatar: data.avatar,
-    });
+    };
+    persistUser(userData);
+    return userData;
   };
 
-  const loginWithGoogle = async (credential: string) => {
+  const loginWithGoogle = async (credential: string): Promise<User> => {
     let response: Response;
     try {
       response = await fetch(apiUrl('/api/auth/google'), {
@@ -104,14 +109,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error('Không thể kết nối máy chủ. Kiểm tra backend Railway và redeploy Vercel.');
     }
 
+
     const data = await readAuthResponse(response, 'Đăng nhập Google thất bại');
-    persistUser({
+    const userData: User = {
       id: data.id,
       email: data.email,
       name: data.name,
       role: data.role,
       avatar: data.avatar,
-    });
+    };
+    persistUser(userData);
+    return userData;
   };
 
   const register = async (email: string, password: string, name: string) => {
@@ -126,6 +134,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error('Không thể kết nối máy chủ. Kiểm tra backend Railway và redeploy Vercel.');
     }
 
+
     const data = await readAuthResponse(response, 'Đăng ký thất bại');
     persistUser({
       id: data.id,
@@ -133,11 +142,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       name: data.name,
       role: data.role,
       avatar: data.avatar,
+
     });
   };
 
   const logout = () => {
     persistUser(null);
+  };
+
+  const updateUser = (data: Partial<User>) => {
+    if (!user) return;
+    persistUser({ ...user, ...data });
   };
 
   return (
@@ -147,6 +162,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       loginWithGoogle,
       register,
       logout,
+      updateUser,
+
       isAuthenticated: !!user,
       isLoading,
     }}>

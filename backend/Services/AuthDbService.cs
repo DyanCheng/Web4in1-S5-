@@ -14,6 +14,7 @@ public class AuthDbService
     public AuthDbService(IConfiguration configuration, IHttpClientFactory httpClientFactory)
     {
         _connectionString = configuration.GetConnectionString("DefaultConnection");
+
         _supabaseUrl = TrimConfig(configuration, "SUPABASE_URL", "Supabase:Url", "NEXT_PUBLIC_SUPABASE_URL");
         _supabaseKey = TrimConfig(
             configuration,
@@ -461,6 +462,10 @@ public class AuthDbService
     {
         "ADMIN" => "admin",
         "PROVIDER" => "hotel_owner",
+        "EMPLOYEE" => "employee",
+        "ACCOUNTANT" => "accountant",
+
+
         _ => "user"
     };
 }
