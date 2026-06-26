@@ -38,7 +38,6 @@ export default function TourDetailPage() {
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState('');
   const [guests, setGuests] = useState(2);
-  const [showBookingModal, setShowBookingModal] = useState(false);
   const [saved, setSaved] = useState(false);
   const [experienced, setExperienced] = useState(false);
   const [reviewNotice, setReviewNotice] = useState('');
@@ -91,7 +90,7 @@ export default function TourDetailPage() {
       date: selectedDate,
       guests,
     });
-    setShowBookingModal(true);
+    navigate('/checkout');
   };
 
   const handleFavoriteToggle = () => {
@@ -374,7 +373,7 @@ export default function TourDetailPage() {
               </div>
 
               <button onClick={handleBooking} className="w-full py-3.5 bg-blue-900 hover:bg-blue-950 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-2xl transition-all mb-3 font-bold text-sm shadow-md cursor-pointer text-center">
-                Đặt Hành Trình
+                Thanh Toán Ngay
               </button>
               <p className="text-[10px] text-center text-slate-400 dark:text-slate-500 font-bold tracking-wide uppercase">
                 Hỗ trợ hủy miễn phí trước 7 ngày
@@ -405,6 +404,7 @@ export default function TourDetailPage() {
           </div>
         </div>
       )}
+
 
       <Footer />
     </div>

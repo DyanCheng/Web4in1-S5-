@@ -36,12 +36,29 @@ export default function LoginPage() {
     setMounted(true);
   }, []);
 
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
 
     try {
 
+      const loggedInUser = await login(email, password);
+      redirectByRole(loggedInUser?.role || 'user', router);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleSuccess = useCallback(async (credential: string) => {
+    setError('');
+    setLoading(true);
+
+    try {
       const loggedInUser = await loginWithGoogle(credential);
       redirectByRole(loggedInUser?.role || 'user', router);
-
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Đăng nhập Google thất bại.');
     } finally {
@@ -68,7 +85,7 @@ export default function LoginPage() {
         subtitle="Vui lòng nhập thông tin để truy cập tài khoản của bạn."
       >
         <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
-          {mounted(
+          {mounted && (
             <div className="text-left p-3 sm:p-4 bg-blue-50/50 dark:bg-blue-950/20 border border-blue-105/10 rounded-2xl text-xxs font-bold text-blue-900 dark:text-blue-400 space-y-1">
               {DEMO_ACCOUNTS.map((account) => (
                 <p key={account.email} className="text-xs">
