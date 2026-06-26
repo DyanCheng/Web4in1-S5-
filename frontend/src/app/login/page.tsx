@@ -86,13 +86,11 @@ export default function LoginPage() {
       >
         <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
           {mounted && (
-            <div className="text-left p-3 sm:p-4 bg-blue-50/50 dark:bg-blue-950/20 border border-blue-105/10 rounded-2xl text-xxs font-bold text-blue-900 dark:text-blue-400 space-y-1">
               {DEMO_ACCOUNTS.map((account) => (
                 <p key={account.email} className="text-xs">
                   • {account.label}: {account.email} / {account.password}
                 </p>
               ))}
-            </div>
           )}
 
           {/* Email Input */}
