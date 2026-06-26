@@ -39,7 +39,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const addToCart = (item: Omit<CartItem, 'id'>) => {
     const newItem = { ...item, id: Date.now().toString() };
-    setItems(prev => [...prev, newItem]);
+    setItems([newItem]); // Only keep the latest item for direct checkout
   };
 
   const removeFromCart = (id: string) => {
