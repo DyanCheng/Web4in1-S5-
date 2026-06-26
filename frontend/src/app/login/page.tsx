@@ -85,13 +85,7 @@ export default function LoginPage() {
         subtitle="Vui lòng nhập thông tin để truy cập tài khoản của bạn."
       >
         <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
-          {mounted && (
-              {DEMO_ACCOUNTS.map((account) => (
-                <p key={account.email} className="text-xs">
-                  • {account.label}: {account.email} / {account.password}
-                </p>
-              ))}
-          )}
+
 
           {/* Email Input */}
           <AuthInput label="Địa chỉ Email">
