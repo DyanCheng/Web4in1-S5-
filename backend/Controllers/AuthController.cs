@@ -1,7 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
 using Backend.Services;
-using Backend.Models;
-using System.Linq;
 
 namespace Backend.Controllers
 {
@@ -9,67 +7,112 @@ namespace Backend.Controllers
     [Route("api/[controller]")]
     public class AuthController : ControllerBase
     {
-        private readonly DataStoreService _dataStore;
+        private readonly AuthDbService _authDb;
+        private readonly GoogleAuthService _googleAuth;
 
-        public AuthController(DataStoreService dataStore)
+        public AuthController(AuthDbService authDb, GoogleAuthService googleAuth)
         {
-            _dataStore = dataStore;
+            _authDb = authDb;
+            _googleAuth = googleAuth;
         }
 
         [HttpPost("login")]
-        public IActionResult Login([FromBody] LoginRequest request)
+        public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
-            var user = _dataStore.Users.FirstOrDefault(u => 
-                u.Email.ToLower() == request.Email.ToLower() && 
-                u.Password == request.Password);
-
-            if (user == null)
+            try
             {
-                return Unauthorized(new { message = "Email hoặc mật khẩu không chính xác" });
+                var user = await _authDb.LoginAsync(request.Email, request.Password);
+
+
+                if (user == null)
+                {
+                    return Unauthorized(new { message = "Email hoặc mật khẩu không chính xác" });
+                }
+
+                return Ok(new
+                {
+                    id = user.Id,
+                    email = user.Email,
+                    name = user.Name,
+                    role = user.Role,
+                    avatar = user.Avatar
+                });
             }
+            catch (InvalidOperationException ex)
 
-            // Optional role verification (to allow hotel owner/admin access specific paths)
-            if (!string.IsNullOrEmpty(request.Role) && user.Role != request.Role)
             {
-                // Note: For convenience, we auto-assign or verify role
-                // In demo, we let role pass if it matches
+                return StatusCode(503, new { message = ex.Message });
             }
-
-            return Ok(new
+            catch (AuthException ex)
             {
-                id = user.Id,
-                email = user.Email,
-                name = user.Name,
-                role = user.Role
-            });
+                return StatusCode(503, new { message = ex.Message });
+            }
         }
 
         [HttpPost("register")]
-        public IActionResult Register([FromBody] RegisterRequest request)
+        public async Task<IActionResult> Register([FromBody] RegisterRequest request)
         {
-            if (_dataStore.Users.Any(u => u.Email.ToLower() == request.Email.ToLower()))
+            try
             {
-                return BadRequest(new { message = "Email này đã được sử dụng" });
+                var newUser = await _authDb.RegisterAsync(request.Email, request.Password, request.Name);
+
+                return Ok(new
+                {
+                    id = newUser.Id,
+                    email = newUser.Email,
+                    name = newUser.Name,
+                    role = newUser.Role,
+                    avatar = newUser.Avatar
+                });
             }
+            catch (AuthException ex)
 
-            var newUser = new User
             {
-                Id = Guid.NewGuid().ToString(),
-                Email = request.Email,
-                Name = request.Name,
-                Role = "user", // default role
-                Password = request.Password
-            };
-
-            _dataStore.Users.Add(newUser);
-
-            return Ok(new
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (InvalidOperationException ex)
             {
-                id = newUser.Id,
-                email = newUser.Email,
-                name = newUser.Name,
-                role = newUser.Role
-            });
+                return StatusCode(503, new { message = ex.Message });
+            }
+        }
+
+        [HttpPost("google")]
+        public async Task<IActionResult> GoogleLogin([FromBody] GoogleLoginRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(request.Credential))
+                return BadRequest(new { message = "Thiếu thông tin xác thực Google" });
+
+            try
+            {
+                var googleUser = await _googleAuth.ValidateIdTokenAsync(request.Credential);
+                var user = await _authDb.LoginOrRegisterGoogleAsync(
+                    googleUser.GoogleId,
+                    googleUser.Email,
+                    googleUser.Name,
+                    googleUser.Picture);
+
+                return Ok(new
+                {
+                    id = user.Id,
+                    email = user.Email,
+                    name = user.Name,
+                    role = user.Role,
+                    avatar = user.Avatar
+                });
+            }
+            catch (AuthException ex)
+
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return StatusCode(503, new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = ex.Message });
+            }
         }
     }
 
@@ -85,5 +128,10 @@ namespace Backend.Controllers
         public string Email { get; set; } = string.Empty;
         public string Password { get; set; } = string.Empty;
         public string Name { get; set; } = string.Empty;
+    }
+
+    public class GoogleLoginRequest
+    {
+        public string Credential { get; set; } = string.Empty;
     }
 }

@@ -7,7 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Hotel, Plus, Edit, Trash2, Calendar, DollarSign, Users, Loader2, Sun, Moon } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:5200';
+import { apiUrl } from '@/lib/backendUrl';
 
 interface Room {
   id: number;
@@ -48,7 +48,7 @@ export default function HotelOwnerDashboard() {
     try {
       setLoading(true);
       setError('');
-      const response = await fetch(`${BACKEND_URL}/api/rooms`);
+      const response = await fetch(apiUrl('/api/rooms'));
       if (!response.ok) throw new Error('Không thể kết nối máy chủ');
       const data = await response.json();
       setRooms(data);
@@ -66,7 +66,7 @@ export default function HotelOwnerDashboard() {
   };
 
   useEffect(() => {
-    if (!user || user.role !== 'hotel_owner') {
+    if (!user || user?.role !== 'hotel_owner') {
       router.push('/login');
     } else {
       fetchRooms();
@@ -76,7 +76,7 @@ export default function HotelOwnerDashboard() {
   const handleAddRoom = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const response = await fetch(`${BACKEND_URL}/api/rooms`, {
+      const response = await fetch(apiUrl('/api/rooms'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -113,7 +113,7 @@ export default function HotelOwnerDashboard() {
   const handleDeleteRoom = async (id: number) => {
     if (!confirm('Bạn có chắc muốn xóa phòng này?')) return;
     try {
-      const response = await fetch(`${BACKEND_URL}/api/rooms/${id}`, {
+      const response = await fetch(apiUrl(`/api/rooms/${id}`), {
         method: 'DELETE',
       });
       if (!response.ok) throw new Error('Xóa thất bại');
@@ -137,7 +137,7 @@ export default function HotelOwnerDashboard() {
     { label: 'Lượt đặt phòng', value: totalGuests.toString(), icon: <Users className="size-6" />, color: 'bg-orange-50 dark:bg-orange-950/40 text-orange-655 dark:text-orange-400' }
   ];
 
-  if (!user || user.role !== 'hotel_owner') {
+  if (!user || user?.role !== 'hotel_owner') {
     return (
       <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center text-slate-700 dark:text-slate-400 font-bold">
         Đang chuyển hướng quyền truy cập...

@@ -7,16 +7,18 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { ImageWithFallback } from '@/components/figma/ImageWithFallback';
 import { Heart, MapPin, Calendar, Star, Trash2, ArrowRight, Sparkles } from 'lucide-react';
 import { getFavorites, setFavorites, SavedTour } from '@/lib/tourStorage';
+import { getHotelFavorites, setHotelFavorites, SavedHotel } from '@/lib/hotelStorage';
 import { useRouter } from 'next/navigation';
 
 export default function FavoritesPage() {
   const { theme } = useTheme();
   const router = useRouter();
   const [favorites, setFavoriteState] = useState<SavedTour[]>([]);
-  const [removing, setRemoving] = useState<string | null>(null);
+  const [hotelFavorites, setHotelFavoriteState] = useState<SavedHotel[]>([]);
 
   useEffect(() => {
     setFavoriteState(getFavorites());
+    setHotelFavoriteState(getHotelFavorites());
   }, []);
 
   const removeFavorite = (id: string) => {
@@ -27,6 +29,12 @@ export default function FavoritesPage() {
       setFavorites(next);
       setRemoving(null);
     }, 350);
+  };
+
+  const removeHotelFavorite = (id: string) => {
+    const next = hotelFavorites.filter((hotel) => hotel.id !== id);
+    setHotelFavoriteState(next);
+    setHotelFavorites(next);
   };
 
   return (
@@ -89,6 +97,7 @@ export default function FavoritesPage() {
             </div>
           </div>
         ) : (
+
           <>
             {/* Summary bar */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-8">
@@ -194,6 +203,7 @@ export default function FavoritesPage() {
               </button>
             </div>
           </>
+
         )}
       </main>
 

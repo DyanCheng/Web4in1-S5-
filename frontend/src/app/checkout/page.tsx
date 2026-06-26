@@ -5,12 +5,13 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { CreditCard, Check, Tag, Loader2 } from 'lucide-react';
+import { QrCode, Tag, Loader2 } from 'lucide-react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useTheme } from '@/contexts/ThemeContext';
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:5200';
+import { apiUrl } from '@/lib/backendUrl';
+
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -20,7 +21,7 @@ export default function CheckoutPage() {
   const { theme } = useTheme();
   const [discountInput, setDiscountInput] = useState('');
   const [discountMessage, setDiscountMessage] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState('credit_card');
+  const [paymentMethod, setPaymentMethod] = useState('sepay_qr');
   const [formData, setFormData] = useState({
     fullName: user?.name || '',
     email: user?.email || '',
@@ -32,10 +33,8 @@ export default function CheckoutPage() {
     expiryDate: '',
     cvv: ''
   });
-  const [orderComplete, setOrderComplete] = useState(false);
-  const [orderId, setOrderId] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleApplyDiscount = () => {
     const success = applyDiscount(discountInput);
@@ -57,12 +56,20 @@ export default function CheckoutPage() {
     try {
       setIsSubmitting(true);
       setError('');
-      
-      let createdOrderId = '';
 
-      // Loop through items in cart and create bookings for each
+      const bookingRefs: string[] = [];
+      const orderItems = items.map((item) => ({
+        tourId: item.tourId,
+        title: item.title,
+        image: item.image,
+        price: item.price,
+        quantity: item.quantity,
+        guests: item.guests,
+        date: item.date,
+      }));
+
       for (const item of items) {
-        const response = await fetch(`${BACKEND_URL}/api/bookings`, {
+        const response = await fetch(apiUrl('/api/bookings'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -71,89 +78,50 @@ export default function CheckoutPage() {
             userEmail: formData.email,
             date: item.date,
             guests: item.guests,
-            quantity: item.quantity
+            quantity: item.quantity,
           }),
         });
 
         if (!response.ok) {
           const err = await response.json();
-          throw new Error(err.message || 'Đặt tour thất bại');
+          throw new Error(err.error || err.message || 'Đặt tour thất bại');
         }
 
         const data = await response.json();
-        createdOrderId = data.id; // Take the last booking ID as order reference
+        bookingRefs.push(data.id);
       }
 
-      setOrderId(createdOrderId || 'ORD-' + Date.now().toString());
-      setOrderComplete(true);
+      const finalAmount = total - discountAmount;
+
+      const paymentResponse = await fetch(apiUrl('/api/payments/create'), {
+
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user?.id || '',
+          userEmail: formData.email,
+          userName: formData.fullName,
+          amount: finalAmount,
+          orderItems,
+          bookingRefs,
+        }),
+      });
+
+      if (!paymentResponse.ok) {
+        const err = await paymentResponse.json();
+        throw new Error(err.error || err.message || 'Không thể tạo thanh toán');
+      }
+
+      const paymentData = await paymentResponse.json();
+      sessionStorage.setItem(`payment_qr_${paymentData.paymentCode}`, paymentData.qrUrl);
       clearCart();
-    } catch (err: any) {
-      console.error(err);
-      setError(err.message || 'Có lỗi xảy ra khi kết nối tới máy chủ. Vui lòng thử lại sau.');
-      // Direct success fallback for demo purposes if backend fails
-      const fallbackId = 'ORD-' + Date.now().toString();
-      setOrderId(fallbackId);
-      setOrderComplete(true);
-      clearCart();
+      router.push(`/payment/${paymentData.paymentCode}`);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Có lỗi xảy ra khi kết nối tới máy chủ. Vui lòng thử lại sau.');
     } finally {
       setIsSubmitting(false);
     }
   };
-
-  if (orderComplete) {
-    return (
-      <div className={`min-h-screen bg-slate-50/50 dark:bg-slate-950 font-sans transition-colors duration-300 flex flex-col ${
-        theme === 'dark' ? 'dark text-white' : 'text-slate-900'
-      }`}>
-        <Header />
-        
-        <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-24 text-center flex-1 flex flex-col items-center justify-center">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-emerald-50 dark:bg-emerald-950/40 rounded-full mb-6">
-            <Check className="size-10 text-emerald-500" />
-          </div>
-
-          <h1 className="text-3xl font-black font-serif text-slate-900 dark:text-white mb-3">Đặt tour thành công!</h1>
-          <p className="text-slate-500 dark:text-slate-400 mb-2 font-semibold">Cảm ơn bạn đã lựa chọn hành trình của CMC Travel</p>
-          <p className="text-lg font-bold text-slate-700 dark:text-slate-300 mb-8">Mã đơn hàng: <span className="font-extrabold text-blue-600 dark:text-blue-400">{orderId}</span></p>
-
-          <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 border border-slate-100/40 dark:border-slate-800/40 w-full text-left mb-10 shadow-sm">
-            <h3 className="text-lg font-extrabold text-slate-900 dark:text-white mb-4 font-serif">Thông tin đơn hàng</h3>
-            <div className="space-y-3 text-sm font-semibold">
-              <div className="flex justify-between">
-                <span className="text-slate-500 dark:text-slate-400">Tổng thanh toán:</span>
-                <span className="text-blue-900 dark:text-blue-400 font-black">{(total - discountAmount).toLocaleString('vi-VN')}đ</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500 dark:text-slate-400">Trạng thái:</span>
-                <span className="text-emerald-500 font-extrabold">Đã xác nhận</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500 dark:text-slate-400">Email nhận vé:</span>
-                <span className="text-slate-700 dark:text-slate-350">{formData.email}</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex gap-4 w-full max-w-md">
-            <button
-              onClick={() => navigate('/dashboard')}
-              className="flex-1 py-3.5 border border-slate-200 dark:border-slate-800 rounded-2xl hover:bg-slate-55 dark:hover:bg-slate-800 transition-colors font-bold text-sm text-slate-700 dark:text-slate-350 cursor-pointer text-center"
-            >
-              Xem đơn đặt
-            </button>
-            <button
-              onClick={() => navigate('/')}
-              className="flex-1 py-3.5 bg-blue-900 hover:bg-blue-955 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-2xl transition-colors font-bold text-sm cursor-pointer shadow text-center"
-            >
-              Về trang chủ
-            </button>
-          </div>
-        </div>
-
-        <Footer />
-      </div>
-    );
-  }
 
   return (
     <div className={`min-h-screen bg-slate-50/50 dark:bg-slate-955 font-sans transition-colors duration-300 flex flex-col ${
@@ -238,95 +206,21 @@ export default function CheckoutPage() {
               <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 border border-slate-100/40 dark:border-slate-800/40 shadow-sm text-left">
                 <h2 className="text-xl font-extrabold text-slate-900 dark:text-white mb-6 font-serif">Phương thức thanh toán</h2>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                <div className="grid grid-cols-1 gap-4 mb-4">
                   <button
                     type="button"
-                    onClick={() => setPaymentMethod('credit_card')}
+                    onClick={() => setPaymentMethod('sepay_qr')}
                     className={`p-5 border-2 rounded-2xl text-center transition-all cursor-pointer flex flex-col items-center justify-center gap-1.5 ${
-                      paymentMethod === 'credit_card'
+                      paymentMethod === 'sepay_qr'
                         ? 'border-blue-600 bg-blue-50/40 dark:bg-blue-950/20'
                         : 'border-slate-150 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
                     }`}
                   >
-                    <CreditCard className="size-6 text-blue-600 dark:text-blue-400" />
-                    <span className="text-sm font-bold text-slate-800 dark:text-slate-200">Thẻ tín dụng</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setPaymentMethod('banking')}
-                    className={`p-5 border-2 rounded-2xl text-center transition-all cursor-pointer flex flex-col items-center justify-center gap-1.5 ${
-                      paymentMethod === 'banking'
-                        ? 'border-blue-600 bg-blue-50/40 dark:bg-blue-950/20'
-                        : 'border-slate-150 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
-                    }`}
-                  >
-                    <span className="text-2xl">🏦</span>
-                    <span className="text-sm font-bold text-slate-800 dark:text-slate-200">Chuyển khoản</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setPaymentMethod('momo')}
-                    className={`p-5 border-2 rounded-2xl text-center transition-all cursor-pointer flex flex-col items-center justify-center gap-1.5 ${
-                      paymentMethod === 'momo'
-                        ? 'border-blue-600 bg-blue-50/40 dark:bg-blue-950/20'
-                        : 'border-slate-150 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
-                    }`}
-                  >
-                    <span className="text-2xl">📱</span>
-                    <span className="text-sm font-bold text-slate-800 dark:text-slate-200">Ví MoMo</span>
+                    <QrCode className="size-6 text-blue-600 dark:text-blue-400" />
+                    <span className="text-sm font-bold text-slate-800 dark:text-slate-200">Quét mã QR SePay</span>
+                    <span className="text-xs text-slate-500">Chuyển khoản ngân hàng tự động xác nhận</span>
                   </button>
                 </div>
-
-                {paymentMethod === 'credit_card' && (
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-xs font-black uppercase text-slate-400 dark:text-slate-555 mb-2">Số thẻ tín dụng</label>
-                      <input
-                        type="text"
-                        value={formData.cardNumber}
-                        onChange={(e) => setFormData({ ...formData, cardNumber: e.target.value })}
-                        placeholder="1234 5678 9012 3456"
-                        className="w-full px-4 py-3 border border-slate-150 dark:border-slate-800 bg-transparent rounded-2xl outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 text-slate-855 dark:text-slate-100 font-bold text-sm transition-all"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-black uppercase text-slate-400 dark:text-slate-555 mb-2">Chủ sở hữu thẻ</label>
-                      <input
-                        type="text"
-                        value={formData.cardName}
-                        onChange={(e) => setFormData({ ...formData, cardName: e.target.value })}
-                        placeholder="NGUYEN VAN A"
-                        className="w-full px-4 py-3 border border-slate-150 dark:border-slate-800 bg-transparent rounded-2xl outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 text-slate-855 dark:text-slate-100 font-bold text-sm transition-all"
-                        required
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-xs font-black uppercase text-slate-400 dark:text-slate-555 mb-2">Ngày hết hạn</label>
-                        <input
-                          type="text"
-                          value={formData.expiryDate}
-                          onChange={(e) => setFormData({ ...formData, expiryDate: e.target.value })}
-                          placeholder="MM/YY"
-                          className="w-full px-4 py-3 border border-slate-150 dark:border-slate-800 bg-transparent rounded-2xl outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 text-slate-855 dark:text-slate-100 font-bold text-sm transition-all"
-                          required
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-black uppercase text-slate-400 dark:text-slate-555 mb-2">Mã bảo mật CVV</label>
-                        <input
-                          type="text"
-                          value={formData.cvv}
-                          onChange={(e) => setFormData({ ...formData, cvv: e.target.value })}
-                          placeholder="123"
-                          className="w-full px-4 py-3 border border-slate-150 dark:border-slate-800 bg-transparent rounded-2xl outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 text-slate-855 dark:text-slate-100 font-bold text-sm transition-all"
-                          required
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
               </div>
 
               {error && (

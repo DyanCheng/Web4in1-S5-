@@ -1,86 +1,172 @@
 "use client";
 
-import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:5200';
+import { apiUrl, parseJsonResponse } from '@/lib/backendUrl';
 
 interface User {
   id: string;
   email: string;
   name: string;
-  role: 'user' | 'admin' | 'hotel_owner';
+  role: 'user' | 'admin' | 'hotel_owner' | 'employee' | 'accountant';
   avatar?: string;
 }
 
 interface AuthContextType {
   user: User | null;
-  login: (email: string, password: string, role?: string) => Promise<User | void>;
+  login: (email: string, password: string, role?: string) => Promise<User>;
+  loginWithGoogle: (credential: string) => Promise<User>;
   register: (email: string, password: string, name: string) => Promise<void>;
   logout: () => void;
+  updateUser: (data: Partial<User>) => void;
   isAuthenticated: boolean;
+  isLoading: boolean;
+}
+  interface AuthResponse {
+    id: string;
+    email: string;
+    name: string;
+    role: User['role'];
+    avatar?: string;
+    message?: string;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const STORAGE_KEY = 'cmc_travel_user';
+
+async function readAuthResponse(
+  response: Response,
+  fallbackMessage: string
+): Promise<AuthResponse> {
+  const data = await parseJsonResponse<AuthResponse>(response);
+  if (!response.ok) {
+    throw new Error(data.message || fallbackMessage);
+  }
+  return data;
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
+    try {
+
+
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        setUser(JSON.parse(stored));
+      }
+    } catch {
+      localStorage.removeItem(STORAGE_KEY);
+    } finally {
+      setIsLoading(false);
     }
   }, []);
 
-  const login = async (email: string, password: string, role: string = 'user') => {
-    const response = await fetch(`${BACKEND_URL}/api/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password, role }),
-    });
+  const persistUser = (userData: User | null) => {
+    setUser(userData);
+    if (userData) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(userData));
+    } else {
+      localStorage.removeItem(STORAGE_KEY);
+    }
+  };
 
-    if (!response.ok) {
-      const err = await response.json();
-      throw new Error(err.message || 'Đăng nhập thất bại');
+  const login = async (email: string, password: string, role: string = 'user'): Promise<User> => {
+    let response: Response;
+    try {
+      response = await fetch(apiUrl('/api/auth/login'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, role }),
+      });
+    } catch {
+      throw new Error('Không thể kết nối máy chủ. Kiểm tra backend Railway và redeploy Vercel.');
     }
 
-    const data = await response.json();
-    const loggedInUser = { id: data.id, email: data.email, name: data.name, role: data.role, avatar: data.avatar };
-    setUser(loggedInUser);
-    localStorage.setItem('user', JSON.stringify(loggedInUser));
-    return loggedInUser;
+    const data = await readAuthResponse(response, 'Đăng nhập thất bại');
+    const userData: User = {
+      id: data.id,
+      email: data.email,
+      name: data.name,
+      role: data.role,
+      avatar: data.avatar,
+    };
+    persistUser(userData);
+    return userData;
+  };
+
+  const loginWithGoogle = async (credential: string): Promise<User> => {
+    let response: Response;
+    try {
+      response = await fetch(apiUrl('/api/auth/google'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ credential }),
+      });
+    } catch {
+      throw new Error('Không thể kết nối máy chủ. Kiểm tra backend Railway và redeploy Vercel.');
+    }
+
+
+    const data = await readAuthResponse(response, 'Đăng nhập Google thất bại');
+    const userData: User = {
+      id: data.id,
+      email: data.email,
+      name: data.name,
+      role: data.role,
+      avatar: data.avatar,
+    };
+    persistUser(userData);
+    return userData;
+
   };
 
   const register = async (email: string, password: string, name: string) => {
-    const response = await fetch(`${BACKEND_URL}/api/auth/register`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password, name }),
-    });
-
-    if (!response.ok) {
-      const err = await response.json();
-      throw new Error(err.message || 'Đăng ký thất bại');
+    let response: Response;
+    try {
+      response = await fetch(apiUrl('/api/auth/register'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, name }),
+      });
+    } catch {
+      throw new Error('Không thể kết nối máy chủ. Kiểm tra backend Railway và redeploy Vercel.');
     }
 
-    const data = await response.json();
-    const newUser = { id: data.id, email: data.email, name: data.name, role: data.role, avatar: data.avatar };
-    setUser(newUser);
-    localStorage.setItem('user', JSON.stringify(newUser));
+
+    const data = await readAuthResponse(response, 'Đăng ký thất bại');
+    persistUser({
+      id: data.id,
+      email: data.email,
+      name: data.name,
+      role: data.role,
+      avatar: data.avatar,
+
+    });
   };
 
   const logout = () => {
-    setUser(null);
-    localStorage.removeItem('user');
+    persistUser(null);
+  };
+
+  const updateUser = (data: Partial<User>) => {
+    if (!user) return;
+    persistUser({ ...user, ...data });
   };
 
   return (
     <AuthContext.Provider value={{
       user,
       login,
+      loginWithGoogle,
       register,
       logout,
-      isAuthenticated: !!user
+      updateUser,
+
+      isAuthenticated: !!user,
+      isLoading,
     }}>
       {children}
     </AuthContext.Provider>

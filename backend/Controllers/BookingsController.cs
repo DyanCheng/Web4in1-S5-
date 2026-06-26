@@ -10,66 +10,55 @@ namespace Backend.Controllers
     [Route("api/[controller]")]
     public class BookingsController : ControllerBase
     {
-        private readonly DataStoreService _dataStore;
+        private readonly TourDbService _tourDb;
 
-        public BookingsController(DataStoreService dataStore)
+        public BookingsController(TourDbService tourDb)
         {
-            _dataStore = dataStore;
+            _tourDb = tourDb;
         }
 
         [HttpGet]
-        public IActionResult GetAll()
+        public async Task<IActionResult> GetAll()
         {
-            return Ok(_dataStore.Bookings);
+            var bookings = await _tourDb.GetAllBookingsAsync();
+            return Ok(bookings);
         }
 
         [HttpGet("user/{email}")]
-        public IActionResult GetByUser(string email)
+        public async Task<IActionResult> GetByUser(string email)
         {
-            var userBookings = _dataStore.Bookings
-                .Where(b => b.UserEmail.ToLower() == email.ToLower())
-                .ToList();
+            var userBookings = await _tourDb.GetBookingsByUserEmailAsync(email);
             return Ok(userBookings);
         }
 
         [HttpPost]
-        public IActionResult Create([FromBody] BookingRequest request)
+        public async Task<IActionResult> Create([FromBody] BookingRequest request)
         {
-            var tour = _dataStore.Tours.FirstOrDefault(t => t.Id == request.TourId);
-            if (tour == null)
+            try
             {
-                return BadRequest(new { message = "Tour không hợp lệ" });
+                var newBooking = await _tourDb.CreateBookingAsync(request);
+                if (newBooking == null)
+                {
+                    return BadRequest(new { message = "Tour hoặc thông tin đặt phòng không hợp lệ" });
+                }
+
+                return Ok(newBooking);
             }
-
-            var newBooking = new Booking
+            catch (Exception ex)
             {
-                Id = "ORD-" + Guid.NewGuid().ToString().Substring(0, 8).ToUpper(),
-                TourId = request.TourId,
-                TourTitle = tour.Title,
-                TourImage = tour.Image,
-                UserId = request.UserId,
-                UserEmail = request.UserEmail,
-                Date = request.Date,
-                Guests = request.Guests,
-                Total = tour.Price * request.Guests * request.Quantity,
-                Status = "pending"
-            };
-
-            _dataStore.Bookings.Insert(0, newBooking); // Prepend to show at top
-
-            return Ok(newBooking);
+                return StatusCode(500, new { message = "Đã xảy ra lỗi khi tạo đơn hàng. Vui lòng thử lại sau.", error = ex.Message });
+            }
         }
 
         [HttpDelete("{id}")]
-        public IActionResult Delete(string id)
+        public async Task<IActionResult> Delete(string id)
         {
-            var booking = _dataStore.Bookings.FirstOrDefault(b => b.Id == id);
-            if (booking == null)
+            var success = await _tourDb.DeleteBookingAsync(id);
+            if (!success)
             {
                 return NotFound(new { message = "Không tìm thấy đơn hàng này" });
             }
 
-            _dataStore.Bookings.Remove(booking);
             return Ok(new { message = "Đã hủy đơn đặt tour thành công" });
         }
     }
@@ -82,5 +71,8 @@ namespace Backend.Controllers
         public string Date { get; set; } = string.Empty;
         public int Guests { get; set; }
         public int Quantity { get; set; } = 1;
+        public string TourTitle { get; set; } = string.Empty;
+        public string TourImage { get; set; } = string.Empty;
+        public decimal? Total { get; set; }
     }
 }

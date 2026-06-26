@@ -4,13 +4,14 @@ import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { ImageWithFallback } from '@/components/figma/ImageWithFallback';
 import { useCart } from '@/contexts/CartContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { MapPin, Calendar, Users, Star, Clock, CheckCircle, X, Heart, Share2, Loader2 } from 'lucide-react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useTheme } from '@/contexts/ThemeContext';
-import { isFavorite, toggleFavorite, isTourExperienced, markTourExperienced } from '@/lib/tourStorage';
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:5200';
+import { isFavorite, toggleFavorite, isTourExperienced, markTourExperienced, hasReviewedTourId, addUserReview } from '@/lib/tourStorage';
+import { apiUrl } from '@/lib/backendUrl';
 
 const fallbackTours: Record<string, any> = {
   '1': { id: '1', title: 'Du ngoạn Vịnh Hạ Long', location: 'Quảng Ninh', price: 3500000, duration: '2 ngày 1 đêm', image: 'https://images.unsplash.com/photo-1643029891412-92f9a81a8c16', rating: 4.9, reviews: 1234, description: 'Khám phá kỳ quan thiên nhiên thế giới với hàng ngàn đảo đá vôi kỳ vĩ.', highlights: ['Du thuyền 5 sao ngủ đêm trên vịnh', 'Thăm hang Sửng Sốt, động Thiên Cung', 'Chèo kayak khám phá làng chài', 'Câu mực đêm trên biển', 'Buffet hải sản tươi sống', 'Tập Thái Cực Quyền trên boong tàu'], included: ['Xe đưa đón từ Hà Nội', 'Du thuyền 5 sao', '2 bữa ăn chính + bữa sáng', 'Vé thăm quan', 'Hướng dẫn viên tiếng Việt', 'Bảo hiểm du lịch'], excluded: ['Chi phí cá nhân', 'Đồ uống có cồn', 'Tip hướng dẫn viên'] },
@@ -19,6 +20,8 @@ const fallbackTours: Record<string, any> = {
   '4': { id: '4', title: 'Biển xanh Đà Nẵng', location: 'Đà Nẵng', price: 3200000, duration: '3 ngày 2 đêm', image: 'https://images.unsplash.com/photo-1723142282970-1fd415eec1ad', rating: 4.7, reviews: 1089, description: 'Tận hưởng bãi biển Mỹ Khê đẹp nhất hành tinh, chiêm ngưỡng cầu Vàng nổi tiếng.', highlights: ['Biển Mỹ Khê, Non Nước', 'Cầu Vàng - Bà Nà Hills', 'Chùa Linh Ứng, Ngũ Hành Sơn', 'Phố cổ Hội An về đêm', 'Ăn tối trên du thuyền sông Hàn', 'Chợ Hàn, Cồn market'], included: ['Vé máy bay', 'Khách sạn 4 sao', 'Ăn sáng', 'Xe đưa đón', 'Vé Bà Nà Hills'], excluded: ['Bữa trưa, tối', 'Cáp treo Ngũ Hành Sơn'] },
   '5': { id: '5', title: 'Phố cổ Hội An', location: 'Quảng Nam', price: 2800000, duration: '2 ngày 1 đêm', image: 'https://images.unsplash.com/photo-1664650440553-ab53804814b3', rating: 5.0, reviews: 1456, description: 'Khám phá di sản văn hóa thế giới với phố cổ lung linh đèn lồng.', highlights: ['Phố cổ lung linh đèn lồng', 'Chùa Cầu Nhật Bản', 'Làng gốm Thanh Hà', 'Rừng dừa Bảy Mẫu', 'Thả đèn hoa đăng sông Hoài', 'Học làm bánh dân gian'], included: ['Xe đưa đón từ Đà Nẵng', 'Homestay phố cổ', 'Ăn sáng', 'Vé thăm quan', 'Hướng dẫn viên'], excluded: ['Chi phí cá nhân', 'Vé rừng dừa'] },
   '6': { id: '6', title: 'Nha Trang - Vịnh xanh', location: 'Khánh Hòa', price: 3900000, duration: '3 ngày 2 đêm', image: 'https://images.unsplash.com/photo-1533002832-1721d16b4bb9', rating: 4.8, reviews: 967, description: 'Vui chơi tại thiên đường biển Nha Trang với hoạt động lặn ngắm san hô.', highlights: ['Tour 4 đảo Nha Trang', 'Lặn ngắm san hô biển sâu', 'Tắm bùn khoáng Thap Ba', 'VinWonders Nha Trang', 'Chùa Long Sơn, tháp Bà Ponagar', 'Buffet hải sản biển'], included: ['Vé máy bay khứ hồi', 'Khách sạn 4 sao', 'Ăn sáng', 'Tour 4 đảo', 'Xe đưa đón'], excluded: ['VinWonders', 'Tắm bùn', 'Bữa trưa, tối'] },
+
+  '7': { id: '7', title: 'Tour Demo Thanh Toán', location: 'Hà Nội', price: 15000, duration: '1 ngày', image: 'https://images.unsplash.com/photo-1559592410-7c496ece05f5', rating: 5.0, reviews: 0, description: 'Tour demo giá 15.000đ dùng để thử nghiệm đặt tour và thanh toán SePay.', highlights: ['Tham quan Hồ Gươm', 'Đi bộ phố cổ', 'Thử nghiệm thanh toán 15.000đ', 'Xác nhận email tự động'], included: ['Hướng dẫn viên', 'Nước uống', 'Bảo hiểm cơ bản'], excluded: ['Ăn trưa', 'Chi phí cá nhân'] },
 };
 
 type Review = { id: number; name: string; rating: number; date: string; comment: string; avatar: string };
@@ -30,6 +33,7 @@ export default function TourDetailPage() {
   const navigate = (url: string) => router.push(url);
   const { addToCart } = useCart();
   const { theme } = useTheme();
+  const { user } = useAuth();
   const [tour, setTour] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState('');
@@ -39,6 +43,7 @@ export default function TourDetailPage() {
   const [reviewNotice, setReviewNotice] = useState('');
   const [myRating, setMyRating] = useState(5);
   const [myComment, setMyComment] = useState('');
+  const [hasReviewed, setHasReviewed] = useState(false);
   const [reviews, setReviews] = useState<Review[]>([
     { id: 1, name: 'Nguyễn Văn A', rating: 5, date: '2026-04-15', comment: 'Tour tuyệt vời! Mọi thứ đều hoàn hảo từ A-Z. Hướng dẫn viên rất nhiệt tình.', avatar: '👨' },
     { id: 2, name: 'Trần Thị B', rating: 5, date: '2026-04-10', comment: 'Trải nghiệm đáng nhớ! Cảnh đẹp, dịch vụ tốt, giá hợp lý.', avatar: '👩' },
@@ -49,9 +54,10 @@ export default function TourDetailPage() {
   useEffect(() => {
     setSaved(isFavorite(id));
     setExperienced(isTourExperienced(id));
+    setHasReviewed(hasReviewedTourId(id));
     const fetchTour = async () => {
       try {
-        const response = await fetch(`${BACKEND_URL}/api/tours/${id}`);
+        const response = await fetch(apiUrl(`/api/tours/${id}`));
         if (!response.ok) throw new Error('Tour not found');
         setTour(await response.json());
       } catch {
@@ -64,6 +70,11 @@ export default function TourDetailPage() {
   }, [id]);
 
   const reviewCount = useMemo(() => reviews.length, [reviews]);
+  const averageRating = useMemo(() => {
+    if (reviews.length === 0) return (tour?.rating || 5).toFixed(1);
+    const sum = reviews.reduce((acc, rev) => acc + rev.rating, 0);
+    return (sum / reviews.length).toFixed(1);
+  }, [reviews, tour]);
 
   const handleBooking = () => {
     if (!selectedDate) {
@@ -90,7 +101,7 @@ export default function TourDetailPage() {
       price: tour.price,
       duration: tour.duration,
       image: tour.image,
-      rating: tour.rating,
+      rating: Number(averageRating),
       reviews: tour.reviews,
     });
     setSaved(next.some((item) => item.id === tour.id));
@@ -99,7 +110,6 @@ export default function TourDetailPage() {
   const handleMarkExperienced = () => {
     markTourExperienced(tour.id);
     setExperienced(true);
-    setReviewNotice('Tour này đã được ghi nhận là đã trải nghiệm. Bạn có thể đánh giá ngay bên dưới.');
   };
 
   const handleSubmitReview = (event: FormEvent) => {
@@ -116,8 +126,10 @@ export default function TourDetailPage() {
       { id: Date.now(), name: 'Bạn', rating: myRating, date: new Date().toISOString().slice(0, 10), comment: myComment.trim(), avatar: '🙂' },
       ...current,
     ]);
+    addUserReview({ id: Date.now(), tourId: id, tour: tour.title, rating: myRating, comment: myComment.trim(), date: new Date().toLocaleDateString('vi-VN') });
+    setHasReviewed(true);
     setMyComment('');
-    setReviewNotice('Đã gửi đánh giá thành công.');
+    setReviewNotice('Đã gửi đánh giá thành công. Cảm ơn những chia sẻ của bạn!');
   };
 
   if (loading) {
@@ -149,7 +161,7 @@ export default function TourDetailPage() {
             <div className="flex flex-wrap items-center gap-6 text-sm font-bold text-slate-100">
               <div className="flex items-center gap-1.5">
                 <Star className="size-4.5 fill-amber-400 text-amber-400" />
-                <span>{tour.rating} ({reviewCount} đánh giá)</span>
+                <span>{averageRating} ({reviewCount} đánh giá)</span>
               </div>
               <span>•</span>
               <div className="flex items-center gap-1.5">
@@ -228,9 +240,11 @@ export default function TourDetailPage() {
             <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 border border-slate-100/40 dark:border-slate-800/40 shadow-sm text-left">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
                 <h2 className="text-2xl font-black text-slate-900 dark:text-white font-serif leading-tight">Đánh giá từ khách hàng</h2>
-                <button onClick={handleMarkExperienced} className="inline-flex items-center justify-center rounded-full border border-blue-200 bg-blue-50 px-4 py-2 text-xs font-black text-blue-700 hover:bg-blue-100 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-300">
-                  Đánh dấu đã trải nghiệm
-                </button>
+                {user && !experienced && (
+                  <button onClick={handleMarkExperienced} className="inline-flex items-center justify-center rounded-full border border-blue-200 bg-blue-50 px-4 py-2 text-xs font-black text-blue-700 hover:bg-blue-100 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-300">
+                    Hoàn thành tour (Giả lập)
+                  </button>
+                )}
               </div>
               {reviewNotice && (
                 <div className="mb-5 rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-700 dark:border-blue-900 dark:bg-blue-950/30 dark:text-blue-300">
@@ -261,9 +275,22 @@ export default function TourDetailPage() {
 
               <form onSubmit={handleSubmitReview} className="mt-8 rounded-3xl border border-slate-100 dark:border-slate-800 p-6">
                 <h3 className="text-lg font-extrabold text-slate-900 dark:text-white mb-4 font-serif">Viết đánh giá của bạn</h3>
-                {!experienced && (
+                
+                {hasReviewed ? (
+                  <p className="mb-4 rounded-2xl bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300">
+                    Bạn đã đánh giá tour này rồi. Cảm ơn những chia sẻ của bạn!
+                  </p>
+                ) : !user ? (
                   <p className="mb-4 rounded-2xl bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700 dark:bg-amber-950/30 dark:text-amber-300">
-                    Bạn cần đánh dấu đã trải nghiệm trước khi comment.
+                    Chỉ khách hàng đã đăng nhập và hoàn thành tour mới có thể đánh giá.
+                  </p>
+                ) : !experienced ? (
+                  <p className="mb-4 rounded-2xl bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700 dark:bg-amber-950/30 dark:text-amber-300">
+                    Bạn cần đặt và hoàn thành chuyến đi này để có thể gửi đánh giá.
+                  </p>
+                ) : (
+                  <p className="mb-4 rounded-2xl bg-blue-50 border border-blue-100 px-4 py-3 text-sm font-semibold text-blue-700 dark:bg-blue-950/30 dark:border-blue-900 dark:text-blue-300">
+                    Bạn đã hoàn thành tour này! Hãy chia sẻ trải nghiệm và đánh giá của bạn nhé.
                   </p>
                 )}
                 <div className="mb-4">
@@ -280,13 +307,13 @@ export default function TourDetailPage() {
                   value={myComment}
                   onChange={(e) => setMyComment(e.target.value)}
                   rows={4}
-                  disabled={!experienced}
+                  disabled={!user || !experienced || hasReviewed}
                   placeholder="Chia sẻ trải nghiệm hành trình của bạn..."
                   className="w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-transparent px-4 py-3 text-sm font-medium outline-none disabled:cursor-not-allowed disabled:opacity-60"
                 />
                 <button
                   type="submit"
-                  disabled={!experienced}
+                  disabled={!user || !experienced || hasReviewed}
                   className="mt-4 rounded-2xl bg-blue-900 px-6 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:bg-slate-400 dark:bg-blue-600 dark:disabled:bg-slate-700"
                 >
                   Gửi comment
@@ -355,6 +382,29 @@ export default function TourDetailPage() {
           </div>
         </div>
       </div>
+
+      {showBookingModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 max-w-sm w-full border border-slate-100/40 dark:border-slate-800/40 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+            <div className="text-center">
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-emerald-50 dark:bg-emerald-950/40 rounded-full mb-4">
+                <CheckCircle className="size-8 text-emerald-500" />
+              </div>
+              <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-2 font-serif">Thành công!</h2>
+              <p className="text-slate-500 dark:text-slate-400 mb-6 text-sm font-semibold">Hành trình của bạn đã được đặt thành công</p>
+              <div className="flex gap-3">
+                <button onClick={() => setShowBookingModal(false)} className="flex-1 px-4 py-2.5 border border-slate-200 dark:border-slate-800 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors font-bold text-sm text-slate-700 dark:text-slate-300 cursor-pointer">
+                  Quay lại
+                </button>
+                <button onClick={() => navigate('/checkout')} className="flex-1 px-4 py-2.5 bg-blue-900 dark:bg-blue-600 text-white rounded-2xl hover:bg-blue-950 dark:hover:bg-blue-700 transition-colors font-bold text-sm cursor-pointer shadow">
+                  Thanh toán
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
 
       <Footer />
     </div>
