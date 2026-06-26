@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { MessageCircle, X, Send } from 'lucide-react';
+import { usePathname } from 'next/navigation';
 
 interface Message {
   id: string;
@@ -9,8 +10,12 @@ interface Message {
   sender: 'user' | 'bot';
   timestamp: Date;
 }
-
+// chatbot will hide in login page and register page
 export default function Chatbot() {
+  const pathname = usePathname();
+  if (pathname.includes('/login') || pathname.includes('/register')) {
+    return null;
+  }
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
