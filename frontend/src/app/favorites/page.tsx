@@ -20,7 +20,7 @@ export default function FavoritesPage() {
     setFavoriteState(getFavorites());
     setHotelFavoriteState(getHotelFavorites());
   }, []);
-
+  const [removing, setRemoving] = useState<string | null>(null);
   const removeFavorite = (id: string) => {
     setRemoving(id);
     setTimeout(() => {

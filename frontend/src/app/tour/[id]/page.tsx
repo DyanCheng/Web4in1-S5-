@@ -44,6 +44,7 @@ export default function TourDetailPage() {
   const [myRating, setMyRating] = useState(5);
   const [myComment, setMyComment] = useState('');
   const [hasReviewed, setHasReviewed] = useState(false);
+  const [showBookingModal, setShowBookingModal] = useState(false);
   const [reviews, setReviews] = useState<Review[]>([
     { id: 1, name: 'Nguyễn Văn A', rating: 5, date: '2026-04-15', comment: 'Tour tuyệt vời! Mọi thứ đều hoàn hảo từ A-Z. Hướng dẫn viên rất nhiệt tình.', avatar: '👨' },
     { id: 2, name: 'Trần Thị B', rating: 5, date: '2026-04-10', comment: 'Trải nghiệm đáng nhớ! Cảnh đẹp, dịch vụ tốt, giá hợp lý.', avatar: '👩' },
@@ -90,7 +91,7 @@ export default function TourDetailPage() {
       date: selectedDate,
       guests,
     });
-    navigate('/checkout');
+    setShowBookingModal(true);
   };
 
   const handleFavoriteToggle = () => {
