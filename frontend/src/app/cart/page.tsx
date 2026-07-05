@@ -9,6 +9,7 @@ import { Trash2, Plus, Minus, ShoppingCart } from 'lucide-react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { getCartLineTotal } from '@/lib/checkoutApi';
+import { useTheme } from '@/contexts/ThemeContext';
 
 export default function CartPage() {
   const router = useRouter();
