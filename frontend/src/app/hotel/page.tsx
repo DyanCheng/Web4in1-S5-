@@ -320,8 +320,8 @@ export default function HotelPage() {
   const [bookingMode, setBookingMode] = useState<BookingMode>('daily');
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
-    from: new Date(2024, 7, 15),
-    to: new Date(2024, 7, 18),
+    from: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000),
+    to: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
   });
   const [startTime, setStartTime] = useState('14:00');
   const [endTime, setEndTime] = useState('18:00');

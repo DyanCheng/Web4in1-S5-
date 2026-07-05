@@ -176,13 +176,14 @@ BEGIN
 END;
 $$;
 
--- GET TOUR BY ID
+-- GET TOUR BY ID (fallback to tour Hạ Long - tour_id = 1)
 CREATE OR REPLACE FUNCTION public.get_tour_by_id(p_id bigint)
 RETURNS json
 LANGUAGE plpgsql
 AS $$
 DECLARE
   v_result json;
+  v_fallback_id bigint := 1;
 BEGIN
   SELECT row_to_json(t) INTO v_result
   FROM (
@@ -201,8 +202,30 @@ BEGIN
       COALESCE(t.excluded, ARRAY[]::text[]) AS excluded
     FROM public.tours t
     LEFT JOIN public.cities c ON t.destination_city_id = c.city_id
-    WHERE t.tour_id = p_id
+    WHERE t.tour_id = p_id AND t.status = true
   ) t;
+
+  IF v_result IS NULL AND p_id IS DISTINCT FROM v_fallback_id THEN
+    SELECT row_to_json(t) INTO v_result
+    FROM (
+      SELECT 
+        t.tour_id::text AS id,
+        t.title,
+        COALESCE(t.location, c.city_name) AS location,
+        t.base_price AS price,
+        COALESCE(t.duration, (t.duration_days::text || ' ngày ' || COALESCE(t.duration_nights, t.duration_days - 1)::text || ' đêm')) AS duration,
+        COALESCE(t.image_url, 'https://images.unsplash.com/photo-1643029891412-92f9a81a8c16') AS image,
+        COALESCE(t.rating_avg, 5.0) AS rating,
+        COALESCE(t.total_reviews, 0) AS reviews,
+        t.description,
+        COALESCE(t.highlights, ARRAY[]::text[]) AS highlights,
+        COALESCE(t.included, ARRAY[]::text[]) AS included,
+        COALESCE(t.excluded, ARRAY[]::text[]) AS excluded
+      FROM public.tours t
+      LEFT JOIN public.cities c ON t.destination_city_id = c.city_id
+      WHERE t.tour_id = v_fallback_id AND t.status = true
+    ) t;
+  END IF;
   
   RETURN v_result;
 END;
