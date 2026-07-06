@@ -10,7 +10,7 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useTheme } from '@/contexts/ThemeContext';
 
-import { apiUrl } from '@/lib/backendUrl';
+import { submitUnifiedCheckout, getCartLineTotal } from '@/lib/checkoutApi';
 
 
 export default function CheckoutPage() {
@@ -57,62 +57,24 @@ export default function CheckoutPage() {
       setIsSubmitting(true);
       setError('');
 
-      const bookingRefs: string[] = [];
-      const orderItems = items.map((item) => ({
-        tourId: item.tourId,
-        title: item.title,
-        image: item.image,
-        price: item.price,
-        quantity: item.quantity,
-        guests: item.guests,
-        date: item.date,
-      }));
-
-      for (const item of items) {
-        const response = await fetch(apiUrl('/api/bookings'), {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            tourId: item.tourId,
-            userId: user?.id || 'guest',
-            userEmail: formData.email,
-            date: item.date,
-            guests: item.guests,
-            quantity: item.quantity,
-          }),
-        });
-
-        if (!response.ok) {
-          const err = await response.json();
-          throw new Error(err.error || err.message || 'Đặt tour thất bại');
-        }
-
-        const data = await response.json();
-        bookingRefs.push(data.id);
-      }
-
-      const finalAmount = total - discountAmount;
-
-      const paymentResponse = await fetch(apiUrl('/api/payments/create'), {
-
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: user?.id || '',
-          userEmail: formData.email,
-          userName: formData.fullName,
-          amount: finalAmount,
-          orderItems,
-          bookingRefs,
-        }),
+      const paymentData = await submitUnifiedCheckout({
+        userId: user?.id || '',
+        userEmail: formData.email,
+        userName: formData.fullName,
+        phone: formData.phone,
+        discountCode: discountCode || undefined,
+        items: items.map((item) => ({
+          serviceType: item.serviceType,
+          referenceId: item.referenceId,
+          title: item.title,
+          image: item.image,
+          price: item.price,
+          quantity: item.quantity,
+          guests: item.guests,
+          date: item.date,
+          metadata: item.metadata,
+        })),
       });
-
-      if (!paymentResponse.ok) {
-        const err = await paymentResponse.json();
-        throw new Error(err.error || err.message || 'Không thể tạo thanh toán');
-      }
-
-      const paymentData = await paymentResponse.json();
       sessionStorage.setItem(`payment_qr_${paymentData.paymentCode}`, paymentData.qrUrl);
       clearCart();
       router.push(`/payment/${paymentData.paymentCode}`);
@@ -260,7 +222,7 @@ export default function CheckoutPage() {
                     <div className="flex-1">
                       <h4 className="text-sm font-extrabold text-slate-900 dark:text-white mb-1 line-clamp-1">{item.title}</h4>
                       <p className="text-xs text-slate-400 dark:text-slate-500 font-bold mb-1">x{item.quantity} Tour</p>
-                      <p className="text-sm text-blue-900 dark:text-blue-400 font-black">{(item.price * item.quantity).toLocaleString('vi-VN')}đ</p>
+                      <p className="text-sm text-blue-900 dark:text-blue-400 font-black">{getCartLineTotal(item).toLocaleString('vi-VN')}đ</p>
                     </div>
                   </div>
                 ))}

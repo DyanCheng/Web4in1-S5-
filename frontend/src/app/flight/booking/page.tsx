@@ -71,13 +71,15 @@ function BookingContent() {
     
     // Thêm vào giỏ hàng
     addToCart({
-      tourId: `${flightId}-${selectedSeat}`,
+      serviceType: 'flight',
+      referenceId: `${flightId}-${selectedSeat}`,
       title: `Chuyến bay: ${flightId} - Ghế: ${selectedSeat} (${ticketName}) - ${formData.name}`,
       image: 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=800&q=80',
       price: price,
       quantity: 1,
       date: new Date().toISOString().split('T')[0],
       guests: 1,
+      metadata: { seatNumber: selectedSeat },
     });
 
     router.push('/checkout');

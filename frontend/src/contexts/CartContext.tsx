@@ -1,9 +1,12 @@
 "use client";
 
 import React, { createContext, useContext, useState, ReactNode } from 'react';
+import { getCartLineTotal, type ServiceType } from '@/lib/checkoutApi';
 
 export interface CartItem {
   id: string;
+  serviceType: ServiceType;
+  referenceId: string;
   tourId: string;
   title: string;
   image: string;
@@ -11,11 +14,15 @@ export interface CartItem {
   quantity: number;
   date: string;
   guests: number;
+  metadata?: {
+    seatNumber?: string;
+    route?: string;
+  };
 }
 
 interface CartContextType {
   items: CartItem[];
-  addToCart: (item: Omit<CartItem, 'id'>) => void;
+  addToCart: (item: Omit<CartItem, 'id' | 'referenceId' | 'tourId'> & { referenceId?: string; tourId?: string }) => void;
   removeFromCart: (id: string) => void;
   updateQuantity: (id: string, quantity: number) => void;
   clearCart: () => void;
@@ -37,9 +44,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [discountCode, setDiscountCode] = useState('');
 
-  const addToCart = (item: Omit<CartItem, 'id'>) => {
-    const newItem = { ...item, id: Date.now().toString() };
-    setItems([newItem]); // Only keep the latest item for direct checkout
+  const addToCart = (item: Omit<CartItem, 'id' | 'referenceId' | 'tourId'> & { referenceId?: string; tourId?: string }) => {
+    const referenceId = item.referenceId ?? item.tourId ?? '';
+    const newItem: CartItem = {
+      ...item,
+      id: Date.now().toString(),
+      referenceId,
+      tourId: referenceId,
+      serviceType: item.serviceType ?? 'tour',
+    };
+    setItems([newItem]);
   };
 
   const removeFromCart = (id: string) => {
@@ -58,7 +72,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setDiscountCode('');
   };
 
-  const total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const total = items.reduce((sum, item) => sum + getCartLineTotal(item), 0);
 
   const applyDiscount = (code: string): boolean => {
     if (DISCOUNT_CODES[code as keyof typeof DISCOUNT_CODES]) {

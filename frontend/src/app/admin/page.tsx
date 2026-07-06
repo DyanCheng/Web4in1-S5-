@@ -63,7 +63,7 @@ interface PaymentTransaction {
   user_name: string | null;
   amount: number;
   payment_status: string;
-  order_items: Array<{ title?: string; price?: number; quantity?: number; guests?: number; date?: string }>;
+  order_items: Array<{ serviceType?: string; title?: string; price?: number; quantity?: number; guests?: number; date?: string; lineTotal?: number; bookingRef?: string }>;
   booking_refs: string[];
   sepay_transaction_id: number | null;
   paid_at: string | null;
@@ -727,8 +727,9 @@ export default function AdminDashboard() {
                             <div className="space-y-1">
                               {(tx.order_items || []).map((item, index) => (
                                 <p key={index} className="text-xs">
-                                  {item.title || 'Tour'} × {item.quantity || 1}
+                                  [{item.serviceType || 'tour'}] {item.title || 'Dịch vụ'} × {item.quantity || 1}
                                   {item.guests ? ` · ${item.guests} khách` : ''}
+                                  {item.lineTotal ? ` · ${Number(item.lineTotal).toLocaleString('vi-VN')}đ` : ''}
                                 </p>
                               ))}
                               {(tx.booking_refs || []).length > 0 && (
