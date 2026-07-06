@@ -151,6 +151,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     const data = await readAuthResponse(response, 'Đăng ký thất bại');
+    console.log(data);
     saveSession({
       id: data.id,
       email: data.email,
