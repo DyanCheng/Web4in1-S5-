@@ -56,7 +56,6 @@ import {
 import RoomTypeModal from '@/components/RoomTypeModal';
 import { getHotelFavorites, toggleHotelFavorite } from '@/lib/hotelStorage';
 import { useEffect } from 'react';
-import { apiUrl } from '@/lib/backendUrl';
 
 type SortMode = 'recommended' | 'price' | 'rating';
 type BookingMode = 'hourly' | 'overnight' | 'daily';

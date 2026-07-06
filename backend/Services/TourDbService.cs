@@ -1,4 +1,4 @@
-using System.Net.Http.Json;
+﻿using System.Net.Http.Json;
 using System.Text.Json;
 using Backend.Models;
 using Backend.Controllers;
@@ -19,9 +19,9 @@ namespace Backend.Services
         public TourDbService(IConfiguration configuration, IHttpClientFactory httpClientFactory)
         {
             _supabaseUrl = configuration["SUPABASE_URL"] ?? configuration["Supabase:Url"];
-            _supabaseKey = configuration["SUPABASE_SERVICE_ROLE_KEY"]
-                ?? configuration["SUPABASE_KEY"]
-                ?? configuration["Supabase:Key"];
+            var svcKey = configuration["SUPABASE_SERVICE_ROLE_KEY"];
+            var anonKey = configuration["SUPABASE_KEY"] ?? configuration["Supabase:Key"];
+            _supabaseKey = !string.IsNullOrWhiteSpace(svcKey) ? svcKey : anonKey;
             _http = httpClientFactory.CreateClient("Supabase");
         }
 
@@ -250,3 +250,5 @@ namespace Backend.Services
         }
     }
 }
+
+

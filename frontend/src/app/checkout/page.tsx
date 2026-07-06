@@ -59,36 +59,72 @@ export default function CheckoutPage() {
 
       const bookingRefs: string[] = [];
       const orderItems = items.map((item) => ({
+        itemType: item.itemType || 'tour',
         tourId: item.tourId,
+        hotelId: item.hotelId,
+        roomId: item.roomId,
         title: item.title,
         image: item.image,
         price: item.price,
         quantity: item.quantity,
         guests: item.guests,
         date: item.date,
+        checkOutDate: item.checkOutDate
       }));
 
       for (const item of items) {
-        const response = await fetch(apiUrl('/api/bookings'), {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            tourId: item.tourId,
-            userId: user?.id || 'guest',
-            userEmail: formData.email,
-            date: item.date,
-            guests: item.guests,
-            quantity: item.quantity,
-          }),
-        });
+        if (item.itemType === 'hotel') {
+          const response = await fetch(apiUrl('/api/hotelbookings/create'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              hotelId: item.hotelId,
+              hotelName: item.hotelName || item.title.split(' - ')[0],
+              hotelImage: item.image,
+              roomId: item.roomId,
+              roomName: item.title.split(' - ')[1] || 'Phòng',
+              userId: user?.email || 'guest',
+              userEmail: formData.email,
+              checkInDate: item.date,
+              checkOutDate: item.checkOutDate,
+              roomQuantity: item.quantity,
+              adults: item.guests || 2,
+              children: item.children || 0,
+              totalAmount: item.price * item.quantity * (item.totalNights || 1),
+              totalNights: item.totalNights || 1,
+              roomPrice: item.price
+            }),
+          });
 
-        if (!response.ok) {
-          const err = await response.json();
-          throw new Error(err.error || err.message || 'Đặt tour thất bại');
+          if (!response.ok) {
+            const err = await response.json();
+            throw new Error(err.error || err.message || 'Đặt khách sạn thất bại');
+          }
+
+          const data = await response.json();
+          bookingRefs.push(data.booking_code || data.id || data.GetProperty?.('booking_code')?.GetString?.() || 'HOTEL-REF');
+        } else {
+          const response = await fetch(apiUrl('/api/bookings'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              tourId: item.tourId,
+              userId: user?.id || 'guest',
+              userEmail: formData.email,
+              date: item.date,
+              guests: item.guests,
+              quantity: item.quantity,
+            }),
+          });
+
+          if (!response.ok) {
+            const err = await response.json();
+            throw new Error(err.error || err.message || 'Đặt tour thất bại');
+          }
+
+          const data = await response.json();
+          bookingRefs.push(data.id);
         }
-
-        const data = await response.json();
-        bookingRefs.push(data.id);
       }
 
       const finalAmount = total - discountAmount;

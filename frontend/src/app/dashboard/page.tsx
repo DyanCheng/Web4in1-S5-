@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
-import { Package, FileText, User, Download, Trash2, Star, Calendar, Loader2, Ticket, Key, Camera } from 'lucide-react';
+import { Package, FileText, User, Download, Trash2, Star, Calendar, Loader2, Ticket, Key, Camera, Building } from 'lucide-react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -19,7 +19,9 @@ export default function DashboardPage() {
   const { theme } = useTheme();
   const [activeTab, setActiveTab] = useState('bookings');
   const [bookings, setBookings] = useState<any[]>([]);
+  const [hotelBookings, setHotelBookings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingHotels, setLoadingHotels] = useState(true);
   const [error, setError] = useState('');
   const [experiencedTourIds, setExperiencedTourIds] = useState<string[]>([]);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
@@ -93,11 +95,27 @@ export default function DashboardPage() {
     }
   };
 
+  const fetchHotelBookings = async () => {
+    if (!user) return;
+    try {
+      setLoadingHotels(true);
+      const response = await fetch(apiUrl(`/api/hotelbookings/user/${encodeURIComponent(user.email)}`));
+      if (!response.ok) throw new Error('Không thể tải lịch sử đặt khách sạn');
+      const data = await response.json();
+      setHotelBookings(data);
+    } catch (err: any) {
+      console.error(err);
+    } finally {
+      setLoadingHotels(false);
+    }
+  };
+
   useEffect(() => {
     if (!user) {
       router.push('/login');
     } else {
       fetchBookings();
+      fetchHotelBookings();
     }
   }, [user, router]);
 
@@ -231,6 +249,18 @@ export default function DashboardPage() {
               >
                 <Package className="size-4.5" />
                 <span>Đặt hành trình của tôi</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('hotels')}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-colors font-bold text-sm cursor-pointer ${
+                  activeTab === 'hotels'
+                    ? 'bg-blue-900 dark:bg-blue-600 text-white shadow'
+                    : 'text-slate-750 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                }`}
+              >
+                <Building className="size-4.5" />
+                <span>Khách sạn đã đặt</span>
               </button>
 
               <button
@@ -371,6 +401,92 @@ export default function DashboardPage() {
                       </div>
                     </div>
                   ))
+                )}
+              </div>
+            )}
+
+            {/* Hotels Tab */}
+            {activeTab === 'hotels' && (
+              <div className="space-y-6">
+                <h2 className="text-2xl font-black text-slate-900 dark:text-white font-serif leading-tight mb-4">Các khách sạn đã đặt</h2>
+                
+                {loadingHotels ? (
+                  <div className="flex justify-center items-center py-20 bg-white dark:bg-slate-900 rounded-3xl border border-slate-100/40 dark:border-slate-800/40 shadow-sm">
+                    <Loader2 className="size-8 animate-spin text-blue-600" />
+                    <span className="ml-3 text-slate-500 dark:text-slate-400 font-bold">Đang tải lịch sử...</span>
+                  </div>
+                ) : hotelBookings.length === 0 ? (
+                  <div className="text-center py-16 bg-white dark:bg-slate-900 rounded-3xl border border-slate-100/40 dark:border-slate-800/40 p-8 shadow-sm">
+                    <p className="text-slate-550 dark:text-slate-400 mb-6 font-semibold">Bạn chưa đăng ký đặt phòng khách sạn nào</p>
+                    <Link
+                      href="/hotel"
+                      className="px-6 py-2.5 bg-blue-900 dark:bg-blue-600 text-white rounded-full transition-all font-bold text-sm shadow inline-block"
+                    >
+                      Tìm kiếm khách sạn ngay
+                    </Link>
+                  </div>
+                ) : (
+                  hotelBookings.map((booking) => {
+                    const hotelDetail = booking.details?.[0] || {};
+                    const hotelObj = hotelDetail.hotel || {};
+                    const roomObj = hotelDetail.room || {};
+                    
+                    const hotelName = hotelObj.name || booking.hotelName || 'Khách sạn';
+                    const hotelImage = hotelObj.image || booking.hotelImage || 'https://images.unsplash.com/photo-1566073771259-6a8506099945';
+                    const roomName = roomObj.name || booking.roomName;
+                    const quantity = hotelDetail.quantity || booking.quantity || booking.room_quantity || 1;
+                    const totalPrice = booking.total_price || booking.totalPrice || booking.total_amount || 0;
+                    const bookingCode = booking.booking_code || booking.bookingCode || booking.id;
+
+                    return (
+                    <div key={booking.hotel_booking_id || booking.id} className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-100/40 dark:border-slate-800/40 shadow-sm flex flex-col md:flex-row gap-6">
+                      <div className="w-full md:w-32 h-32 rounded-2xl overflow-hidden flex-shrink-0">
+                        <img src={hotelImage} alt={hotelName} className="w-full h-full object-cover" />
+                      </div>
+
+                      <div className="flex-1 flex flex-col justify-between">
+                        <div className="flex items-start justify-between mb-2">
+                          <h3 className="text-lg font-extrabold text-slate-900 dark:text-white leading-tight">{hotelName} {roomName ? `- ${roomName}` : ''}</h3>
+                          <span
+                            className={`px-3 py-1 rounded-full text-xxs font-black tracking-wide uppercase ${
+                              booking.payment_status === 'paid' || booking.paymentStatus === 'paid' || booking.status === 'paid'
+                                ? 'bg-green-50 text-green-700 dark:bg-green-950/40 dark:text-green-400'
+                                : 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400'
+                            }`}
+                          >
+                            {(booking.payment_status === 'paid' || booking.paymentStatus === 'paid') ? 'Đã thanh toán' : 'Chưa thanh toán'}
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4 text-xs font-bold">
+                          <div>
+                            <p className="text-slate-400 dark:text-slate-500 uppercase tracking-wide text-[9px] mb-0.5">Mã đơn đặt</p>
+                            <p className="text-slate-800 dark:text-slate-200 font-extrabold">{bookingCode}</p>
+                          </div>
+                          <div>
+                            <p className="text-slate-400 dark:text-slate-500 uppercase tracking-wide text-[9px] mb-0.5">Thời gian</p>
+                            <p className="text-slate-800 dark:text-slate-200">{(booking.check_in_date || booking.checkInDate || '').split('T')[0]} - {(booking.check_out_date || booking.checkOutDate || '').split('T')[0]}</p>
+                          </div>
+                          <div>
+                            <p className="text-slate-400 dark:text-slate-500 uppercase tracking-wide text-[9px] mb-0.5">Số lượng</p>
+                            <p className="text-slate-800 dark:text-slate-200">{quantity} Phòng</p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-800">
+                          <div className="text-2xl font-black text-blue-900 dark:text-blue-400">{Number(totalPrice).toLocaleString('vi-VN')}đ</div>
+                          <div className="flex gap-2">
+                            <button
+                              className="px-4 py-2 bg-blue-900 dark:bg-blue-600 text-white rounded-2xl hover:bg-blue-955 dark:hover:bg-blue-700 transition-colors flex items-center gap-1.5 font-bold text-xs cursor-pointer shadow-sm"
+                            >
+                              <FileText className="size-3.5" />
+                              Chi tiết
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )})
                 )}
               </div>
             )}

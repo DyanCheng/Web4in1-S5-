@@ -56,15 +56,14 @@ import {
 import RoomTypeModal from '@/components/RoomTypeModal';
 import { getHotelFavorites, toggleHotelFavorite } from '@/lib/hotelStorage';
 import { useEffect } from 'react';
-import { apiUrl } from '@/lib/backendUrl';
 
 type SortMode = 'recommended' | 'price' | 'rating';
 type BookingMode = 'hourly' | 'overnight' | 'daily';
 
 const bookingModeOptions: { value: BookingMode; label: string }[] = [
-  { value: 'hourly', label: 'Theo giờ' },
-  { value: 'overnight', label: 'Qua đêm' },
-  { value: 'daily', label: 'Theo ngày' },
+  { value: 'hourly', label: 'Theo gi�' },
+  { value: 'overnight', label: 'Qua �m' },
+  { value: 'daily', label: 'Theo ng�y' },
 ];
 
 const hourlyTimeOptions = [
@@ -99,88 +98,88 @@ const hotels = [
   {
     id: 'ocean-view',
     name: 'Resort Sun Peninsula',
-    location: 'Bãi Bắc, Bán đảo Sơn Trà, Đà Nẵng',
-    area: 'Đà Nẵng',
+    location: 'B�i B�c, B�n �o S�n Tr�, � N�ng',
+    area: '� N�ng',
     image: 'https://images.unsplash.com/photo-1571896349842-33c89424de2d',
     rating: 4.8,
     reviews: 2345,
     price: 3500000,
     oldPrice: 4100000,
-    badge: 'Bán chạy nhất',
+    badge: 'B�n ch�y nh�t',
     stars: 5,
-    features: ['WiFi miễn phí', 'Hồ bơi', 'Nhà hàng', 'Spa'],
+    features: ['WiFi mi�n ph�', 'H� b�i', 'Nh� h�ng', 'Spa'],
   },
   {
     id: 'duong-dong',
-    name: 'Dương Đông Boutique Hotel',
-    location: 'Dương Đông, Phú Quốc',
-    area: 'Phú Quốc',
+    name: 'D��ng �ng Boutique Hotel',
+    location: 'D��ng �ng, Ph� Qu�c',
+    area: 'Ph� Qu�c',
     image: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b',
     rating: 4.5,
     reviews: 998,
     price: 1850000,
     oldPrice: 2300000,
     stars: 4,
-    features: ['WiFi miễn phí', 'Gần bãi biển', 'Đưa đón sân bay'],
+    features: ['WiFi mi�n ph�', 'G�n b�i bi�n', '�a �n s�n bay'],
   },
   {
     id: 'imperial-garden',
     name: 'Imperial Garden & Spa',
-    location: 'Trần Hưng Đạo, Phú Quốc',
-    area: 'Phú Quốc',
+    location: 'Tr�n H�ng �o, Ph� Qu�c',
+    area: 'Ph� Qu�c',
     image: 'https://images.unsplash.com/photo-1564501049412-61c2a3083791',
     rating: 5.0,
     reviews: 812,
     price: 5100000,
     oldPrice: 6500000,
-    badge: 'Giảm 25%',
+    badge: 'Gi�m 25%',
     stars: 5,
-    features: ['Nhà hàng', 'Spa', 'Hồ bơi', 'Phòng gym'],
+    features: ['Nh� h�ng', 'Spa', 'H� b�i', 'Ph�ng gym'],
   },
   {
     id: 'nha-trang-bay',
     name: 'Nha Trang Bay Resort',
-    location: 'Đường Trần Phú, Nha Trang',
+    location: '��ng Tr�n Ph�, Nha Trang',
     area: 'Nha Trang',
     image: 'https://images.unsplash.com/photo-1566073771259-6a8506099945',
     rating: 4.7,
     reviews: 1650,
     price: 2450000,
     oldPrice: 3100000,
-    badge: 'Ưu đãi hè',
+    badge: '�u �i h�',
     stars: 5,
-    features: ['WiFi miễn phí', 'Hồ bơi', 'Nhà hàng', 'Gần bãi biển'],
+    features: ['WiFi mi�n ph�', 'H� b�i', 'Nh� h�ng', 'G�n b�i bi�n'],
   },
   {
     id: 'da-nang-ocean',
-    name: 'Đà Nẵng Ocean Hotel',
-    location: 'Mỹ Khê, Đà Nẵng',
-    area: 'Đà Nẵng',
+    name: '� N�ng Ocean Hotel',
+    location: 'M� Kh�, � N�ng',
+    area: '� N�ng',
     image: 'https://images.unsplash.com/photo-1551882547-ff40c63fe5fa',
     rating: 4.6,
     reviews: 1320,
     price: 2100000,
     oldPrice: 2700000,
     stars: 4,
-    features: ['WiFi miễn phí', 'Gần bãi biển', 'Bữa sáng miễn phí'],
+    features: ['WiFi mi�n ph�', 'G�n b�i bi�n', 'B�a s�ng mi�n ph�'],
   },
   {
     id: 'hoi-an-lantern',
-    name: 'Hội An Lantern Villa',
-    location: 'Phố cổ Hội An, Quảng Nam',
-    area: 'Hội An',
+    name: 'H�i An Lantern Villa',
+    location: 'Ph� c� H�i An, Qu�ng Nam',
+    area: 'H�i An',
     image: 'https://images.unsplash.com/photo-1528127269322-539801943592',
     rating: 4.4,
     reviews: 760,
     price: 1350000,
     oldPrice: 1800000,
     stars: 4,
-    features: ['WiFi miễn phí', 'Bữa sáng miễn phí', 'Đưa đón sân bay'],
+    features: ['WiFi mi�n ph�', 'B�a s�ng mi�n ph�', '�a �n s�n bay'],
   },
   {
     id: 'sapa-mountain',
     name: 'Sa Pa Mountain Lodge',
-    location: 'Trung tâm Sa Pa, Lào Cai',
+    location: 'Trung t�m Sa Pa, L�o Cai',
     area: 'Sa Pa',
     image: 'https://images.unsplash.com/photo-1582719508461-905c673771fd',
     rating: 4.3,
@@ -188,85 +187,85 @@ const hotels = [
     price: 1650000,
     oldPrice: 2100000,
     stars: 4,
-    features: ['WiFi miễn phí', 'Bữa sáng miễn phí', 'Nhà hàng'],
+    features: ['WiFi mi�n ph�', 'B�a s�ng mi�n ph�', 'Nh� h�ng'],
   },
   {
     id: 'ha-long-pearl',
-    name: 'Hạ Long Pearl Hotel',
-    location: 'Bãi Cháy, Hạ Long',
-    area: 'Hạ Long',
+    name: 'H� Long Pearl Hotel',
+    location: 'B�i Ch�y, H� Long',
+    area: 'H� Long',
     image: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee',
     rating: 4.2,
     reviews: 690,
     price: 1750000,
     oldPrice: 2200000,
     stars: 4,
-    features: ['WiFi miễn phí', 'Hồ bơi', 'Nhà hàng'],
+    features: ['WiFi mi�n ph�', 'H� b�i', 'Nh� h�ng'],
   },
   {
     id: 'da-lat-pine',
-    name: 'Đà Lạt Pine Garden',
-    location: 'Hồ Tuyền Lâm, Đà Lạt',
-    area: 'Đà Lạt',
+    name: '� L�t Pine Garden',
+    location: 'H� Tuy�n L�m, � L�t',
+    area: '� L�t',
     image: 'https://images.unsplash.com/photo-1501117716987-c8e1ecb21098',
     rating: 4.1,
     reviews: 430,
     price: 1250000,
     oldPrice: 1650000,
     stars: 3,
-    features: ['WiFi miễn phí', 'Bữa sáng miễn phí', 'Nhà hàng'],
+    features: ['WiFi mi�n ph�', 'B�a s�ng mi�n ph�', 'Nh� h�ng'],
   },
   {
     id: 'hanoi-heritage',
-    name: 'Hà Nội Heritage Hotel',
-    location: 'Hoàn Kiếm, Hà Nội',
-    area: 'Hà Nội',
+    name: 'H� N�i Heritage Hotel',
+    location: 'Ho�n Ki�m, H� N�i',
+    area: 'H� N�i',
     image: 'https://images.unsplash.com/photo-1568084680786-a84f91d1153c',
     rating: 4.5,
     reviews: 1180,
     price: 1950000,
     oldPrice: 2500000,
     stars: 4,
-    features: ['WiFi miễn phí', 'Nhà hàng', 'Đưa đón sân bay'],
+    features: ['WiFi mi�n ph�', 'Nh� h�ng', '�a �n s�n bay'],
   },
   {
     id: 'saigon-sky',
-    name: 'Sài Gòn Sky Suites',
-    location: 'Quận 1, TP. Hồ Chí Minh',
-    area: 'TP. Hồ Chí Minh',
+    name: 'S�i G�n Sky Suites',
+    location: 'Qu�n 1, TP. H� Ch� Minh',
+    area: 'TP. H� Ch� Minh',
     image: 'https://images.unsplash.com/photo-1596394516093-501ba68a0ba6',
     rating: 4.9,
     reviews: 2012,
     price: 3650000,
     oldPrice: 4550000,
-    badge: 'Được yêu thích',
+    badge: '��c y�u th�ch',
     stars: 5,
-    features: ['WiFi miễn phí', 'Hồ bơi', 'Spa', 'Phòng gym'],
+    features: ['WiFi mi�n ph�', 'H� b�i', 'Spa', 'Ph�ng gym'],
   },
   {
     id: 'hue-riverside',
-    name: 'Huế Riverside Hotel',
-    location: 'Bờ sông Hương, Huế',
-    area: 'Huế',
+    name: 'Hu� Riverside Hotel',
+    location: 'B� s�ng H��ng, Hu�',
+    area: 'Hu�',
     image: 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb',
     rating: 4.0,
     reviews: 355,
     price: 980000,
     oldPrice: 1350000,
     stars: 3,
-    features: ['WiFi miễn phí', 'Nhà hàng', 'Bữa sáng miễn phí'],
+    features: ['WiFi mi�n ph�', 'Nh� h�ng', 'B�a s�ng mi�n ph�'],
   },
 ];
 
 type Hotel = (typeof hotels)[number];
 
 const starOptions = [5, 4, 3];
-const facilityOptions = ['WiFi miễn phí', 'Hồ bơi', 'Bữa sáng miễn phí', 'Phòng gym', 'Spa', 'Nhà hàng', 'Gần bãi biển', 'Đưa đón sân bay'];
-const areaOptions = ['Phú Quốc', 'Nha Trang', 'Đà Nẵng', 'Hội An', 'Sa Pa', 'Hạ Long', 'Đà Lạt', 'Hà Nội', 'TP. Hồ Chí Minh', 'Huế'];
+const facilityOptions = ['WiFi mi�n ph�', 'H� b�i', 'B�a s�ng mi�n ph�', 'Ph�ng gym', 'Spa', 'Nh� h�ng', 'G�n b�i bi�n', '�a �n s�n bay'];
+const areaOptions = ['Ph� Qu�c', 'Nha Trang', '� N�ng', 'H�i An', 'Sa Pa', 'H� Long', '� L�t', 'H� N�i', 'TP. H� Ch� Minh', 'Hu�'];
 const hotelsPerPage = 5;
 
 function formatVnd(value: number) {
-  return `${value.toLocaleString('vi-VN')} đ`;
+  return `${value.toLocaleString('vi-VN')} `;
 }
 
 function hotelImageUrl(url: string) {
@@ -283,29 +282,29 @@ function getBookingModeLabel(mode: BookingMode) {
 }
 
 function getScoreLabel(rating: number) {
-  if (rating >= 4.8) return 'Xuất sắc';
-  if (rating >= 4.5) return 'Tuyệt vời';
-  if (rating >= 4.0) return 'Rất tốt';
-  return 'Tốt';
+  if (rating >= 4.8) return 'Xu�t s�c';
+  if (rating >= 4.5) return 'Tuy�t v�i';
+  if (rating >= 4.0) return 'R�t t�t';
+  return 'T�t';
 }
 
 function getFeatureIcon(feature: string) {
   switch (feature) {
-    case 'WiFi miễn phí':
+    case 'WiFi mi�n ph�':
       return <Wifi className="size-3.5" />;
-    case 'Hồ bơi':
+    case 'H� b�i':
       return <Waves className="size-3.5" />;
-    case 'Nhà hàng':
+    case 'Nh� h�ng':
       return <Utensils className="size-3.5" />;
     case 'Spa':
       return <Sparkles className="size-3.5" />;
-    case 'Gần bãi biển':
+    case 'G�n b�i bi�n':
       return <Palmtree className="size-3.5" />;
-    case 'Đưa đón sân bay':
+    case '�a �n s�n bay':
       return <Plane className="size-3.5" />;
-    case 'Phòng gym':
+    case 'Ph�ng gym':
       return <Dumbbell className="size-3.5" />;
-    case 'Bữa sáng miễn phí':
+    case 'B�a s�ng mi�n ph�':
       return <Coffee className="size-3.5" />;
     default:
       return <Wifi className="size-3.5" />;
@@ -353,26 +352,26 @@ export default function HotelPage() {
     return [
       {
         id: 'standard',
-        name: 'Phòng Standard (Tiêu chuẩn)',
-        badge: 'Bán chạy nhất',
+        name: 'Ph�ng Standard (Ti�u chu�n)',
+        badge: 'B�n ch�y nh�t',
         badgeColor: 'bg-orange-50 dark:bg-orange-950/30 text-orange-600 dark:text-orange-400 border border-orange-200 dark:border-orange-900',
-        area: '35 m²',
-        bed: '1 Giường King',
-        guests: '2 Người lớn',
-        features: ['WiFi Miễn phí', 'Biểu hòa nhiệt độ', 'Bao gồm bữa sáng', 'Mini Nar'],
+        area: '35 m�',
+        bed: '1 Gi��ng King',
+        guests: '2 Ng��i l�n',
+        features: ['WiFi Mi�n ph�', 'Bi�u h�a nhi�t �', 'Bao g�m b�a s�ng', 'Mini Nar'],
         price: 3500000,
         taxAndFee: 280000,
         image: 'https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&w=600&q=80',
       },
       {
         id: 'deluxe',
-        name: 'Phòng Deluxe View Biển',
-        badge: 'Lựa chọn phổ biến',
+        name: 'Ph�ng Deluxe View Bi�n',
+        badge: 'L�a ch�n ph� bi�n',
         badgeColor: 'bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-900',
-        area: '52 m²',
-        bed: '1 Giường King',
-        guests: '2 Người lớn, 1 Trẻ em',
-        features: ['WiFi Tốc độ cao', 'Ban công riêng', 'Buffet Sáng Cao Cấp', 'Bồn tắm nằm'],
+        area: '52 m�',
+        bed: '1 Gi��ng King',
+        guests: '2 Ng��i l�n, 1 Tr� em',
+        features: ['WiFi T�c � cao', 'Ban c�ng ri�ng', 'Buffet S�ng Cao C�p', 'B�n t�m n�m'],
         price: 5200000,
         taxAndFee: 720000,
         image: 'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=600&q=80',
@@ -380,25 +379,25 @@ export default function HotelPage() {
       {
         id: 'vip',
         name: 'VIP Club Peninsula Suite',
-        badge: 'Đẳng cấp VIP',
+        badge: '�ng c�p VIP',
         badgeColor: 'bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-900',
-        area: '120 m²',
-        bed: '1 Giường Super King',
-        guests: 'Hồ bơi riêng',
-        features: ['Quản gia riêng 24/7', 'Quyền lợi Lounge VIP', 'Đưa đón sân bay', 'Rượu vang chào mừng'],
+        area: '120 m�',
+        bed: '1 Gi��ng Super King',
+        guests: 'H� b�i ri�ng',
+        features: ['Qu�n gia ri�ng 24/7', 'Quy�n l�i Lounge VIP', '�a �n s�n bay', 'R��u vang ch�o m�ng'],
         price: 12800000,
         taxAndFee: 3800000,
         image: 'https://images.unsplash.com/photo-1578683010236-d716f9a3f461?auto=format&fit=crop&w=600&q=80',
       },
       {
         id: 'family',
-        name: 'Phòng Family (2 Giường lớn)',
-        badge: 'Dành cho gia đình',
+        name: 'Ph�ng Family (2 Gi��ng l�n)',
+        badge: 'D�nh cho gia �nh',
         badgeColor: 'bg-purple-50 dark:bg-purple-950/30 text-purple-600 dark:text-purple-400 border border-purple-200 dark:border-purple-900',
-        area: '68 m²',
-        bed: '2 Giường Queen',
-        guests: '4 Người lớn',
-        features: ['Khu vực tiếp khách', 'Đồ dùng trẻ em', 'Ăn sáng gia đình', 'Kết nối thiết bị giải trí'],
+        area: '68 m�',
+        bed: '2 Gi��ng Queen',
+        guests: '4 Ng��i l�n',
+        features: ['Khu v�c ti�p kh�ch', '� d�ng tr� em', 'n s�ng gia �nh', 'K�t n�i thi�t b� gi�i tr�'],
         price: 7800000,
         taxAndFee: 400000,
         image: 'https://images.unsplash.com/photo-1566665797739-1674de7a421a?auto=format&fit=crop&w=600&q=80',
@@ -455,12 +454,12 @@ export default function HotelPage() {
 
   const dateSummary = useMemo(() => {
     if (bookingMode === 'hourly') {
-      if (!selectedDate) return 'Chưa chọn ngày';
-      return `${formatDateVi(selectedDate)} · ${startTime} - ${endTime}`;
+      if (!selectedDate) return 'Ch�a ch�n ng�y';
+      return `${formatDateVi(selectedDate)} � ${startTime} - ${endTime}`;
     }
 
     if (!dateRange?.from) {
-      return bookingMode === 'overnight' ? 'Chưa chọn đêm nhận - trả phòng' : 'Chưa chọn ngày nhận - trả phòng';
+      return bookingMode === 'overnight' ? 'Ch�a ch�n �m nh�n - tr� ph�ng' : 'Ch�a ch�n ng�y nh�n - tr� ph�ng';
     }
 
     if (!dateRange.to) return formatDateVi(dateRange.from);
@@ -511,7 +510,7 @@ export default function HotelPage() {
     setMaxPrice(100000000);
     setSortMode('recommended');
     setCurrentPage(1);
-    setNotice('Đã xóa tất cả bộ lọc.');
+    setNotice('� x�a t�t c� b� l�c.');
   };
 
   const toggleFavorite = (hotel: Hotel) => {
@@ -532,7 +531,7 @@ export default function HotelPage() {
     setCurrentPage(1);
     setDatePopoverOpen(false);
     setNotice(
-      `Đang tìm khách sạn tại ${searchDestination || 'tất cả địa điểm'} · ${getBookingModeLabel(bookingMode)} · ${dateSummary}.`
+      `ang t�m kh�ch s�n t�i ${searchDestination || 't�t c� �a i�m'} � ${getBookingModeLabel(bookingMode)} � ${dateSummary}.`
     );
   };
 
@@ -557,7 +556,7 @@ export default function HotelPage() {
                   className="inline-flex items-center gap-1.5 text-xs font-black text-[#0b5cd5] hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 mb-3 transition-colors cursor-pointer"
                 >
                   <ArrowLeft className="size-3.5" />
-                  Quay lại danh sách khách sạn
+                  Quay l�i danh s�ch kh�ch s�n
                 </button>
 
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
@@ -569,25 +568,25 @@ export default function HotelPage() {
                         ))}
                       </span>
                       <span className="text-[10px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-wider">
-                        KHÁCH SẠN {selectedHotel.stars} SAO
+                        KH�CH S�N {selectedHotel.stars} SAO
                       </span>
                     </div>
                     <h1 className="text-xl md:text-3xl font-black text-[#1a1a1a] dark:text-white leading-tight">
-                      Chọn phòng tại {selectedHotel.name}
+                      Ch�n ph�ng t�i {selectedHotel.name}
                     </h1>
                     <p className="mt-1 flex items-center gap-1.5 text-xs font-bold text-slate-500 dark:text-slate-400">
                       <MapPin className="size-3.5 text-blue-600 shrink-0" />
-                      <span>{selectedHotel.location}, Việt Nam</span>
+                      <span>{selectedHotel.location}, Vi�t Nam</span>
                     </p>
                   </div>
 
                   <div className="flex items-center gap-2">
                     <button
-                      onClick={() => setNotice('Liên kết chia sẻ đã được sao chép vào bộ nhớ tạm.')}
+                      onClick={() => setNotice('Li�n k�t chia s� � ��c sao ch�p v�o b� nh� t�m.')}
                       className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-1.5 text-xs font-black hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors shadow-sm cursor-pointer"
                     >
                       <Share2 className="size-3.5 text-slate-500" />
-                      Chia sẻ
+                      Chia s�
                     </button>
                     <button
                       onClick={() => toggleFavorite(selectedHotel)}
@@ -598,7 +597,7 @@ export default function HotelPage() {
                       }`}
                     >
                       <Heart className={`size-3.5 ${favorites.includes(selectedHotel.id) ? 'fill-red-500 text-red-500' : 'text-slate-500'}`} />
-                      {favorites.includes(selectedHotel.id) ? 'Đã lưu' : 'Lưu lại'}
+                      {favorites.includes(selectedHotel.id) ? '� l�u' : 'L�u l�i'}
                     </button>
                   </div>
                 </div>
@@ -671,12 +670,12 @@ export default function HotelPage() {
                             {/* Price and Action Button */}
                             <div className="mt-4 flex flex-row items-center justify-between gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
                               <div>
-                                <p className="text-[10px] font-bold text-slate-400">Giá mỗi đêm từ</p>
+                                <p className="text-[10px] font-bold text-slate-400">Gi� m�i �m t�</p>
                                 <p className="text-lg font-black text-[#0b5cd5] dark:text-blue-400 leading-none mt-1">
-                                  {room.price.toLocaleString('vi-VN')} <span className="underline underline-offset-1 decoration-[1.5px]">đ</span>
+                                  {room.price.toLocaleString('vi-VN')} <span className="underline underline-offset-1 decoration-[1.5px]"></span>
                                 </p>
                                 <p className="text-[9px] font-medium text-slate-400 mt-1">
-                                  + {room.taxAndFee.toLocaleString('vi-VN')} <span className="underline underline-offset-1 decoration-[1px]">đ</span> thuế & phí
+                                  + {room.taxAndFee.toLocaleString('vi-VN')} <span className="underline underline-offset-1 decoration-[1px]"></span> thu� & ph�
                                 </p>
                               </div>
 
@@ -688,7 +687,7 @@ export default function HotelPage() {
                                     : 'bg-[#0b5cd5] text-white hover:bg-blue-700'
                                 }`}
                               >
-                                {isSelected ? 'Đã chọn' : 'Chọn phòng'}
+                                {isSelected ? '� ch�n' : 'Ch�n ph�ng'}
                               </button>
                             </div>
                           </div>
@@ -703,14 +702,14 @@ export default function HotelPage() {
                   {/* Booking Summary Box */}
                   <div className="bg-white dark:bg-slate-900 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-md">
                     <div className="bg-[#0b5cd5] text-center py-3 text-white">
-                      <h3 className="text-sm font-black tracking-wide text-white uppercase">Tóm tắt đặt phòng</h3>
+                      <h3 className="text-sm font-black tracking-wide text-white uppercase">T�m t�t �t ph�ng</h3>
                     </div>
 
                     <div className="p-4 text-left space-y-3">
                       {/* Date Picker Section */}
                       <div className="flex items-center justify-between border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 relative bg-slate-50 dark:bg-slate-800/50">
                         <div className="flex flex-col text-left">
-                          <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">NGÀY NHẬN PHÒNG</span>
+                          <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">NG�Y NH�N PH�NG</span>
                           <span className="text-xs font-black text-slate-800 dark:text-slate-100 mt-0.5">
                             {format(displayFromDate, "dd 'Th'MM, yyyy")}
                           </span>
@@ -724,7 +723,7 @@ export default function HotelPage() {
                           </PopoverTrigger>
                           <PopoverContent className="w-auto p-0" align="end">
                             <div className="p-3">
-                              <p className="mb-2 text-xs font-black text-slate-500">Thay đổi ngày lưu trú</p>
+                              <p className="mb-2 text-xs font-black text-slate-500">Thay �i ng�y l�u tr�</p>
                               <Calendar
                                 mode="range"
                                 selected={dateRange}
@@ -738,7 +737,7 @@ export default function HotelPage() {
                         </Popover>
 
                         <div className="flex flex-col text-right border-l border-slate-200 dark:border-slate-800 pl-3">
-                          <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">NGÀY TRẢ PHÒNG</span>
+                          <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">NG�Y TR� PH�NG</span>
                           <span className="text-xs font-black text-slate-800 dark:text-slate-100 mt-0.5">
                             {format(displayToDate, "dd 'Th'MM, yyyy")}
                           </span>
@@ -747,7 +746,7 @@ export default function HotelPage() {
 
                       {/* Guest Counter Section */}
                       <div className="flex justify-between items-center py-2 border-b border-slate-100 dark:border-slate-800">
-                        <span className="text-xs font-semibold text-slate-500">Số lượng phòng</span>
+                        <span className="text-xs font-semibold text-slate-500">S� l��ng ph�ng</span>
                         <div className="flex items-center gap-2">
                           <button onClick={() => setRoomQuantity(Math.max(1, roomQuantity - 1))} className="size-5 rounded bg-slate-100 dark:bg-slate-800 font-bold">-</button>
                           <span className="text-xs font-black text-slate-800 dark:text-slate-100 w-4 text-center">{roomQuantity}</span>
@@ -756,20 +755,20 @@ export default function HotelPage() {
                       </div>
 
                       <div className="flex justify-between items-center py-2 border-b border-slate-100 dark:border-slate-800">
-                        <span className="text-xs font-semibold text-slate-500">Khách lưu trú</span>
+                        <span className="text-xs font-semibold text-slate-500">Kh�ch l�u tr�</span>
                         <div className="flex items-center gap-1">
                           <span className="text-xs font-black text-slate-800 dark:text-slate-100">
-                            {adults} Người lớn, {children} Trẻ em
+                            {adults} Ng��i l�n, {children} Tr� em
                           </span>
                           <Popover>
                             <PopoverTrigger asChild>
-                              <button className="text-[10px] font-black text-blue-600 underline ml-1 cursor-pointer">Sửa</button>
+                              <button className="text-[10px] font-black text-blue-600 underline ml-1 cursor-pointer">S�a</button>
                             </PopoverTrigger>
                             <PopoverContent className="w-56 p-3">
                               <div className="space-y-2 text-xs">
-                                <p className="font-bold text-slate-700 mb-2">Số lượng khách</p>
+                                <p className="font-bold text-slate-700 mb-2">S� l��ng kh�ch</p>
                                 <div className="flex justify-between items-center">
-                                  <span>Người lớn:</span>
+                                  <span>Ng��i l�n:</span>
                                   <div className="flex items-center gap-1">
                                     <button onClick={() => setAdults(Math.max(1, adults - 1))} className="size-5 rounded bg-slate-100 font-bold">-</button>
                                     <span className="w-4 text-center font-bold">{adults}</span>
@@ -777,7 +776,7 @@ export default function HotelPage() {
                                   </div>
                                 </div>
                                 <div className="flex justify-between items-center mt-2">
-                                  <span>Trẻ em:</span>
+                                  <span>Tr� em:</span>
                                   <div className="flex items-center gap-1">
                                     <button onClick={() => setChildren(Math.max(0, children - 1))} className="size-5 rounded bg-slate-100 font-bold">-</button>
                                     <span className="w-4 text-center font-bold">{children}</span>
@@ -792,27 +791,27 @@ export default function HotelPage() {
 
                       {/* Nights info */}
                       <div className="flex justify-between items-center py-1.5 text-xs border-b border-slate-100 dark:border-slate-800">
-                        <span className="text-slate-500 font-semibold">Số đêm</span>
-                        <span className="font-black text-slate-800 dark:text-slate-100">{computedNights} đêm</span>
+                        <span className="text-slate-500 font-semibold">S� �m</span>
+                        <span className="font-black text-slate-800 dark:text-slate-100">{computedNights} �m</span>
                       </div>
 
                       {/* Selected Room Details */}
                       <div className="p-3 bg-[#eef2ff] dark:bg-blue-950/20 rounded-lg">
-                        <p className="text-[9px] font-black text-slate-400 uppercase">Phòng đã chọn:</p>
+                        <p className="text-[9px] font-black text-slate-400 uppercase">Ph�ng � ch�n:</p>
                         <p className={`text-xs font-black mt-0.5 ${selectedRoom ? 'text-[#0b5cd5] dark:text-blue-400' : 'text-slate-400'}`}>
-                          {selectedRoom ? selectedRoom.name : 'Vui lòng chọn phòng'}
+                          {selectedRoom ? selectedRoom.name : 'Vui l�ng ch�n ph�ng'}
                         </p>
                       </div>
 
                       {/* Total Price & Submit Booking */}
                       <div className="pt-1">
                         <div className="flex justify-between items-baseline mb-3">
-                          <span className="text-xs font-black text-slate-800 dark:text-slate-200">Tổng cộng</span>
+                          <span className="text-xs font-black text-slate-800 dark:text-slate-200">T�ng c�ng</span>
                           <div className="text-right">
                             <span className="text-lg font-black text-[#0b5cd5] dark:text-blue-400 leading-none">
-                              {((selectedRoom ? (selectedRoom.price + selectedRoom.taxAndFee) * computedNights * roomQuantity : 0)).toLocaleString('vi-VN')} <span className="underline underline-offset-1 decoration-[1.5px]">đ</span>
+                              {((selectedRoom ? (selectedRoom.price + selectedRoom.taxAndFee) * computedNights * roomQuantity : 0)).toLocaleString('vi-VN')} <span className="underline underline-offset-1 decoration-[1.5px]"></span>
                             </span>
-                            <p className="text-[9px] font-medium text-slate-400 mt-0.5">Đã bao gồm tất cả thuế phí</p>
+                            <p className="text-[9px] font-medium text-slate-400 mt-0.5">� bao g�m t�t c� thu� ph�</p>
                           </div>
                         </div>
 
@@ -831,9 +830,9 @@ export default function HotelPage() {
                               : 'bg-[#85a8e6] text-white cursor-not-allowed opacity-100'
                           }`}
                         >
-                          {user && selectedRoom ? 'Đặt phòng' : 'Tiếp tục đặt phòng'}
+                          {user && selectedRoom ? '�t ph�ng' : 'Ti�p t�c �t ph�ng'}
                         </button>
-                        <p className="text-[10px] text-slate-400 text-center mt-2 font-medium">Bạn sẽ không bị trừ tiền ngay lúc này</p>
+                        <p className="text-[10px] text-slate-400 text-center mt-2 font-medium">B�n s� kh�ng b� tr� ti�n ngay l�c n�y</p>
                       </div>
                     </div>
                   </div>
@@ -842,30 +841,30 @@ export default function HotelPage() {
                   <AlertDialog open={showConfirmModal} onOpenChange={setShowConfirmModal}>
                     <AlertDialogContent>
                       <AlertDialogHeader>
-                        <AlertDialogTitle>Xác nhận đặt phòng</AlertDialogTitle>
+                        <AlertDialogTitle>X�c nh�n �t ph�ng</AlertDialogTitle>
                         <AlertDialogDescription asChild>
                           <div className="space-y-2 mt-2">
-                            <p>Bạn có chắc chắn muốn đặt phòng <strong>{selectedRoom?.name}</strong> tại khách sạn <strong>{selectedHotel?.name}</strong> không?</p>
+                            <p>B�n c� ch�c ch�n mu�n �t ph�ng <strong>{selectedRoom?.name}</strong> t�i kh�ch s�n <strong>{selectedHotel?.name}</strong> kh�ng?</p>
                             <div className="bg-slate-50 dark:bg-slate-800 p-3 rounded-lg text-sm text-slate-700 dark:text-slate-300">
-                              <p>Ngày nhận phòng: <strong>{format(displayFromDate, "dd/MM/yyyy")}</strong></p>
-                              <p>Ngày trả phòng: <strong>{format(displayToDate, "dd/MM/yyyy")}</strong></p>
-                              <p>Khách: <strong>{adults} Người lớn, {children} Trẻ em</strong></p>
-                              <p>Số lượng phòng: <strong>{roomQuantity}</strong></p>
-                              <p className="mt-2 text-[#0b5cd5] font-black text-base">Tổng cộng: {selectedRoom ? ((selectedRoom.price + selectedRoom.taxAndFee) * computedNights * roomQuantity).toLocaleString('vi-VN') : 0} đ</p>
+                              <p>Ng�y nh�n ph�ng: <strong>{format(displayFromDate, "dd/MM/yyyy")}</strong></p>
+                              <p>Ng�y tr� ph�ng: <strong>{format(displayToDate, "dd/MM/yyyy")}</strong></p>
+                              <p>Kh�ch: <strong>{adults} Ng��i l�n, {children} Tr� em</strong></p>
+                              <p>S� l��ng ph�ng: <strong>{roomQuantity}</strong></p>
+                              <p className="mt-2 text-[#0b5cd5] font-black text-base">T�ng c�ng: {selectedRoom ? ((selectedRoom.price + selectedRoom.taxAndFee) * computedNights * roomQuantity).toLocaleString('vi-VN') : 0} </p>
                             </div>
                           </div>
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
-                        <AlertDialogCancel>Hủy</AlertDialogCancel>
+                        <AlertDialogCancel>H�y</AlertDialogCancel>
                         <AlertDialogAction
                           onClick={() => {
-                            setNotice(`Đặt phòng thành công! CMC Travel đang chuẩn bị đơn hàng cho ${roomQuantity} phòng ${selectedRoom?.name} tại ${selectedHotel?.name}.`);
+                            setNotice(`�t ph�ng th�nh c�ng! CMC Travel ang chu�n b� �n h�ng cho ${roomQuantity} ph�ng ${selectedRoom?.name} t�i ${selectedHotel?.name}.`);
                             setSelectedRoom(null);
                             setShowConfirmModal(false);
                           }}
                         >
-                          Xác nhận đặt
+                          X�c nh�n �t
                         </AlertDialogAction>
                       </AlertDialogFooter>
                     </AlertDialogContent>
@@ -877,15 +876,15 @@ export default function HotelPage() {
                       <Headphones className="size-4.5 text-blue-600" />
                     </div>
                     <div>
-                      <p className="text-[10px] font-black text-slate-400 uppercase leading-none">Cần hỗ trợ?</p>
-                      <p className="text-xs font-black text-slate-800 dark:text-slate-100 mt-1">Gọi ngay: 1900 1234</p>
+                      <p className="text-[10px] font-black text-slate-400 uppercase leading-none">C�n h� tr�?</p>
+                      <p className="text-xs font-black text-slate-800 dark:text-slate-100 mt-1">G�i ngay: 1900 1234</p>
                     </div>
                   </div>
                       {/* Services Section */}
                       <div className="space-y-3 pt-2">
                         <div className="flex items-center justify-between">
                           <h4 className="text-xs font-black text-slate-700 dark:text-slate-350 uppercase tracking-wider text-left">
-                            Khám phá các dịch vụ khác
+                            Kh�m ph� c�c d�ch v� kh�c
                           </h4>
                           <div className="flex gap-1">
                             <button
@@ -930,10 +929,10 @@ export default function HotelPage() {
                                     </p>
                                   </div>
                                   <button
-                                    onClick={() => setNotice(`Đang mở thông tin chi tiết dịch vụ ${svc.name}.`)}
+                                    onClick={() => setNotice(`ang m� th�ng tin chi ti�t d�ch v� ${svc.name}.`)}
                                     className="mt-2.5 w-full text-[9px] font-black text-white bg-[#e07a5f] hover:bg-[#c6654a] py-1.5 rounded-md transition-colors cursor-pointer"
                                   >
-                                    Xem chi tiết
+                                    Xem chi ti�t
                                   </button>
                                 </div>
                               </div>
@@ -951,7 +950,7 @@ export default function HotelPage() {
               <div className="max-w-7xl mx-auto bg-white dark:bg-slate-900 rounded-lg p-3 shadow-lg">
                 <div className="grid grid-cols-1 md:grid-cols-[1.1fr_0.9fr_1.2fr_auto] gap-3">
                   <label className="flex flex-col gap-1 text-xs font-black text-slate-500 dark:text-slate-400">
-                    Điểm đến
+                    i�m �n
                     <span className="relative flex items-center gap-2 rounded-md border border-slate-200 dark:border-slate-800 px-3 py-2 text-sm text-slate-800 dark:text-slate-100">
                       <MapPin className="size-4 text-blue-600 shrink-0" />
                       <select
@@ -959,7 +958,7 @@ export default function HotelPage() {
                         onChange={(event) => handleDestinationChange(event.target.value)}
                         className="w-full appearance-none bg-transparent pr-6 outline-none font-bold cursor-pointer"
                       >
-                        <option value="">Chọn địa điểm đặt phòng</option>
+                        <option value="">Ch�n �a i�m �t ph�ng</option>
                         {areaOptions.map((area) => (
                           <option key={area} value={area}>
                             {area}
@@ -971,7 +970,7 @@ export default function HotelPage() {
                   </label>
 
                   <label className="flex flex-col gap-1 text-xs font-black text-slate-500 dark:text-slate-400">
-                    Loại đặt phòng
+                    Lo�i �t ph�ng
                     <span className="relative flex items-center gap-2 rounded-md border border-slate-200 dark:border-slate-800 px-3 py-2 text-sm text-slate-800 dark:text-slate-100">
                       <Clock className="size-4 text-blue-600 shrink-0" />
                       <select
@@ -991,10 +990,10 @@ export default function HotelPage() {
 
                   <label className="flex flex-col gap-1 text-xs font-black text-slate-500 dark:text-slate-400">
                     {bookingMode === 'hourly'
-                      ? 'Ngày và khung giờ'
+                      ? 'Ng�y v� khung gi�'
                       : bookingMode === 'overnight'
-                        ? 'Đêm nhận - trả phòng'
-                        : 'Ngày nhận - trả phòng'}
+                        ? '�m nh�n - tr� ph�ng'
+                        : 'Ng�y nh�n - tr� ph�ng'}
                     <Popover open={datePopoverOpen} onOpenChange={setDatePopoverOpen}>
                       <PopoverTrigger asChild>
                         <button
@@ -1008,7 +1007,7 @@ export default function HotelPage() {
                       <PopoverContent className="w-auto p-0" align="start">
                         {bookingMode === 'hourly' ? (
                           <div className="p-3">
-                            <p className="mb-2 text-xs font-black text-slate-500">Chọn ngày trên lịch</p>
+                            <p className="mb-2 text-xs font-black text-slate-500">Ch�n ng�y tr�n l�ch</p>
                             <Calendar
                               mode="single"
                               selected={selectedDate}
@@ -1018,7 +1017,7 @@ export default function HotelPage() {
                             />
                             <div className="mt-3 grid grid-cols-2 gap-3 border-t border-slate-200 pt-3 dark:border-slate-700">
                               <label className="flex flex-col gap-1 text-xs font-bold text-slate-500">
-                                Giờ nhận phòng
+                                Gi� nh�n ph�ng
                                 <select
                                   value={startTime}
                                   onChange={(event) => setStartTime(event.target.value)}
@@ -1032,7 +1031,7 @@ export default function HotelPage() {
                                 </select>
                               </label>
                               <label className="flex flex-col gap-1 text-xs font-bold text-slate-500">
-                                Giờ trả phòng
+                                Gi� tr� ph�ng
                                 <select
                                   value={endTime}
                                   onChange={(event) => setEndTime(event.target.value)}
@@ -1051,8 +1050,8 @@ export default function HotelPage() {
                           <div className="p-3">
                             <p className="mb-2 text-xs font-black text-slate-500">
                               {bookingMode === 'overnight'
-                                ? 'Chọn đêm nhận và trả phòng trên lịch'
-                                : 'Chọn ngày nhận và trả phòng trên lịch'}
+                                ? 'Ch�n �m nh�n v� tr� ph�ng tr�n l�ch'
+                                : 'Ch�n ng�y nh�n v� tr� ph�ng tr�n l�ch'}
                             </p>
                             <Calendar
                               mode="range"
@@ -1073,7 +1072,7 @@ export default function HotelPage() {
                     className="md:self-end inline-flex items-center justify-center gap-2 rounded-md bg-orange-500 px-6 py-3 text-sm font-black text-white hover:bg-orange-600 transition-colors"
                   >
                     <Search className="size-4" />
-                    Tìm kiếm
+                    T�m ki�m
                   </button>
                 </div>
               </div>
@@ -1090,16 +1089,16 @@ export default function HotelPage() {
                 <aside className="space-y-5">
                   <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 p-5 shadow-sm">
                     <div className="flex items-center justify-between mb-5">
-                      <h2 className="text-xl font-black text-blue-900 dark:text-blue-300">Bộ lọc</h2>
+                      <h2 className="text-xl font-black text-blue-900 dark:text-blue-300">B� l�c</h2>
                       <button onClick={resetFilters} className="text-xs font-black text-blue-600 dark:text-blue-400">
-                        Xóa tất cả
+                        X�a t�t c�
                       </button>
                     </div>
 
                     <div className="space-y-6 text-left">
                       <div>
                         <p className="text-xs font-black text-slate-700 dark:text-slate-200 mb-3">
-                          Khoảng giá mỗi đêm: {formatVnd(maxPrice)}
+                          Kho�ng gi� m�i �m: {formatVnd(maxPrice)}
                         </p>
                         <input
                           type="range"
@@ -1114,13 +1113,13 @@ export default function HotelPage() {
                           className="w-full accent-blue-600"
                         />
                         <div className="flex justify-between mt-2 text-xxs font-bold text-slate-400">
-                          <span>0 đ</span>
-                          <span>100.000.000 đ</span>
+                          <span>0 </span>
+                          <span>100.000.000 </span>
                         </div>
                       </div>
 
                       <div>
-                        <p className="text-xs font-black text-slate-700 dark:text-slate-200 mb-3">Hạng khách sạn</p>
+                        <p className="text-xs font-black text-slate-700 dark:text-slate-200 mb-3">H�ng kh�ch s�n</p>
                         <div className="space-y-2">
                           {starOptions.map((count) => (
                             <label key={count} className="flex items-center gap-2 text-sm font-bold text-slate-600 dark:text-slate-300">
@@ -1141,7 +1140,7 @@ export default function HotelPage() {
                       </div>
 
                       <div>
-                        <p className="text-xs font-black text-slate-700 dark:text-slate-200 mb-3">Tiện nghi</p>
+                        <p className="text-xs font-black text-slate-700 dark:text-slate-200 mb-3">Ti�n nghi</p>
                         <div className="space-y-2">
                           {facilityOptions.map((item) => (
                             <label key={item} className="flex items-center gap-2 text-sm font-bold text-slate-600 dark:text-slate-300">
@@ -1158,7 +1157,7 @@ export default function HotelPage() {
                       </div>
 
                       <div>
-                        <p className="text-xs font-black text-slate-700 dark:text-slate-200 mb-3">Khu vực</p>
+                        <p className="text-xs font-black text-slate-700 dark:text-slate-200 mb-3">Khu v�c</p>
                         <div className="space-y-2">
                           {areaOptions.map((item) => (
                             <label key={item} className="flex items-center gap-2 text-sm font-bold text-slate-600 dark:text-slate-300">
@@ -1182,10 +1181,10 @@ export default function HotelPage() {
                   </div>
 
                   <div className="rounded-lg bg-blue-700 p-5 text-white shadow-lg">
-                    <p className="text-xs font-black uppercase opacity-80">Ưu đãi độc quyền</p>
-                    <h3 className="mt-2 text-2xl font-black leading-tight">Giảm tới 30% cho thành viên mới</h3>
+                    <p className="text-xs font-black uppercase opacity-80">�u �i �c quy�n</p>
+                    <h3 className="mt-2 text-2xl font-black leading-tight">Gi�m t�i 30% cho th�nh vi�n m�i</h3>
                     <button
-                      onClick={() => setNotice('Bạn đã đăng ký nhận ưu đãi thành viên mới.')}
+                      onClick={() => setNotice('B�n � ng k� nh�n �u �i th�nh vi�n m�i.')}
                       className="mt-5 rounded-md bg-white px-4 py-2 text-xs font-black text-blue-700"
                     >
                       Tham gia ngay
@@ -1196,13 +1195,13 @@ export default function HotelPage() {
                 <div className="space-y-5">
                   <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 p-4 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <p className="text-sm font-black text-slate-700 dark:text-slate-200">
-                      Tìm thấy <span className="text-blue-600">{filteredHotels.length}</span> khách sạn{searchDestination ? ` tại ${searchDestination}` : ''}
+                      T�m th�y <span className="text-blue-600">{filteredHotels.length}</span> kh�ch s�n{searchDestination ? ` t�i ${searchDestination}` : ''}
                     </p>
                     <div className="flex flex-wrap gap-2">
                       {[
-                        { id: 'recommended' as SortMode, label: 'Đề xuất' },
-                        { id: 'price' as SortMode, label: 'Giá thấp nhất' },
-                        { id: 'rating' as SortMode, label: 'Đánh giá cao nhất' },
+                        { id: 'recommended' as SortMode, label: '� xu�t' },
+                        { id: 'price' as SortMode, label: 'Gi� th�p nh�t' },
+                        { id: 'rating' as SortMode, label: '�nh gi� cao nh�t' },
                       ].map((item) => (
                         <button
                           key={item.id}
@@ -1224,14 +1223,14 @@ export default function HotelPage() {
                         className="inline-flex items-center gap-1 rounded-md bg-slate-50 px-3 py-2 text-xs font-black text-slate-500 dark:bg-slate-800 dark:text-slate-300"
                       >
                         <SlidersHorizontal className="size-3.5" />
-                        Xóa lọc
+                        X�a l�c
                       </button>
                     </div>
                   </div>
 
                   {currentHotels.length === 0 ? (
                     <div className="rounded-lg bg-white p-10 text-center font-black text-slate-500 dark:bg-slate-900 dark:text-slate-300">
-                      Không có khách sạn phù hợp với bộ lọc hiện tại.
+                      Kh�ng c� kh�ch s�n ph� h�p v�i b� l�c hi�n t�i.
                     </div>
                   ) : (
                     currentHotels.map((hotel) => (
@@ -1256,7 +1255,7 @@ export default function HotelPage() {
                               className={`absolute top-3 right-3 flex size-9 items-center justify-center rounded-full bg-white shadow-md transition-colors ${
                                 favorites.includes(hotel.id) ? 'text-red-500' : 'text-slate-400 hover:text-red-500'
                               }`}
-                              aria-label="Yêu thích khách sạn"
+                              aria-label="Y�u th�ch kh�ch s�n"
                             >
                               <Heart className={`size-4 ${favorites.includes(hotel.id) ? 'fill-red-500' : ''}`} />
                             </button>
@@ -1281,7 +1280,7 @@ export default function HotelPage() {
                                 </div>
                                 <p className="mt-1 text-[11px] font-black text-blue-700 dark:text-blue-300">{getScoreLabel(hotel.rating)}</p>
                                 <p className="text-[9px] font-semibold leading-tight text-slate-400">
-                                  {hotel.reviews.toLocaleString('vi-VN')} người đánh giá
+                                  {hotel.reviews.toLocaleString('vi-VN')} ng��i �nh gi�
                                 </p>
                               </div>
                             </div>
@@ -1290,10 +1289,10 @@ export default function HotelPage() {
                               <MapPin className="size-3.5 shrink-0 text-blue-600" />
                               <span>{hotel.location}</span>
                               <button
-                                onClick={() => setNotice(`Đang mở bản đồ cho ${hotel.name}.`)}
+                                onClick={() => setNotice(`ang m� b�n � cho ${hotel.name}.`)}
                                 className="font-bold text-blue-600 underline underline-offset-2 dark:text-blue-400"
                               >
-                                Xem trên bản đồ
+                                Xem tr�n b�n �
                               </button>
                             </p>
 
@@ -1314,14 +1313,14 @@ export default function HotelPage() {
                                 <p className="text-xs font-semibold text-slate-400 line-through">{formatVnd(hotel.oldPrice)}</p>
                                 <p className="mt-0.5 text-2xl font-black text-orange-600 dark:text-orange-500">
                                   {formatVnd(hotel.price)}
-                                  <span className="ml-1 text-sm font-semibold text-slate-400">/ đêm</span>
+                                  <span className="ml-1 text-sm font-semibold text-slate-400">/ �m</span>
                                 </p>
                               </div>
                               <button
                                 onClick={() => openRoomModal(hotel)}
                                 className="shrink-0 rounded-lg bg-blue-700 px-8 py-3 text-sm font-black text-white hover:bg-blue-800 transition-colors"
                               >
-                                Chọn phòng
+                                Ch�n ph�ng
                               </button>
                             </div>
                           </div>
@@ -1375,7 +1374,7 @@ export default function HotelPage() {
             onClose={closeRoomModal}
             hotel={selectedHotel}
             onConfirm={(room) => {
-              setNotice(`Bạn đã chọn ${room.label} cho ${selectedHotel.name}.`);
+              setNotice(`B�n � ch�n ${room.label} cho ${selectedHotel.name}.`);
               closeRoomModal();
             }}
           />

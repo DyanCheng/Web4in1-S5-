@@ -11,6 +11,7 @@ namespace Backend.Services
         public List<Room> Rooms { get; } = new();
         public List<BusTrip> BusTrips { get; } = new();
         public List<BusBooking> BusBookings { get; } = new();
+        public List<HotelBooking> HotelBookings { get; } = new();
 
         public DataStoreService()
         {
@@ -504,6 +505,14 @@ namespace Backend.Services
             var booking = Bookings.FirstOrDefault(b => b.Id == bookingId);
             if (booking == null) return false;
             booking.Status = "confirmed";
+            return true;
+        }
+
+        public bool ConfirmHotelBooking(string bookingId)
+        {
+            var booking = HotelBookings.FirstOrDefault(b => b.BookingCode == bookingId);
+            if (booking == null) return false;
+            booking.BookingStatus = "confirmed";
             return true;
         }
     }

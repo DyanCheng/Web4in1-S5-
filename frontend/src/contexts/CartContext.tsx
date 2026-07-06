@@ -4,13 +4,19 @@ import React, { createContext, useContext, useState, ReactNode } from 'react';
 
 export interface CartItem {
   id: string;
-  tourId: string;
+  itemType?: 'tour' | 'hotel';
+  tourId?: string;
+  hotelId?: string;
+  hotelName?: string;
+  roomId?: string;
   title: string;
   image: string;
   price: number;
   quantity: number;
   date: string;
+  checkOutDate?: string;
   guests: number;
+  children?: number;
 }
 
 interface CartContextType {
@@ -39,7 +45,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const addToCart = (item: Omit<CartItem, 'id'>) => {
     const newItem = { ...item, id: Date.now().toString() };
-    setItems([newItem]); // Only keep the latest item for direct checkout
+    setItems(prev => [...prev, newItem]); // Append to allow multiple items
   };
 
   const removeFromCart = (id: string) => {

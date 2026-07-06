@@ -1,4 +1,4 @@
-﻿using System.Text.Json;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using Backend.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -12,6 +12,7 @@ public class PaymentsController : ControllerBase
     private readonly PaymentDbService _paymentDb;
     private readonly SePayService _sePay;
     private readonly TourDbService _tourDb;
+    private readonly DataStoreService _dataStore;
     private readonly EmailService _emailService;
     private readonly ILogger<PaymentsController> _logger;
     private readonly IWebHostEnvironment _environment;
@@ -21,6 +22,7 @@ public class PaymentsController : ControllerBase
         PaymentDbService paymentDb,
         SePayService sePay,
         TourDbService tourDb,
+        DataStoreService dataStore,
         EmailService emailService,
         ILogger<PaymentsController> logger,
         IWebHostEnvironment environment,
@@ -29,6 +31,7 @@ public class PaymentsController : ControllerBase
         _paymentDb = paymentDb;
         _sePay = sePay;
         _tourDb = tourDb;
+        _dataStore = dataStore;
         _emailService = emailService;
         _logger = logger;
         _environment = environment;
@@ -243,7 +246,16 @@ public class PaymentsController : ControllerBase
         {
             var bookingId = bookingRef.GetString();
             if (!string.IsNullOrWhiteSpace(bookingId))
-                await _tourDb.ConfirmBookingAsync(bookingId);
+            {
+                if (bookingId.StartsWith("HOTEL-"))
+                {
+                    _dataStore.ConfirmHotelBooking(bookingId);
+                }
+                else
+                {
+                    await _tourDb.ConfirmBookingAsync(bookingId);
+                }
+            }
         }
     }
 
