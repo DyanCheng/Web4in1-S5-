@@ -10,7 +10,7 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useTheme } from '@/contexts/ThemeContext';
 
-import { apiUrl } from '@/lib/backendUrl';
+import { submitUnifiedCheckout, getCartLineTotal } from '@/lib/checkoutApi';
 
 
 export default function CheckoutPage() {
@@ -57,98 +57,24 @@ export default function CheckoutPage() {
       setIsSubmitting(true);
       setError('');
 
-      const bookingRefs: string[] = [];
-      const orderItems = items.map((item) => ({
-        itemType: item.itemType || 'tour',
-        tourId: item.tourId,
-        hotelId: item.hotelId,
-        roomId: item.roomId,
-        title: item.title,
-        image: item.image,
-        price: item.price,
-        quantity: item.quantity,
-        guests: item.guests,
-        date: item.date,
-        checkOutDate: item.checkOutDate
-      }));
-
-      for (const item of items) {
-        if (item.itemType === 'hotel') {
-          const response = await fetch(apiUrl('/api/hotelbookings/create'), {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              hotelId: item.hotelId,
-              hotelName: item.hotelName || item.title.split(' - ')[0],
-              hotelImage: item.image,
-              roomId: item.roomId,
-              roomName: item.title.split(' - ')[1] || 'Phòng',
-              userId: user?.email || 'guest',
-              userEmail: formData.email,
-              checkInDate: item.date,
-              checkOutDate: item.checkOutDate,
-              roomQuantity: item.quantity,
-              adults: item.guests || 2,
-              children: item.children || 0,
-              totalAmount: item.price * item.quantity * (item.totalNights || 1),
-              totalNights: item.totalNights || 1,
-              roomPrice: item.price
-            }),
-          });
-
-          if (!response.ok) {
-            const err = await response.json();
-            throw new Error(err.error || err.message || 'Đặt khách sạn thất bại');
-          }
-
-          const data = await response.json();
-          bookingRefs.push(data.booking_code || data.id || data.GetProperty?.('booking_code')?.GetString?.() || 'HOTEL-REF');
-        } else {
-          const response = await fetch(apiUrl('/api/bookings'), {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              tourId: item.tourId,
-              userId: user?.id || 'guest',
-              userEmail: formData.email,
-              date: item.date,
-              guests: item.guests,
-              quantity: item.quantity,
-            }),
-          });
-
-          if (!response.ok) {
-            const err = await response.json();
-            throw new Error(err.error || err.message || 'Đặt tour thất bại');
-          }
-
-          const data = await response.json();
-          bookingRefs.push(data.id);
-        }
-      }
-
-      const finalAmount = total - discountAmount;
-
-      const paymentResponse = await fetch(apiUrl('/api/payments/create'), {
-
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: user?.id || '',
-          userEmail: formData.email,
-          userName: formData.fullName,
-          amount: finalAmount,
-          orderItems,
-          bookingRefs,
-        }),
+      const paymentData = await submitUnifiedCheckout({
+        userId: user?.id || '',
+        userEmail: formData.email,
+        userName: formData.fullName,
+        phone: formData.phone,
+        discountCode: discountCode || undefined,
+        items: items.map((item) => ({
+          serviceType: item.serviceType,
+          referenceId: item.referenceId,
+          title: item.title,
+          image: item.image,
+          price: item.price,
+          quantity: item.quantity,
+          guests: item.guests,
+          date: item.date,
+          metadata: item.metadata,
+        })),
       });
-
-      if (!paymentResponse.ok) {
-        const err = await paymentResponse.json();
-        throw new Error(err.error || err.message || 'Không thể tạo thanh toán');
-      }
-
-      const paymentData = await paymentResponse.json();
       sessionStorage.setItem(`payment_qr_${paymentData.paymentCode}`, paymentData.qrUrl);
       clearCart();
       router.push(`/payment/${paymentData.paymentCode}`);
@@ -160,9 +86,8 @@ export default function CheckoutPage() {
   };
 
   return (
-    <div className={`min-h-screen bg-slate-50/50 dark:bg-slate-955 font-sans transition-colors duration-300 flex flex-col ${
-      theme === 'dark' ? 'dark text-white' : 'text-slate-900'
-    }`}>
+    <div className={`min-h-screen bg-slate-50/50 dark:bg-slate-955 font-sans transition-colors duration-300 flex flex-col ${theme === 'dark' ? 'dark text-white' : 'text-slate-900'
+      }`}>
       <Header />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 flex-1 w-full">
@@ -179,11 +104,11 @@ export default function CheckoutPage() {
           {/* Form Column */}
           <div className="lg:col-span-2">
             <form onSubmit={handleSubmitOrder} className="space-y-8">
-              
+
               {/* Contact Information */}
               <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 border border-slate-100/40 dark:border-slate-800/40 shadow-sm text-left">
                 <h2 className="text-xl font-extrabold text-slate-900 dark:text-white mb-6 font-serif">Thông tin liên hệ hành trình</h2>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <div>
                     <label className="block text-xs font-black uppercase text-slate-400 dark:text-slate-550 mb-2">Họ và tên</label>
@@ -246,11 +171,10 @@ export default function CheckoutPage() {
                   <button
                     type="button"
                     onClick={() => setPaymentMethod('sepay_qr')}
-                    className={`p-5 border-2 rounded-2xl text-center transition-all cursor-pointer flex flex-col items-center justify-center gap-1.5 ${
-                      paymentMethod === 'sepay_qr'
+                    className={`p-5 border-2 rounded-2xl text-center transition-all cursor-pointer flex flex-col items-center justify-center gap-1.5 ${paymentMethod === 'sepay_qr'
                         ? 'border-blue-600 bg-blue-50/40 dark:bg-blue-950/20'
                         : 'border-slate-150 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
-                    }`}
+                      }`}
                   >
                     <QrCode className="size-6 text-blue-600 dark:text-blue-400" />
                     <span className="text-sm font-bold text-slate-800 dark:text-slate-200">Quét mã QR SePay</span>
@@ -296,7 +220,7 @@ export default function CheckoutPage() {
                     <div className="flex-1">
                       <h4 className="text-sm font-extrabold text-slate-900 dark:text-white mb-1 line-clamp-1">{item.title}</h4>
                       <p className="text-xs text-slate-400 dark:text-slate-500 font-bold mb-1">x{item.quantity} Tour</p>
-                      <p className="text-sm text-blue-900 dark:text-blue-400 font-black">{(item.price * item.quantity).toLocaleString('vi-VN')}đ</p>
+                      <p className="text-sm text-blue-900 dark:text-blue-400 font-black">{getCartLineTotal(item).toLocaleString('vi-VN')}đ</p>
                     </div>
                   </div>
                 ))}

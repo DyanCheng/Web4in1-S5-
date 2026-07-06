@@ -1,3 +1,4 @@
+
 -- 1. Create hotel_bookings table
 CREATE TABLE IF NOT EXISTS public.hotel_bookings (
   booking_id varchar PRIMARY KEY,

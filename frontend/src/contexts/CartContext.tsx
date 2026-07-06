@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, ReactNode } from 'react';
+import { getCartLineTotal, type ServiceType } from '@/lib/checkoutApi';
 
 export interface CartItem {
   id: string;
@@ -9,6 +10,9 @@ export interface CartItem {
   hotelId?: string;
   hotelName?: string;
   roomId?: string;
+  serviceType: ServiceType;
+  referenceId: string;
+  tourId: string;
   title: string;
   image: string;
   price: number;
@@ -17,11 +21,15 @@ export interface CartItem {
   checkOutDate?: string;
   guests: number;
   children?: number;
+  metadata?: {
+    seatNumber?: string;
+    route?: string;
+  };
 }
 
 interface CartContextType {
   items: CartItem[];
-  addToCart: (item: Omit<CartItem, 'id'>) => void;
+  addToCart: (item: Omit<CartItem, 'id' | 'referenceId' | 'tourId'> & { referenceId?: string; tourId?: string }) => void;
   removeFromCart: (id: string) => void;
   updateQuantity: (id: string, quantity: number) => void;
   clearCart: () => void;
@@ -43,9 +51,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [discountCode, setDiscountCode] = useState('');
 
-  const addToCart = (item: Omit<CartItem, 'id'>) => {
-    const newItem = { ...item, id: Date.now().toString() };
-    setItems(prev => [...prev, newItem]); // Append to allow multiple items
+
+  const addToCart = (item: Omit<CartItem, 'id' | 'referenceId' | 'tourId'> & { referenceId?: string; tourId?: string }) => {
+    const referenceId = item.referenceId ?? item.tourId ?? '';
+    const newItem: CartItem = {
+      ...item,
+      id: Date.now().toString(),
+      referenceId,
+      tourId: referenceId,
+      serviceType: item.serviceType ?? 'tour',
+    };
+    setItems([newItem]);
   };
 
   const removeFromCart = (id: string) => {
@@ -64,7 +80,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setDiscountCode('');
   };
 
-  const total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const total = items.reduce((sum, item) => sum + getCartLineTotal(item), 0);
 
   const applyDiscount = (code: string): boolean => {
     if (DISCOUNT_CODES[code as keyof typeof DISCOUNT_CODES]) {

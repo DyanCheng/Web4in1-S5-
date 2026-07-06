@@ -8,6 +8,7 @@ import { ImageWithFallback } from '@/components/figma/ImageWithFallback';
 import { Trash2, Plus, Minus, ShoppingCart } from 'lucide-react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import { getCartLineTotal } from '@/lib/checkoutApi';
 import { useTheme } from '@/contexts/ThemeContext';
 
 export default function CartPage() {
@@ -107,7 +108,7 @@ export default function CartPage() {
 
                       <div className="flex items-center gap-4">
                         <span className="text-2xl font-black text-blue-900 dark:text-blue-400">
-                          {(item.price * item.quantity).toLocaleString('vi-VN')}đ
+                          {getCartLineTotal(item).toLocaleString('vi-VN')}đ
                         </span>
                         <button
                           onClick={() => removeFromCart(item.id)}

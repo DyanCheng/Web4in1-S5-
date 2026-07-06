@@ -534,7 +534,8 @@ export default function VehiclePage() {
                           return;
                         }
                         addToCart({
-                          tourId: selectedVehicle.id,
+                          serviceType: 'vehicle',
+                          referenceId: selectedVehicle.id,
                           title: selectedVehicle.provider,
                           image: selectedVehicle.imageUrl,
                           price: selectedVehicle.pricePerDay,
