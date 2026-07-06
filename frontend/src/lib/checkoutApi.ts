@@ -1,4 +1,4 @@
-import { apiUrl } from '@/lib/backendUrl';
+import { authFetch } from '@/lib/authFetch';
 
 export type ServiceType = 'tour' | 'bus' | 'flight' | 'insurance' | 'vehicle';
 
@@ -53,9 +53,8 @@ export function getCartLineTotal(item: {
 }
 
 export async function submitUnifiedCheckout(payload: CheckoutPayload): Promise<CheckoutResponse> {
-  const response = await fetch(apiUrl('/api/orders/checkout'), {
+  const response = await authFetch('/api/orders/checkout', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   });
 

@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 import { apiUrl, parseJsonResponse } from '@/lib/backendUrl';
+import { getAuthToken, setAuthToken } from '@/lib/authFetch';
 
 interface User {
   id: string;
@@ -14,6 +15,7 @@ interface User {
 
 interface AuthContextType {
   user: User | null;
+  token: string | null;
   login: (email: string, password: string, role?: string) => Promise<User>;
   loginWithGoogle: (credential: string) => Promise<User>;
   register: (email: string, password: string, name: string) => Promise<void>;
@@ -22,13 +24,16 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
 }
-  interface AuthResponse {
-    id: string;
-    email: string;
-    name: string;
-    role: User['role'];
-    avatar?: string;
-    message?: string;
+
+interface AuthResponse {
+  token: string;
+  expiresIn: number;
+  id: string;
+  email: string;
+  name: string;
+  role: User['role'];
+  avatar?: string;
+  message?: string;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -45,32 +50,44 @@ async function readAuthResponse(
   return data;
 }
 
+function persistSession(userData: User | null, token: string | null) {
+  if (userData && token) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(userData));
+    setAuthToken(token);
+  } else {
+    localStorage.removeItem(STORAGE_KEY);
+    setAuthToken(null);
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     try {
-
-
       const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
+      const storedToken = getAuthToken();
+      if (stored && storedToken) {
         setUser(JSON.parse(stored));
+        setToken(storedToken);
+      } else {
+        localStorage.removeItem(STORAGE_KEY);
+        setAuthToken(null);
       }
     } catch {
       localStorage.removeItem(STORAGE_KEY);
+      setAuthToken(null);
     } finally {
       setIsLoading(false);
     }
   }, []);
 
-  const persistUser = (userData: User | null) => {
+  const saveSession = (userData: User, authToken: string) => {
     setUser(userData);
-    if (userData) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(userData));
-    } else {
-      localStorage.removeItem(STORAGE_KEY);
-    }
+    setToken(authToken);
+    persistSession(userData, authToken);
   };
 
   const login = async (email: string, password: string, role: string = 'user'): Promise<User> => {
@@ -93,7 +110,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       role: data.role,
       avatar: data.avatar,
     };
-    persistUser(userData);
+    saveSession(userData, data.token);
     return userData;
   };
 
@@ -109,7 +126,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error('Không thể kết nối máy chủ. Kiểm tra backend Railway và redeploy Vercel.');
     }
 
-
     const data = await readAuthResponse(response, 'Đăng nhập Google thất bại');
     const userData: User = {
       id: data.id,
@@ -118,9 +134,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       role: data.role,
       avatar: data.avatar,
     };
-    persistUser(userData);
+    saveSession(userData, data.token);
     return userData;
-
   };
 
   const register = async (email: string, password: string, name: string) => {
@@ -135,37 +150,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error('Không thể kết nối máy chủ. Kiểm tra backend Railway và redeploy Vercel.');
     }
 
-
     const data = await readAuthResponse(response, 'Đăng ký thất bại');
-    persistUser({
+    saveSession({
       id: data.id,
       email: data.email,
       name: data.name,
       role: data.role,
       avatar: data.avatar,
-
-    });
+    }, data.token);
   };
 
   const logout = () => {
-    persistUser(null);
+    setUser(null);
+    setToken(null);
+    persistSession(null, null);
   };
 
   const updateUser = (data: Partial<User>) => {
     if (!user) return;
-    persistUser({ ...user, ...data });
+    const updated = { ...user, ...data };
+    setUser(updated);
+    if (token) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    }
   };
 
   return (
     <AuthContext.Provider value={{
       user,
+      token,
       login,
       loginWithGoogle,
       register,
       logout,
       updateUser,
-
-      isAuthenticated: !!user,
+      isAuthenticated: !!user && !!token,
       isLoading,
     }}>
       {children}

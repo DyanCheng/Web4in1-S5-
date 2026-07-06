@@ -1,6 +1,7 @@
 ﻿using System.Text.Json;
 using System.Text.Json.Serialization;
 using Backend.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Backend.Controllers;
@@ -40,6 +41,7 @@ public class PaymentsController : ControllerBase
         || string.Equals(_configuration["ALLOW_PAYMENT_SIMULATION"], "true", StringComparison.OrdinalIgnoreCase);
 
     [HttpPost("create")]
+    [Authorize]
     public async Task<IActionResult> CreatePayment([FromBody] CreatePaymentRequest request)
     {
         if (request.Amount <= 0)
@@ -205,6 +207,7 @@ public class PaymentsController : ControllerBase
     }
 
     [HttpGet("admin/summary")]
+    [Authorize(Roles = "admin")]
     public async Task<IActionResult> GetAdminSummary()
     {
         try
@@ -219,6 +222,7 @@ public class PaymentsController : ControllerBase
     }
 
     [HttpGet("admin/transactions")]
+    [Authorize(Roles = "admin")]
     public async Task<IActionResult> GetAdminTransactions()
     {
         try

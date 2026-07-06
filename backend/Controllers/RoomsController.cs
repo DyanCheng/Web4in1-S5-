@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Backend.Services;
 using Backend.Models;
@@ -17,12 +18,14 @@ namespace Backend.Controllers
         }
 
         [HttpGet]
+        [AllowAnonymous]
         public IActionResult GetAll()
         {
             return Ok(_dataStore.Rooms);
         }
 
         [HttpPost]
+        [Authorize(Roles = "admin,hotel_owner")]
         public IActionResult Create([FromBody] RoomRequest request)
         {
             var newRoom = new Room
@@ -41,6 +44,7 @@ namespace Backend.Controllers
         }
 
         [HttpPut("{id}")]
+        [Authorize(Roles = "admin,hotel_owner")]
         public IActionResult Update(int id, [FromBody] RoomRequest request)
         {
             var room = _dataStore.Rooms.FirstOrDefault(r => r.Id == id);
@@ -64,6 +68,7 @@ namespace Backend.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = "admin,hotel_owner")]
         public IActionResult Delete(int id)
         {
             var room = _dataStore.Rooms.FirstOrDefault(r => r.Id == id);

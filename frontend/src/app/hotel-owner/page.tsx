@@ -8,6 +8,7 @@ import { Hotel, Plus, Edit, Trash2, Calendar, DollarSign, Users, Loader2, Sun, M
 import { useTheme } from '@/contexts/ThemeContext';
 
 import { apiUrl } from '@/lib/backendUrl';
+import { authFetch } from '@/lib/authFetch';
 
 interface Room {
   id: number;
@@ -76,9 +77,8 @@ export default function HotelOwnerDashboard() {
   const handleAddRoom = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const response = await fetch(apiUrl('/api/rooms'), {
+      const response = await authFetch('/api/rooms', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: newRoom.name,
           type: newRoom.type,
@@ -113,7 +113,7 @@ export default function HotelOwnerDashboard() {
   const handleDeleteRoom = async (id: number) => {
     if (!confirm('Bạn có chắc muốn xóa phòng này?')) return;
     try {
-      const response = await fetch(apiUrl(`/api/rooms/${id}`), {
+      const response = await authFetch(`/api/rooms/${id}`, {
         method: 'DELETE',
       });
       if (!response.ok) throw new Error('Xóa thất bại');

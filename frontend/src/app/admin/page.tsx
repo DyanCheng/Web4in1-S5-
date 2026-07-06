@@ -25,6 +25,7 @@ import {
   Building2,
 } from 'lucide-react';
 import { apiUrl, getBackendUrl, normalizeBackendUrl } from '@/lib/backendUrl';
+import { authFetch } from '@/lib/authFetch';
 
 
 const WEBHOOK_PUBLIC_URL =
@@ -116,19 +117,15 @@ export default function AdminDashboard() {
   const [editingRoom, setEditingRoom] = useState<Room | null>(null);
   const [roomActionLoading, setRoomActionLoading] = useState(false);
 
-  const adminHeaders = () => ({
-    'Content-Type': 'application/json',
-    'X-User-Role': user?.role ?? '',
-  });
   const fetchData = async () => {
     try {
       setLoading(true);
       const [toursResponse, bookingsResponse, roomsResponse, summaryResponse, transactionsResponse] = await Promise.all([
         fetch(apiUrl('/api/tours')),
-        fetch(apiUrl('/api/bookings')),
+        authFetch('/api/bookings'),
         fetch(apiUrl('/api/rooms')),
-        fetch(apiUrl('/api/payments/admin/summary')),
-        fetch(apiUrl('/api/payments/admin/transactions')),
+        authFetch('/api/payments/admin/summary'),
+        authFetch('/api/payments/admin/transactions'),
       ]);
       const toursData = toursResponse.ok ? await toursResponse.json() : [];
       const bookingsData = bookingsResponse.ok ? await bookingsResponse.json() : [];
@@ -215,9 +212,8 @@ export default function AdminDashboard() {
     if (!confirm('Bạn muốn xóa tour này?')) return;
     setTourActionLoading(true);
     try {
-      const response = await fetch(`${getBackendUrl()}/api/tours/${id}`, {
+      const response = await authFetch(`/api/tours/${id}`, {
         method: 'DELETE',
-        headers: adminHeaders(),
       });
       if (!response.ok) {
         const err = await response.json();
@@ -232,12 +228,11 @@ export default function AdminDashboard() {
   };
 
   const handleSaveTour = async (payload: Record<string, unknown>) => {
-    const url = editingTour
-      ? `${getBackendUrl()}/api/tours/${editingTour.id}`
-      : `${getBackendUrl()}/api/tours`;
-    const response = await fetch(url, {
+    const path = editingTour
+      ? `/api/tours/${editingTour.id}`
+      : '/api/tours';
+    const response = await authFetch(path, {
       method: editingTour ? 'PUT' : 'POST',
-      headers: adminHeaders(),
       body: JSON.stringify(payload),
     });
     if (!response.ok) {
@@ -261,9 +256,8 @@ export default function AdminDashboard() {
     if (!confirm('Bạn muốn xóa phòng này?')) return;
     setRoomActionLoading(true);
     try {
-      const response = await fetch(`${getBackendUrl()}/api/rooms/${id}`, {
+      const response = await authFetch(`/api/rooms/${id}`, {
         method: 'DELETE',
-        headers: adminHeaders(),
       });
       if (!response.ok) {
         const err = await response.json();
@@ -278,12 +272,11 @@ export default function AdminDashboard() {
   };
 
   const handleSaveRoom = async (payload: Record<string, unknown>) => {
-    const url = editingRoom
-      ? `${getBackendUrl()}/api/rooms/${editingRoom.id}`
-      : `${getBackendUrl()}/api/rooms`;
-    const response = await fetch(url, {
+    const path = editingRoom
+      ? `/api/rooms/${editingRoom.id}`
+      : '/api/rooms';
+    const response = await authFetch(path, {
       method: editingRoom ? 'PUT' : 'POST',
-      headers: adminHeaders(),
       body: JSON.stringify(payload),
     });
     if (!response.ok) {

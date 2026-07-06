@@ -1,4 +1,7 @@
+using System.Text;
 using Backend.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,30 +24,52 @@ builder.Services.AddCors(options =>
         });
 });
 
+// JWT Authentication
+var jwtSecret = builder.Configuration["Jwt:Secret"]?.Trim()
+    ?? builder.Configuration["JWT_SECRET"]?.Trim();
+if (string.IsNullOrEmpty(jwtSecret) || jwtSecret == "#")
+{
+    if (builder.Environment.IsDevelopment())
+        jwtSecret = "cmc-travel-dev-jwt-secret-min-32-chars!!";
+    else
+        throw new InvalidOperationException("JWT_SECRET is required in production");
+}
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = false,
+            ValidateAudience = false,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret)),
+            RoleClaimType = System.Security.Claims.ClaimTypes.Role,
+        };
+    });
+builder.Services.AddAuthorization();
+
 // Register DataStoreService as a Singleton
 builder.Services.AddSingleton<DataStoreService>();
 builder.Services.AddHttpClient("Supabase");
 builder.Services.AddSingleton<AuthDbService>();
 builder.Services.AddSingleton<GoogleAuthService>();
+builder.Services.AddSingleton<JwtService>();
 builder.Services.AddSingleton<PaymentDbService>();
 builder.Services.AddSingleton<TourDbService>();
 builder.Services.AddSingleton<CheckoutService>();
 
 builder.Services.AddSingleton<SePayService>();
 builder.Services.AddSingleton<EmailService>();
-//Đăng ký DiscountService
 builder.Services.AddSingleton<DiscountService>();
-
-// THÊM DÒNG NÀY ĐỂ ĐĂNG KÝ BUS SERVICE
 builder.Services.AddSingleton<IBusService, BusService>();
 
 builder.Services.AddControllers();
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
@@ -62,8 +87,7 @@ app.UseExceptionHandler(errorApp =>
     });
 });
 
-// app.UseHttpsRedirection();
-
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();

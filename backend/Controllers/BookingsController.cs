@@ -1,4 +1,6 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Backend.Extensions;
 using Backend.Services;
 using Backend.Models;
 using System;
@@ -18,6 +20,7 @@ namespace Backend.Controllers
         }
 
         [HttpGet]
+        [Authorize(Roles = "admin,employee")]
         public async Task<IActionResult> GetAll()
         {
             var bookings = await _tourDb.GetAllBookingsAsync();
@@ -25,13 +28,23 @@ namespace Backend.Controllers
         }
 
         [HttpGet("user/{email}")]
+        [Authorize]
         public async Task<IActionResult> GetByUser(string email)
         {
+            var callerEmail = User.GetUserEmail();
+            var role = User.GetUserRole();
+            if (!string.Equals(callerEmail, email, StringComparison.OrdinalIgnoreCase)
+                && !string.Equals(role, "admin", StringComparison.OrdinalIgnoreCase))
+            {
+                return Forbid();
+            }
+
             var userBookings = await _tourDb.GetBookingsByUserEmailAsync(email);
             return Ok(userBookings);
         }
 
         [HttpPost]
+        [Authorize]
         public async Task<IActionResult> Create([FromBody] BookingRequest request)
         {
             try
@@ -51,6 +64,7 @@ namespace Backend.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize]
         public async Task<IActionResult> Delete(string id)
         {
             var success = await _tourDb.DeleteBookingAsync(id);

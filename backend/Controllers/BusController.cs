@@ -1,6 +1,8 @@
 using System;
+using Backend.Extensions;
 using Backend.Models;
 using Backend.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Backend.Controllers
@@ -16,24 +18,24 @@ namespace Backend.Controllers
             _busService = busService;
         }
 
-        // GET: api/bus/trips
         [HttpGet("trips")]
+        [AllowAnonymous]
         public IActionResult GetAllTrips()
         {
             var trips = _busService.GetAllTrips();
             return Ok(new { success = true, data = trips });
         }
 
-        // GET: api/bus/search?from=Hà Nội&to=Đà Nẵng&date=2026-01-01
         [HttpGet("search")]
+        [AllowAnonymous]
         public IActionResult SearchTrips([FromQuery] string? from, [FromQuery] string? to, [FromQuery] DateTime? date)
         {
             var trips = _busService.SearchTrips(from, to, date);
             return Ok(new { success = true, data = trips });
         }
 
-        // GET: api/bus/trips/{id}
         [HttpGet("trips/{id}")]
+        [AllowAnonymous]
         public IActionResult GetTripById(string id)
         {
             var trip = _busService.GetTripById(id);
@@ -43,30 +45,31 @@ namespace Backend.Controllers
             return Ok(new { success = true, data = trip });
         }
 
-        // GET: api/bus/trips/{id}/seats
         [HttpGet("trips/{id}/seats")]
+        [AllowAnonymous]
         public IActionResult GetAvailableSeats(string id)
         {
             var seats = _busService.GetAvailableSeats(id);
             return Ok(new { success = true, data = seats });
         }
 
-        // GET: api/bus/location/{location}
         [HttpGet("location/{location}")]
+        [AllowAnonymous]
         public IActionResult GetTripsByLocation(string location)
         {
             var trips = _busService.GetTripsByLocation(location);
             return Ok(new { success = true, data = trips });
         }
 
-        // POST: api/bus/book
         [HttpPost("book")]
+        [Authorize]
         public IActionResult BookTicket([FromBody] BookTicketRequest request)
         {
             try
             {
-                // TODO: Lấy UserId từ JWT token, tạm thời dùng user mặc định
-                var userId = "3";
+                var userId = User.GetUserId();
+                if (string.IsNullOrEmpty(userId))
+                    return Unauthorized(new { success = false, message = "Token không hợp lệ" });
 
                 var booking = _busService.BookTicket(
                     request.TripId,
@@ -77,10 +80,11 @@ namespace Backend.Controllers
                     request.PassengerEmail
                 );
 
-                return Ok(new { 
-                    success = true, 
+                return Ok(new
+                {
+                    success = true,
                     data = booking,
-                    message = "Đặt vé thành công!" 
+                    message = "Đặt vé thành công!"
                 });
             }
             catch (Exception ex)
@@ -89,24 +93,28 @@ namespace Backend.Controllers
             }
         }
 
-        // GET: api/bus/my-bookings
         [HttpGet("my-bookings")]
+        [Authorize]
         public IActionResult GetMyBookings()
         {
-            // TODO: Lấy UserId từ JWT token
-            var userId = "3";
+            var userId = User.GetUserId();
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized(new { success = false, message = "Token không hợp lệ" });
+
             var bookings = _busService.GetUserBookings(userId);
             return Ok(new { success = true, data = bookings });
         }
 
-        // DELETE: api/bus/cancel/{id}
         [HttpDelete("cancel/{id}")]
+        [Authorize]
         public IActionResult CancelBooking(string id)
         {
             try
             {
-                // TODO: Lấy UserId từ JWT token
-                var userId = "3";
+                var userId = User.GetUserId();
+                if (string.IsNullOrEmpty(userId))
+                    return Unauthorized(new { success = false, message = "Token không hợp lệ" });
+
                 var result = _busService.CancelBooking(id, userId);
                 if (!result)
                     return BadRequest(new { success = false, message = "Không thể hủy vé" });

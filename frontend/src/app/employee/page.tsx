@@ -17,7 +17,7 @@ import {
   FileText
 } from 'lucide-react';
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
+import { authFetch } from '@/lib/authFetch';
 
 interface Booking {
   id: string;
@@ -73,7 +73,7 @@ export default function EmployeeDashboard() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const bookingsResponse = await fetch(`${BACKEND_URL}/api/bookings`);
+      const bookingsResponse = await authFetch('/api/bookings');
       const bookingsData = bookingsResponse.ok ? await bookingsResponse.json() : [];
       setBookings(bookingsData);
     } catch (error) {

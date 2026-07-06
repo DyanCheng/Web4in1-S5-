@@ -1,4 +1,5 @@
 using Backend.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Backend.Controllers;
@@ -15,6 +16,7 @@ public class OrdersController : ControllerBase
     }
 
     [HttpPost("checkout")]
+    [Authorize]
     public async Task<IActionResult> Checkout([FromBody] CheckoutRequest request)
     {
         try

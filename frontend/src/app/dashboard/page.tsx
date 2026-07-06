@@ -11,6 +11,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 
 import { getExperiencedTourIds, getUserReviews, addUserReview, hasReviewedTourTitle } from '@/lib/tourStorage';
 import { apiUrl } from '@/lib/backendUrl';
+import { authFetch } from '@/lib/authFetch';
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -60,7 +61,7 @@ export default function DashboardPage() {
     try {
       setLoading(true);
       setError('');
-      const response = await fetch(apiUrl(`/api/bookings/user/${encodeURIComponent(user.email)}`));
+      const response = await authFetch(`/api/bookings/user/${encodeURIComponent(user.email)}`);
       if (!response.ok) throw new Error('Không thể tải lịch sử đặt tour');
       const data = await response.json();
       setBookings(data);
@@ -150,7 +151,7 @@ export default function DashboardPage() {
     if (!confirm('Bạn có chắc muốn hủy đặt tour này?')) return;
     
     try {
-      const response = await fetch(apiUrl(`/api/bookings/${id}`), {
+      const response = await authFetch(`/api/bookings/${id}`, {
         method: 'DELETE',
       });
 

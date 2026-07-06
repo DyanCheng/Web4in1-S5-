@@ -1,7 +1,7 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Backend.Services;
 using Backend.Models;
-using System.Linq;
 
 namespace Backend.Controllers
 {
@@ -16,13 +16,8 @@ namespace Backend.Controllers
             _tourDb = tourDb;
         }
 
-        private bool IsAdmin()
-        {
-            var role = Request.Headers["X-User-Role"].FirstOrDefault();
-            return string.Equals(role, "admin", StringComparison.OrdinalIgnoreCase);
-        }
-
         [HttpGet]
+        [AllowAnonymous]
         public async Task<IActionResult> GetAll([FromQuery] string? destination)
         {
             var tours = await _tourDb.GetAllToursAsync(destination);
@@ -30,6 +25,7 @@ namespace Backend.Controllers
         }
 
         [HttpGet("{id}")]
+        [AllowAnonymous]
         public async Task<IActionResult> GetById(string id)
         {
             var tour = await _tourDb.GetTourByIdAsync(id);
@@ -42,11 +38,9 @@ namespace Backend.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "admin")]
         public async Task<IActionResult> Create([FromBody] TourRequest request)
         {
-            if (!IsAdmin())
-                return Unauthorized(new { message = "Chỉ admin mới được thêm tour" });
-
             if (string.IsNullOrWhiteSpace(request.Title))
                 return BadRequest(new { message = "Tên tour không được để trống" });
 
@@ -58,11 +52,9 @@ namespace Backend.Controllers
         }
 
         [HttpPut("{id}")]
+        [Authorize(Roles = "admin")]
         public async Task<IActionResult> Update(string id, [FromBody] TourRequest request)
         {
-            if (!IsAdmin())
-                return Unauthorized(new { message = "Chỉ admin mới được sửa tour" });
-
             if (string.IsNullOrWhiteSpace(request.Title))
                 return BadRequest(new { message = "Tên tour không được để trống" });
 
@@ -74,11 +66,9 @@ namespace Backend.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = "admin")]
         public async Task<IActionResult> Delete(string id)
         {
-            if (!IsAdmin())
-                return Unauthorized(new { message = "Chỉ admin mới được xóa tour" });
-
             var success = await _tourDb.DeleteTourAsync(id);
             if (!success)
                 return NotFound(new { message = "Không tìm thấy tour này" });
