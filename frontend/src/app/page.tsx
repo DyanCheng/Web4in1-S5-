@@ -305,11 +305,14 @@ export default function HomePage() {
                 <div className="flex-1 text-left">
                   <label className="text-[10px] uppercase tracking-wider text-slate-400 dark:text-slate-500 block font-bold">Ngày đi</label>
                   <input
+                    placeholder="Chọn ngày"
                     type="date"
                     min={getTodayDate()}
                     value={searchQuery.date}
                     onChange={(e) => setSearchQuery(prev => ({ ...prev, date: e.target.value }))}
                     className="w-full outline-none text-sm text-slate-800 dark:text-slate-100 font-bold bg-transparent focus:ring-0"
+                    onPaste={(e) => e.preventDefault()} // Prevent pasting
+                    onKeyDown={(e) => e.preventDefault()} // Prevent typing
                   />
                 </div>
               </div>

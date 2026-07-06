@@ -35,7 +35,7 @@ builder.Services.AddSingleton<EmailService>();
 //Đăng ký DiscountService
 builder.Services.AddSingleton<DiscountService>();
 
-// 👇 THÊM DÒNG NÀY ĐỂ ĐĂNG KÝ BUS SERVICE
+// THÊM DÒNG NÀY ĐỂ ĐĂNG KÝ BUS SERVICE
 builder.Services.AddSingleton<IBusService, BusService>();
 
 builder.Services.AddControllers();
