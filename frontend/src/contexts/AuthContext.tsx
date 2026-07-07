@@ -14,7 +14,6 @@ interface User {
 
 interface AuthContextType {
   user: User | null;
-
   login: (email: string, password: string, role?: string) => Promise<User>;
   loginWithGoogle: (credential: string) => Promise<User>;
   register: (email: string, password: string, name: string) => Promise<void>;
@@ -52,6 +51,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     try {
+
 
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
@@ -120,6 +120,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
     persistUser(userData);
     return userData;
+
   };
 
   const register = async (email: string, password: string, name: string) => {

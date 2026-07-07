@@ -146,11 +146,11 @@ export default function RegisterPage() {
             <input type="checkbox" id="terms" className="mt-1" required />
             <label htmlFor="terms" className="text-xs text-slate-500 dark:text-slate-455 font-bold leading-normal">
               Tôi đồng ý với{' '}
-              <a href="#" className="text-blue-600 dark:text-blue-400 hover:underline">
+              <a href="/policy#terms" className="text-blue-600 dark:text-blue-400 hover:underline">
                 Điều khoản dịch vụ
               </a>
               {' '}và{' '}
-              <a href="#" className="text-blue-600 dark:text-blue-400 hover:underline">
+              <a href="/policy#privacy" className="text-blue-600 dark:text-blue-400 hover:underline">
                 Chính sách bảo mật
               </a>
             </label>

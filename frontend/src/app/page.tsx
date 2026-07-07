@@ -33,7 +33,7 @@ import Footer from '@/components/Footer';
 import { useTheme } from '@/contexts/ThemeContext';
 import { getFavorites, toggleFavorite } from '@/lib/tourStorage';
 
-import { apiUrl } from '@/lib/backendUrl';
+import { fetchAllTours } from '@/lib/tourApi';
 
 interface Tour {
   id: string;
@@ -48,160 +48,24 @@ interface Tour {
   badge?: string;
 }
 
-const staticFeaturedTours: Tour[] = [
-  // Hạ Long
-  {
-    id: 'hl-1',
-    title: "Du thuyền 5 sao trên Vịnh Hạ Long",
-    location: "Vịnh Hạ Long",
-    price: 3250000,
-    duration: "2 ngày 1 đêm",
-    image: "https://images.unsplash.com/photo-1528127269322-539801943592?auto=format&fit=crop&w=800&q=80",
-    rating: 4.9,
-    reviews: 120,
-    badge: "Bestseller",
-    description: "Trải nghiệm kỳ nghỉ xa hoa 2 ngày 1 đêm với dịch vụ chuẩn quốc tế và ngắm nhìn kỳ quan thiên nhiên thế giới."
-  },
-  {
-    id: 'hl-2',
-    title: "Du thuyền Paradise Elegance",
-    location: "Vịnh Hạ Long",
-    price: 3500000,
-    duration: "2 ngày 1 đêm",
-    image: "https://images.unsplash.com/photo-1548574505-12caf0050b5b?auto=format&fit=crop&w=800&q=80",
-    rating: 4.8,
-    reviews: 85,
-    description: "Nghỉ dưỡng đẳng cấp trên vịnh Hạ Long."
-  },
-  {
-    id: 'hl-3',
-    title: "Khám phá Vịnh Lan Hạ",
-    location: "Vịnh Hạ Long",
-    price: 2800000,
-    duration: "2 ngày 1 đêm",
-    image: "https://images.unsplash.com/photo-1552465011-b4e21bf6e79a?auto=format&fit=crop&w=800&q=80",
-    rating: 4.7,
-    reviews: 92,
-    description: "Tour tham quan Vịnh Lan Hạ bằng du thuyền 4 sao."
-  },
-
-  // Phú Quốc
-  {
-    id: 'pq-1',
-    title: "Tour khám phá Nam Đảo & Lặn ngắm san hô",
-    location: "Phú Quốc",
-    price: 750000,
-    duration: "1 ngày",
-    image: "https://images.unsplash.com/photo-1602002418082-a4443e081dd1?auto=format&fit=crop&w=800&q=80",
-    rating: 4.6,
-    reviews: 210,
-    badge: "Giá rẻ nhất",
-    description: "Khám phá đại dương thu nhỏ tại Nam Đảo Phú Quốc."
-  },
-  {
-    id: 'pq-2',
-    title: "VinWonders & Safari Phú Quốc",
-    location: "Phú Quốc",
-    price: 1350000,
-    duration: "1 ngày",
-    image: "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=800&q=80",
-    rating: 4.8,
-    reviews: 430,
-    description: "Vui chơi thả ga tại tổ hợp giải trí lớn nhất Việt Nam."
-  },
-  {
-    id: 'pq-3',
-    title: "Nghỉ dưỡng Sunset Sanato",
-    location: "Phú Quốc",
-    price: 950000,
-    duration: "1 ngày",
-    image: "https://images.unsplash.com/photo-1590523741831-ab7e8b8f9c7f?auto=format&fit=crop&w=800&q=80",
-    rating: 4.5,
-    reviews: 156,
-    description: "Check-in hoàng hôn đẹp nhất Việt Nam."
-  },
-  {
-    id: 'pq-4',
-    title: "Tour Rạch Vẹm - Làng Chài",
-    location: "Phú Quốc",
-    price: 650000,
-    duration: "1 ngày",
-    image: "https://images.unsplash.com/photo-1544644181-1484b3fdfc62?auto=format&fit=crop&w=800&q=80",
-    rating: 4.4,
-    reviews: 90,
-    description: "Khám phá vương quốc sao biển Rạch Vẹm."
-  },
-
-  // Đà Lạt
-  {
-    id: 'dl-1',
-    title: "Chinh phục đỉnh Langbiang - Săn mây Đà Lạt",
-    location: "Đà Lạt",
-    price: 650000,
-    duration: "1 ngày",
-    image: "https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?auto=format&fit=crop&w=800&q=80",
-    rating: 5.0,
-    reviews: 320,
-    badge: "Được yêu thích nhất",
-    description: "Trải nghiệm săn mây và ngắm nhìn toàn cảnh thành phố sương mù từ đỉnh Langbiang."
-  },
-  {
-    id: 'dl-2',
-    title: "Tour tham quan Vườn Hoa Thành Phố",
-    location: "Đà Lạt",
-    price: 450000,
-    duration: "1 ngày",
-    image: "https://images.unsplash.com/photo-1522851508933-28682121e7d1?auto=format&fit=crop&w=800&q=80",
-    rating: 4.5,
-    reviews: 112,
-    description: "Hòa mình vào thiên nhiên với hàng ngàn loài hoa khoe sắc."
-  },
-  {
-    id: 'dl-3',
-    title: "Tour Check-in các quán Cafe Hot",
-    location: "Đà Lạt",
-    price: 390000,
-    duration: "1 ngày",
-    image: "https://images.unsplash.com/photo-1511920170033-f8396924c348?auto=format&fit=crop&w=800&q=80",
-    rating: 4.7,
-    reviews: 205,
-    description: "Sống ảo thả ga tại các quán cafe view thung lũng đẹp nhất Đà Lạt."
-  },
-  {
-    id: 'dl-4',
-    title: "Tour thác Datanla - Thác Pongour",
-    location: "Đà Lạt",
-    price: 550000,
-    duration: "1 ngày",
-    image: "https://images.unsplash.com/photo-1502484393963-3cbba670d859?auto=format&fit=crop&w=800&q=80",
-    rating: 4.6,
-    reviews: 180,
-    description: "Trải nghiệm máng trượt và ngắm thác nước hùng vĩ."
-  },
-  {
-    id: 'dl-5',
-    title: "Tour Trại Mát - Đồi Chè Cầu Đất",
-    location: "Đà Lạt",
-    price: 450000,
-    duration: "1 ngày",
-    image: "https://images.unsplash.com/photo-1600010996885-1d48c82eb5c2?auto=format&fit=crop&w=800&q=80",
-    rating: 4.8,
-    reviews: 150,
-    description: "Đón bình minh tại đồi chè xanh mướt."
-  }
-];
-
 export default function HomePage() {
   const router = useRouter();
   const navigate = (url: string) => router.push(url);
   const { theme } = useTheme();
   
+  // Get today's date
+  const getTodayDate = () => {
+    const today = new Date();
+    today.setMinutes(today.getMinutes() - today.getTimezoneOffset());
+    return today.toISOString().split('T')[0];
+  };
+
   // Search state
   const [searchQuery, setSearchQuery] = useState({ 
     startLocation: 'Hà Nội', 
     destination: '', 
-    date: '2026-06-02' 
-  });
+    date: getTodayDate()
+  }); 
   const [searchType, setSearchType] = useState<'domestic' | 'international'>('domestic');
   const [priceRange, setPriceRange] = useState<number[]>([0, 100000000]);
   const [isFilterExpanded, setIsFilterExpanded] = useState(false);
@@ -233,26 +97,17 @@ export default function HomePage() {
   }, [tours]);
 
   useEffect(() => {
-    const fetchTours = async () => {
-      try {
-        const response = await fetch(apiUrl('/api/tours'));
-        if (response.ok) {
-          const data = await response.json();
-          const combined = [...staticFeaturedTours, ...data].map((t: any, index: number) => ({
-            ...t,
-            badge: t.badge || (index === 0 ? "Verified" : index === 1 ? "Bestseller" : undefined)
-          }));
-          setTours(combined);
-        } else {
-          setTours(staticFeaturedTours);
-        }
-      } catch {
-        setTours(staticFeaturedTours);
-      } finally {
-        setLoading(false);
-      }
+    const loadTours = async () => {
+      const data = await fetchAllTours();
+      setTours(
+        data.map((t: Tour, index: number) => ({
+          ...t,
+          badge: t.badge || (index === 0 ? 'Verified' : index === 1 ? 'Bestseller' : undefined),
+        }))
+      );
+      setLoading(false);
     };
-    fetchTours();
+    loadTours();
   }, []);
 
   const handleSearch = () => {
@@ -450,10 +305,14 @@ export default function HomePage() {
                 <div className="flex-1 text-left">
                   <label className="text-[10px] uppercase tracking-wider text-slate-400 dark:text-slate-500 block font-bold">Ngày đi</label>
                   <input
+                    placeholder="Chọn ngày"
                     type="date"
+                    min={getTodayDate()}
                     value={searchQuery.date}
                     onChange={(e) => setSearchQuery(prev => ({ ...prev, date: e.target.value }))}
                     className="w-full outline-none text-sm text-slate-800 dark:text-slate-100 font-bold bg-transparent focus:ring-0"
+                    onPaste={(e) => e.preventDefault()} // Prevent pasting
+                    onKeyDown={(e) => e.preventDefault()} // Prevent typing
                   />
                 </div>
               </div>

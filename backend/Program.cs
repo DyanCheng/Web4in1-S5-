@@ -28,14 +28,16 @@ builder.Services.AddSingleton<AuthDbService>();
 builder.Services.AddSingleton<GoogleAuthService>();
 builder.Services.AddSingleton<PaymentDbService>();
 builder.Services.AddSingleton<TourDbService>();
+builder.Services.AddSingleton<HotelDbService>();
+builder.Services.AddSingleton<CheckoutService>();
 
 builder.Services.AddSingleton<SePayService>();
 builder.Services.AddSingleton<EmailService>();
 //Đăng ký DiscountService
 builder.Services.AddSingleton<DiscountService>();
 
-// 👇 THÊM DÒNG NÀY ĐỂ ĐĂNG KÝ BUS SERVICE
-builder.Services.AddScoped<IBusService, BusService>();
+// THÊM DÒNG NÀY ĐỂ ĐĂNG KÝ BUS SERVICE
+builder.Services.AddSingleton<IBusService, BusService>();
 
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
