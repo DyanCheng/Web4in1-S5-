@@ -6,7 +6,6 @@ import { getCartLineTotal, type ServiceType } from '@/lib/checkoutApi';
 export interface CartItem {
   id: string;
   itemType?: 'tour' | 'hotel';
-  tourId?: string;
   hotelId?: string;
   hotelName?: string;
   roomId?: string;
