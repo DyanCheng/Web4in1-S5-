@@ -11,10 +11,14 @@ public class PaymentDbService
 
     public PaymentDbService(IConfiguration configuration, IHttpClientFactory httpClientFactory)
     {
-        _supabaseUrl = configuration["SUPABASE_URL"] ?? configuration["Supabase:Url"];
-        _supabaseKey = configuration["SUPABASE_SERVICE_ROLE_KEY"]
-            ?? configuration["SUPABASE_KEY"]
-            ?? configuration["Supabase:Key"];
+        _supabaseUrl = !string.IsNullOrWhiteSpace(configuration["SUPABASE_URL"]) 
+            ? configuration["SUPABASE_URL"] 
+            : configuration["Supabase:Url"];
+        _supabaseKey = !string.IsNullOrWhiteSpace(configuration["SUPABASE_SERVICE_ROLE_KEY"])
+            ? configuration["SUPABASE_SERVICE_ROLE_KEY"]
+            : (!string.IsNullOrWhiteSpace(configuration["SUPABASE_KEY"])
+                ? configuration["SUPABASE_KEY"]
+                : configuration["Supabase:Key"]);
         _http = httpClientFactory.CreateClient("Supabase");
     }
 
