@@ -40,6 +40,7 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
+// Mã giảm giá client-side — phải khớp CheckoutService.cs khi thanh toán
 const DISCOUNT_CODES = {
   'SUMMER2026': 0.15,
   'WELCOME10': 0.10,

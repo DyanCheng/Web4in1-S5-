@@ -20,7 +20,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { useIsMobile } from '@/components/ui/use-mobile';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
 import {
@@ -56,7 +56,6 @@ import {
 import RoomTypeModal from '@/components/RoomTypeModal';
 import { getHotelFavorites, toggleHotelFavorite } from '@/lib/hotelStorage';
 import { useEffect } from 'react';
-import { apiUrl } from '@/lib/backendUrl';
 
 type SortMode = 'recommended' | 'price' | 'rating';
 type BookingMode = 'hourly' | 'overnight' | 'daily';
@@ -95,6 +94,7 @@ const otherServices = [
   },
 ];
 
+// TODO: dữ liệu mock — backend HotelsController/HotelDbService đã sẵn sàng, cần wire fetch API
 const hotels = [
   {
     id: 'ocean-view',
