@@ -717,10 +717,11 @@ export default function HotelPage() {
                         </div>
                         
                         <Popover>
-                          <PopoverTrigger asChild>
-                            <button className="rounded-full p-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-blue-600 transition-colors cursor-pointer shadow-sm flex items-center justify-center">
-                              <CalendarDays className="size-3.5 text-slate-500" />
-                            </button>
+                          <PopoverTrigger
+                            type="button"
+                            className="rounded-full p-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-blue-600 transition-colors cursor-pointer shadow-sm flex items-center justify-center"
+                          >
+                            <CalendarDays className="size-3.5 text-slate-500" />
                           </PopoverTrigger>
                           <PopoverContent className="w-auto p-0" align="end">
                             <div className="p-3">
@@ -762,8 +763,11 @@ export default function HotelPage() {
                             {adults} Người lớn, {children} Trẻ em
                           </span>
                           <Popover>
-                            <PopoverTrigger asChild>
-                              <button className="text-[10px] font-black text-blue-600 underline ml-1 cursor-pointer">Sửa</button>
+                            <PopoverTrigger
+                              type="button"
+                              className="text-[10px] font-black text-blue-600 underline ml-1 cursor-pointer"
+                            >
+                              Sửa
                             </PopoverTrigger>
                             <PopoverContent className="w-56 p-3">
                               <div className="space-y-2 text-xs">
@@ -843,16 +847,14 @@ export default function HotelPage() {
                     <AlertDialogContent>
                       <AlertDialogHeader>
                         <AlertDialogTitle>Xác nhận đặt phòng</AlertDialogTitle>
-                        <AlertDialogDescription asChild>
-                          <div className="space-y-2 mt-2">
-                            <p>Bạn có chắc chắn muốn đặt phòng <strong>{selectedRoom?.name}</strong> tại khách sạn <strong>{selectedHotel?.name}</strong> không?</p>
-                            <div className="bg-slate-50 dark:bg-slate-800 p-3 rounded-lg text-sm text-slate-700 dark:text-slate-300">
-                              <p>Ngày nhận phòng: <strong>{format(displayFromDate, "dd/MM/yyyy")}</strong></p>
-                              <p>Ngày trả phòng: <strong>{format(displayToDate, "dd/MM/yyyy")}</strong></p>
-                              <p>Khách: <strong>{adults} Người lớn, {children} Trẻ em</strong></p>
-                              <p>Số lượng phòng: <strong>{roomQuantity}</strong></p>
-                              <p className="mt-2 text-[#0b5cd5] font-black text-base">Tổng cộng: {selectedRoom ? ((selectedRoom.price + selectedRoom.taxAndFee) * computedNights * roomQuantity).toLocaleString('vi-VN') : 0} đ</p>
-                            </div>
+                        <AlertDialogDescription className="space-y-2 mt-2" render={<div />}>
+                          <p>Bạn có chắc chắn muốn đặt phòng <strong>{selectedRoom?.name}</strong> tại khách sạn <strong>{selectedHotel?.name}</strong> không?</p>
+                          <div className="bg-slate-50 dark:bg-slate-800 p-3 rounded-lg text-sm text-slate-700 dark:text-slate-300">
+                            <p>Ngày nhận phòng: <strong>{format(displayFromDate, "dd/MM/yyyy")}</strong></p>
+                            <p>Ngày trả phòng: <strong>{format(displayToDate, "dd/MM/yyyy")}</strong></p>
+                            <p>Khách: <strong>{adults} Người lớn, {children} Trẻ em</strong></p>
+                            <p>Số lượng phòng: <strong>{roomQuantity}</strong></p>
+                            <p className="mt-2 text-[#0b5cd5] font-black text-base">Tổng cộng: {selectedRoom ? ((selectedRoom.price + selectedRoom.taxAndFee) * computedNights * roomQuantity).toLocaleString('vi-VN') : 0} đ</p>
                           </div>
                         </AlertDialogDescription>
                       </AlertDialogHeader>
@@ -996,14 +998,12 @@ export default function HotelPage() {
                         ? 'Đêm nhận - trả phòng'
                         : 'Ngày nhận - trả phòng'}
                     <Popover open={datePopoverOpen} onOpenChange={setDatePopoverOpen}>
-                      <PopoverTrigger asChild>
-                        <button
-                          type="button"
-                          className="flex w-full items-center gap-2 rounded-md border border-slate-200 dark:border-slate-800 px-3 py-2 text-left text-sm font-bold text-slate-800 dark:text-slate-100"
-                        >
-                          <CalendarDays className="size-4 text-blue-600 shrink-0" />
-                          <span className="truncate">{dateSummary}</span>
-                        </button>
+                      <PopoverTrigger
+                        type="button"
+                        className="flex w-full items-center gap-2 rounded-md border border-slate-200 dark:border-slate-800 px-3 py-2 text-left text-sm font-bold text-slate-800 dark:text-slate-100"
+                      >
+                        <CalendarDays className="size-4 text-blue-600 shrink-0" />
+                        <span className="truncate">{dateSummary}</span>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0" align="start">
                         {bookingMode === 'hourly' ? (
