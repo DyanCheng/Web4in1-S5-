@@ -24,8 +24,6 @@ import {
 } from 'lucide-react';
 import { ImageWithFallback } from '@/components/figma/ImageWithFallback';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/contexts/AuthContext';
-import { useCart } from '@/contexts/CartContext';
 import { useState, useEffect, useMemo } from 'react';
 import { Slider } from '@/components/ui/slider';
 import Header from '@/components/Header';
@@ -494,7 +492,6 @@ export default function HomePage() {
                         >
                           <ImageWithFallback src={locTours[0].image} alt={locTours[0].title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
                           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                          
                           {/* Badges */}
                           <div className="absolute top-4 left-4 flex gap-2">
                             {locTours[0].badge && (
@@ -653,7 +650,6 @@ export default function HomePage() {
                             </div>
                           </div>
                         </div>
-
                         {/* 4 Small Mini Cards Grid */}
                         <div className="w-full lg:w-1/2 grid grid-cols-1 sm:grid-cols-2 gap-4">
                           {locTours.slice(1, 4).map(tour => (
