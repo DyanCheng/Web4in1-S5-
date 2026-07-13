@@ -14,6 +14,7 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+import { SupportChatWidget } from "@/components/support/SupportChatWidget";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { CartProvider } from "@/contexts/CartContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
@@ -40,6 +41,7 @@ export default function RootLayout({
           <AuthProvider>
             <CartProvider>
               {children}
+              <SupportChatWidget />
             </CartProvider>
           </AuthProvider>
         </ThemeProvider>

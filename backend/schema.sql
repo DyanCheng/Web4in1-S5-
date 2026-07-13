@@ -1,5 +1,5 @@
 -- Thứ tự chạy migration: schema.sql → schema-payments.sql → update_rpcs.sql
--- → seed_hotels.sql → setup_hotel_bookings.sql → insert_more_rooms.sql → setup_realtime_chat.sql → setup_chat_messages_room.sql → setup_auth_logs.sql
+-- → seed_hotels.sql → setup_hotel_bookings.sql → insert_more_rooms.sql → setup_realtime_chat.sql → setup_chat_messages_room.sql → setup_support_chat.sql → setup_auth_logs.sql
 -- 1. Alter Tours Table to support frontend properties
 ALTER TABLE public.tours ADD COLUMN IF NOT EXISTS location text;
 ALTER TABLE public.tours ADD COLUMN IF NOT EXISTS duration text;
