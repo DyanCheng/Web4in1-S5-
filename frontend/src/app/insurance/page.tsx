@@ -301,7 +301,8 @@ export default function InsurancePage() {
                       return;
                     }
                     addToCart({
-                      tourId: plan.id,
+                      serviceType: 'insurance',
+                      referenceId: plan.id,
                       title: `Bảo hiểm cao cấp: ${plan.name}`,
                       image: 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=800&q=80',
                       price: plan.price,

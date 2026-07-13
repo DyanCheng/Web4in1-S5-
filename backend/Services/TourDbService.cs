@@ -1,4 +1,4 @@
-using System.Net.Http.Json;
+﻿using System.Net.Http.Json;
 using System.Text.Json;
 using Backend.Models;
 using Backend.Controllers;
@@ -7,6 +7,8 @@ namespace Backend.Services
 {
     public class TourDbService
     {
+        private const long DefaultFallbackTourId = 1;
+
         private readonly string? _supabaseUrl;
         private readonly string? _supabaseKey;
         private readonly HttpClient _http;
@@ -18,11 +20,25 @@ namespace Backend.Services
 
         public TourDbService(IConfiguration configuration, IHttpClientFactory httpClientFactory)
         {
-            _supabaseUrl = configuration["SUPABASE_URL"] ?? configuration["Supabase:Url"];
-            _supabaseKey = configuration["SUPABASE_SERVICE_ROLE_KEY"]
-                ?? configuration["SUPABASE_KEY"]
-                ?? configuration["Supabase:Key"];
+            _supabaseUrl = FirstConfig(configuration, "SUPABASE_URL", "Supabase:Url");
+            _supabaseKey = FirstConfig(
+                configuration,
+                "SUPABASE_SERVICE_ROLE_KEY",
+                "SUPABASE_KEY",
+                "Supabase:Key");
             _http = httpClientFactory.CreateClient("Supabase");
+        }
+
+        private static string? FirstConfig(IConfiguration configuration, params string[] keys)
+        {
+            foreach (var key in keys)
+            {
+                var value = configuration[key]?.Trim();
+                if (!string.IsNullOrWhiteSpace(value))
+                    return value;
+            }
+
+            return null;
         }
 
         private async Task<JsonElement?> PostRpcAsync(string functionName, object body)
@@ -70,16 +86,25 @@ namespace Backend.Services
             }
         }
 
+        private async Task<Tour?> FetchTourByIdAsync(long tourId)
+        {
+            var response = await PostRpcAsync("get_tour_by_id", new { p_id = tourId });
+            if (response == null) return null;
+
+            return JsonSerializer.Deserialize<Tour>(response.Value.GetRawText(), _jsonOptions);
+        }
+
         public async Task<Tour?> GetTourByIdAsync(string id)
         {
-            if (!long.TryParse(id, out var parsedId)) return null;
-
             try
             {
-                var response = await PostRpcAsync("get_tour_by_id", new { p_id = parsedId });
-                if (response == null) return null;
+                if (long.TryParse(id, out var parsedId))
+                {
+                    var tour = await FetchTourByIdAsync(parsedId);
+                    if (tour != null) return tour;
+                }
 
-                return JsonSerializer.Deserialize<Tour>(response.Value.GetRawText(), _jsonOptions);
+                return await FetchTourByIdAsync(DefaultFallbackTourId);
             }
             catch (Exception ex)
             {
@@ -250,3 +275,5 @@ namespace Backend.Services
         }
     }
 }
+
+

@@ -3,6 +3,11 @@ using Backend.Models;
 
 namespace Backend.Services
 {
+    /// <summary>
+    /// Dữ liệu demo trong bộ nhớ — KHÔNG dùng cho production.
+    /// Còn được dùng bởi: BusService, RoomsController, fallback HotelDbService.
+    /// Tours/Auth đã chuyển sang Supabase; cần migrate bus/rooms trước khi xóa class này.
+    /// </summary>
     public class DataStoreService
     {
         public List<User> Users { get; } = new();
@@ -11,6 +16,7 @@ namespace Backend.Services
         public List<Room> Rooms { get; } = new();
         public List<BusTrip> BusTrips { get; } = new();
         public List<BusBooking> BusBookings { get; } = new();
+        public List<HotelBooking> HotelBookings { get; } = new();
 
         public DataStoreService()
         {
@@ -504,6 +510,14 @@ namespace Backend.Services
             var booking = Bookings.FirstOrDefault(b => b.Id == bookingId);
             if (booking == null) return false;
             booking.Status = "confirmed";
+            return true;
+        }
+
+        public bool ConfirmHotelBooking(string bookingId)
+        {
+            var booking = HotelBookings.FirstOrDefault(b => b.BookingCode == bookingId);
+            if (booking == null) return false;
+            booking.BookingStatus = "confirmed";
             return true;
         }
     }

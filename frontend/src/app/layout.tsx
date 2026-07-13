@@ -2,10 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Playfair_Display, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
-const inter = Inter({
-  variable: "--font-sans",
-  subsets: ["latin"],
-});
+const inter = Inter({subsets:['latin'],variable:'--font-sans'});
 
 const playfair = Playfair_Display({
   variable: "--font-serif",
@@ -17,10 +14,11 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+import { SupportChatWidget } from "@/components/support/SupportChatWidget";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { CartProvider } from "@/contexts/CartContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
-import Chatbot from "@/components/Chatbot";
+import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = {
   title: "CMC Travel - Trải Nghiệm Du Lịch Thượng Lưu",
@@ -35,7 +33,7 @@ export default function RootLayout({
   return (
     <html
       lang="vi" suppressHydrationWarning
-      className={`${inter.variable} ${playfair.variable} ${geistMono.variable} h-full antialiased`}
+      className={cn("h-full", "antialiased", playfair.variable, geistMono.variable, "font-sans", inter.variable)}
     >
       <body suppressHydrationWarning 
       className="min-h-full flex flex-col">
@@ -43,7 +41,7 @@ export default function RootLayout({
           <AuthProvider>
             <CartProvider>
               {children}
-              <Chatbot />
+              <SupportChatWidget />
             </CartProvider>
           </AuthProvider>
         </ThemeProvider>

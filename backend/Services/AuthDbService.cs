@@ -4,13 +4,20 @@ using Npgsql;
 
 namespace Backend.Services;
 
+/// <summary>
+/// Xác thực người dùng qua 2 đường dẫn (ưu tiên theo thứ tự cấu hình):
+/// 1. PostgreSQL trực tiếp (ConnectionStrings:DefaultConnection) — RPC qua Npgsql
+/// 2. Supabase REST/RPC (SUPABASE_URL + SUPABASE_KEY) — khi không có connection string
+/// Service role key dùng cho thao tác admin (tạo user Auth) khi cần.
+/// </summary>
 public class AuthDbService
 {
     private readonly string? _connectionString;
     private readonly string? _supabaseUrl;
     private readonly string? _supabaseKey;
+    private readonly string? _serviceRoleKey;
     private readonly HttpClient _http;
-
+    //Constructor của AuthDbService
     public AuthDbService(IConfiguration configuration, IHttpClientFactory httpClientFactory)
     {
         _connectionString = configuration.GetConnectionString("DefaultConnection");
@@ -22,9 +29,13 @@ public class AuthDbService
             "SUPABASE_ANON_KEY",
             "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
             "Supabase:Key");
+        _serviceRoleKey = TrimConfig(configuration, "SUPABASE_SERVICE_ROLE_KEY");
         _http = httpClientFactory.CreateClient("Supabase");
     }
+    //Key cho Supabase REST
+    private string? SupabaseRestKey => _serviceRoleKey ?? _supabaseKey;
 
+    //Cắt cấu hình cho Supabase
     private static string? TrimConfig(IConfiguration configuration, params string[] keys)
     {
         foreach (var key in keys)
@@ -37,6 +48,7 @@ public class AuthDbService
         return null;
     }
 
+    //Đăng nhập người dùng từ database hoặc Supabase
     public async Task<AuthResult?> LoginAsync(string email, string password)
     {
         if (!string.IsNullOrWhiteSpace(_connectionString))
@@ -48,6 +60,7 @@ public class AuthDbService
         throw new InvalidOperationException("Configure ConnectionStrings:DefaultConnection or SUPABASE_URL + SUPABASE_KEY.");
     }
 
+    //Đăng ký người dùng từ database hoặc Supabase
     public async Task<AuthResult> RegisterAsync(string email, string password, string name)
     {
         if (!string.IsNullOrWhiteSpace(_connectionString))
@@ -59,6 +72,7 @@ public class AuthDbService
         throw new InvalidOperationException("Configure ConnectionStrings:DefaultConnection or SUPABASE_URL + SUPABASE_KEY.");
     }
 
+    //Đăng nhập hoặc đăng ký người dùng Google từ database hoặc Supabase
     public async Task<AuthResult> LoginOrRegisterGoogleAsync(string googleId, string email, string fullName, string? avatarUrl)
     {
         if (!string.IsNullOrWhiteSpace(_connectionString))
@@ -69,7 +83,121 @@ public class AuthDbService
 
         throw new InvalidOperationException("Configure ConnectionStrings:DefaultConnection or SUPABASE_URL + SUPABASE_KEY.");
     }
+//Lấy thông tin người dùng từ database hoặc Supabase dựa vào id và email của người dùng  
+    public async Task<AuthResult?> GetUserByIdAndEmailAsync(string id, string email)
+    {
+        if (!long.TryParse(id, out var userId))
+            return null;
 
+        if (!string.IsNullOrWhiteSpace(_connectionString))
+            return await GetUserByIdAndEmailViaDatabaseAsync(userId, email);
+
+        if (!string.IsNullOrWhiteSpace(_supabaseUrl) && !string.IsNullOrWhiteSpace(_supabaseKey))
+            return await GetUserByIdAndEmailViaSupabaseAsync(userId, email);
+
+        throw new InvalidOperationException("Configure ConnectionStrings:DefaultConnection or SUPABASE_URL + SUPABASE_KEY.");
+    }
+
+    private async Task<AuthResult?> GetUserByIdAndEmailViaDatabaseAsync(long userId, string email)
+    {
+        await using var conn = new NpgsqlConnection(_connectionString);
+        await conn.OpenAsync();
+
+        const string sql = """
+            SELECT u.user_id, u.email, u.full_name, u.avatar_url, r.role_name
+            FROM public.users u
+            LEFT JOIN public.user_roles ur ON u.user_id = ur.user_id
+            LEFT JOIN public.roles r ON ur.role_id = r.role_id
+            WHERE u.user_id = @userId AND LOWER(u.email) = LOWER(@email)
+            LIMIT 1
+            """;
+
+        await using var cmd = new NpgsqlCommand(sql, conn);
+        cmd.Parameters.AddWithValue("userId", userId);
+        cmd.Parameters.AddWithValue("email", email.Trim());
+        await using var reader = await cmd.ExecuteReaderAsync();
+        if (!await reader.ReadAsync())
+            return null;
+
+        return MapAuthResult(reader);
+    }
+
+    private async Task<AuthResult?> GetUserByIdAndEmailViaSupabaseAsync(long userId, string email)
+    {
+        var apiKey = SupabaseRestKey;
+        if (string.IsNullOrWhiteSpace(apiKey))
+            return null;
+
+        var request = new HttpRequestMessage(
+            HttpMethod.Get,
+            $"{_supabaseUrl!.TrimEnd('/')}/rest/v1/users?user_id=eq.{userId}&email=eq.{Uri.EscapeDataString(email.Trim())}&select=user_id,email,full_name,avatar_url&limit=1");
+        request.Headers.Add("apikey", apiKey);
+        request.Headers.Add("Authorization", $"Bearer {apiKey}");
+
+        var response = await _http.SendAsync(request);
+        if (!response.IsSuccessStatusCode)
+            return null;
+
+        await using var stream = await response.Content.ReadAsStreamAsync();
+        using var doc = await JsonDocument.ParseAsync(stream);
+        if (doc.RootElement.ValueKind != JsonValueKind.Array || doc.RootElement.GetArrayLength() == 0)
+            return null;
+
+        var row = doc.RootElement[0];
+        var role = await GetUserRoleViaSupabaseAsync(userId) ?? "user";
+
+        return new AuthResult
+        {
+            Id = row.GetProperty("user_id").GetRawText().Trim('"'),
+            Email = row.GetProperty("email").GetString() ?? email,
+            Name = row.GetProperty("full_name").GetString() ?? string.Empty,
+            Role = role,
+            Avatar = row.TryGetProperty("avatar_url", out var avatar) && avatar.ValueKind != JsonValueKind.Null
+                ? avatar.GetString()
+                : null,
+        };
+    }
+
+    private async Task<string?> GetUserRoleViaSupabaseAsync(long userId)
+    {
+        var apiKey = SupabaseRestKey;
+        if (string.IsNullOrWhiteSpace(apiKey))
+            return null;
+
+        var request = new HttpRequestMessage(
+            HttpMethod.Get,
+            $"{_supabaseUrl!.TrimEnd('/')}/rest/v1/user_roles?user_id=eq.{userId}&select=roles(role_name)&limit=1");
+        request.Headers.Add("apikey", apiKey);
+        request.Headers.Add("Authorization", $"Bearer {apiKey}");
+
+        var response = await _http.SendAsync(request);
+        if (!response.IsSuccessStatusCode)
+            return null;
+
+        await using var stream = await response.Content.ReadAsStreamAsync();
+        using var doc = await JsonDocument.ParseAsync(stream);
+        if (doc.RootElement.ValueKind != JsonValueKind.Array || doc.RootElement.GetArrayLength() == 0)
+            return null;
+
+        var row = doc.RootElement[0];
+        if (!row.TryGetProperty("roles", out var rolesEl))
+            return null;
+
+        var roleName = rolesEl.GetProperty("role_name").GetString();
+        return string.IsNullOrWhiteSpace(roleName) ? null : MapRole(roleName);
+    }
+
+    private static AuthResult MapAuthResult(NpgsqlDataReader reader) =>
+        new()
+        {
+            Id = reader.GetInt64(0).ToString(),
+            Email = reader.GetString(1),
+            Name = reader.GetString(2),
+            Avatar = reader.IsDBNull(3) ? null : reader.GetString(3),
+            Role = reader.IsDBNull(4) ? "user" : MapRole(reader.GetString(4)),
+        };
+
+    //Đăng nhập hoặc đăng ký người dùng Google từ Supabase RPC
     private async Task<AuthResult> LoginOrRegisterGoogleViaSupabaseRpcAsync(
         string googleId, string email, string fullName, string? avatarUrl)
     {
@@ -87,6 +215,7 @@ public class AuthDbService
         return MapRpcResult(response.Value);
     }
 
+    //Đăng nhập hoặc đăng ký người dùng Google từ database
     private async Task<AuthResult> LoginOrRegisterGoogleViaDatabaseAsync(
         string googleId, string email, string fullName, string? avatarUrl)
     {
@@ -171,6 +300,7 @@ public class AuthDbService
         }
     }
 
+    //Cập nhật thông tin người dùng Google từ database
     private static async Task UpdateGoogleProfileAsync(
         NpgsqlConnection conn, NpgsqlTransaction tx, long userId, string email, string fullName, string? avatarUrl)
     {
@@ -190,6 +320,7 @@ public class AuthDbService
         await cmd.ExecuteNonQueryAsync();
     }
 
+    //Cập nhật thời gian đăng nhập người dùng Google từ database
     private static async Task UpdateGoogleLoginAsync(NpgsqlConnection conn, NpgsqlTransaction tx, long userId)
     {
         await using var cmd = new NpgsqlCommand(
@@ -199,6 +330,7 @@ public class AuthDbService
         await cmd.ExecuteNonQueryAsync();
     }
 
+    //Lấy thông tin người dùng từ database dựa vào id của người dùng
     private static async Task<AuthResult> GetUserByIdAsync(NpgsqlConnection conn, long userId)
     {
         const string sql = """
@@ -226,6 +358,7 @@ public class AuthDbService
         };
     }
 
+    //Đăng nhập người dùng từ Supabase RPC
     private async Task<AuthResult?> LoginViaSupabaseRpcAsync(string email, string password)
     {
         var response = await PostRpcAsync("login_user", new { p_email = email.Trim(), p_password = password });
@@ -235,6 +368,7 @@ public class AuthDbService
         return MapRpcResult(response.Value);
     }
 
+    //Đăng ký người dùng từ Supabase RPC
     private async Task<AuthResult> RegisterViaSupabaseRpcAsync(string email, string password, string name)
     {
         try
@@ -257,6 +391,7 @@ public class AuthDbService
         }
     }
 
+    //Gửi yêu cầu đến Supabase RPC
     private async Task<JsonElement?> PostRpcAsync(string functionName, object body)
     {
         using var request = new HttpRequestMessage(HttpMethod.Post, $"{_supabaseUrl!.TrimEnd('/')}/rest/v1/rpc/{functionName}")
@@ -282,6 +417,7 @@ public class AuthDbService
         return doc.RootElement.Clone();
     }
 
+    //Chuyển đổi kết quả từ Supabase RPC thành AuthResult
     private static AuthResult MapRpcResult(JsonElement data)
     {
         var roleName = data.TryGetProperty("role_name", out var roleProp)
@@ -300,6 +436,7 @@ public class AuthDbService
         };
     }
 
+    //Phân tích lỗi từ Supabase RPC
     private static string ParseSupabaseError(string content)
     {
         try
@@ -316,6 +453,7 @@ public class AuthDbService
         return content;
     }
 
+    //Đăng nhập người dùng từ database
     private async Task<AuthResult?> LoginViaDatabaseAsync(string email, string password)
     {
         await using var conn = new NpgsqlConnection(_connectionString);
@@ -379,6 +517,7 @@ public class AuthDbService
         };
     }
 
+    //Đăng ký người dùng từ database
     private async Task<AuthResult> RegisterViaDatabaseAsync(string email, string password, string name)
     {
         await using var conn = new NpgsqlConnection(_connectionString);
@@ -458,6 +597,7 @@ public class AuthDbService
         }
     }
 
+    //Chuyển đổi vai trò từ database thành AuthResult
     private static string MapRole(string dbRole) => dbRole switch
     {
         "ADMIN" => "admin",
@@ -469,7 +609,7 @@ public class AuthDbService
         _ => "user"
     };
 }
-
+//Kết quả đăng nhập hoặc đăng ký người dùng
 public class AuthResult
 {
     public string Id { get; set; } = string.Empty;
