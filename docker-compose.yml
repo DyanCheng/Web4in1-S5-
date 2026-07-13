@@ -1,16 +1,20 @@
-﻿services:
+services:
+  # Frontend Next.js — proxy /api/* tới backend qua next.config rewrites
   frontend:
     build:
       context: ./frontend
     ports:
       - "3000:3000"
+    env_file:
+      - .env
     volumes:
       - ./frontend:/app
       - /app/node_modules
     environment:
       - NEXT_PUBLIC_BACKEND_URL=http://localhost:5000
       - BACKEND_INTERNAL_URL=http://backend:8080
-
+      - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL:-${SUPABASE_URL}}
+      - NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=${NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:-${SUPABASE_KEY}}
       - NEXT_PUBLIC_GOOGLE_CLIENT_ID=${NEXT_PUBLIC_GOOGLE_CLIENT_ID:-}
       - NEXT_PUBLIC_SEPAY_BANK_ACCOUNT=${NEXT_PUBLIC_SEPAY_BANK_ACCOUNT:-}
       - NEXT_PUBLIC_SEPAY_BANK_NAME=${NEXT_PUBLIC_SEPAY_BANK_NAME:-Vietcombank}
@@ -18,11 +22,14 @@
     depends_on:
       - backend
 
+  # ASP.NET Core API — kết nối Supabase qua env từ .env gốc
   backend:
     build:
       context: ./backend
     ports:
       - "5000:8080"
+    env_file:
+      - .env
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - SUPABASE_URL=${SUPABASE_URL:-https://tbabfvaohalhmtzrtgty.supabase.co}
@@ -36,9 +43,9 @@
       - ConnectionStrings__DefaultConnection=${SUPABASE_DB_CONNECTION_STRING:-}
       - AI_SERVICE_URL=http://ai_service:8000
 
+  # Placeholder AI — backend chưa gọi AI_SERVICE_URL
   ai_service:
     build:
       context: ./ai_service
     ports:
       - "8000:8000"
-

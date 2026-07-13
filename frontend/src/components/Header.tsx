@@ -3,8 +3,9 @@
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
-import { Sun, Moon, Menu, Heart, ChevronDown, Plane, Bus, Car, Shield } from 'lucide-react';
+import { Sun, Moon, Menu, Heart, ChevronDown, Plane, Bus, Car, Shield, MessageSquare } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
+import { canAccessSupportInbox } from '@/lib/chat/support-constants';
 
 export default function Header() {
   const router = useRouter();
@@ -92,6 +93,18 @@ export default function Header() {
             >
               Khách sạn
             </button>
+
+            {canAccessSupportInbox(user?.role) ? (
+              <button
+                onClick={() => navigate('/employee/support')}
+                className={`hover:text-blue-600 dark:hover:text-blue-400 transition-colors py-2 uppercase font-bold text-sm tracking-wider cursor-pointer inline-flex items-center gap-1 ${
+                  pathname.startsWith('/employee/support') ? 'text-blue-600 dark:text-blue-400' : ''
+                }`}
+              >
+                <MessageSquare className="size-4" />
+                Hỗ trợ
+              </button>
+            ) : null}
 
             {/* Yêu thích */}
             <button
@@ -255,6 +268,15 @@ export default function Header() {
             >
               Khách sạn
             </button>
+            {canAccessSupportInbox(user?.role) ? (
+              <button
+                onClick={() => { navigate('/employee/support'); setMobileMenuOpen(false); }}
+                className="px-3 py-2 text-left text-sm font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg cursor-pointer inline-flex items-center gap-2"
+              >
+                <MessageSquare className="size-4" />
+                Hỗ trợ
+              </button>
+            ) : null}
             <button
               onClick={() => { navigate('/favorites'); setMobileMenuOpen(false); }}
               className="px-3 py-2 text-left text-sm font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg cursor-pointer inline-flex items-center gap-2"

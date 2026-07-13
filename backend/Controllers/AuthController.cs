@@ -1,137 +1,248 @@
-using Microsoft.AspNetCore.Mvc;
 using Backend.Services;
+using Microsoft.AspNetCore.Mvc;
 
-namespace Backend.Controllers
+namespace Backend.Controllers;
+
+[ApiController]
+[Route("api/[controller]")]
+public class AuthController : ControllerBase
 {
-    [ApiController]
-    [Route("api/[controller]")]
-    public class AuthController : ControllerBase
+    private readonly AuthDbService _authDb;
+    private readonly GoogleAuthService _googleAuth;
+    private readonly RealtimeAuthService _realtimeAuth;
+    private readonly AuthLogService _authLog;
+
+    public AuthController(
+        AuthDbService authDb,
+        GoogleAuthService googleAuth,
+        RealtimeAuthService realtimeAuth,
+        AuthLogService authLog)
     {
-        private readonly AuthDbService _authDb;
-        private readonly GoogleAuthService _googleAuth;
+        _authDb = authDb;
+        _googleAuth = googleAuth;
+        _realtimeAuth = realtimeAuth;
+        _authLog = authLog;
+    }
 
-        public AuthController(AuthDbService authDb, GoogleAuthService googleAuth)
-        {
-            _authDb = authDb;
-            _googleAuth = googleAuth;
-        }
+    [HttpPost("login")]
+    public async Task<IActionResult> Login([FromBody] LoginRequest request)
+    {
+        var ipAddress = GetClientIp();
+        var userAgent = GetUserAgent();
 
-        [HttpPost("login")]
-        public async Task<IActionResult> Login([FromBody] LoginRequest request)
+        try
         {
-            try
+            var user = await _authDb.LoginAsync(request.Email, request.Password);
+            if (user == null)
             {
-                var user = await _authDb.LoginAsync(request.Email, request.Password);
+                await _authLog.LogLoginAsync(
+                    request.Email,
+                    "failed",
+                    ipAddress: ipAddress,
+                    userAgent: userAgent);
+                return Unauthorized(new { message = "Email hoặc mật khẩu không chính xác" });
+            }
 
+            await _authLog.LogLoginAsync(
+                request.Email,
+                "success",
+                userId: ParseUserId(user.Id),
+                ipAddress: ipAddress,
+                userAgent: userAgent);
 
-                if (user == null)
+            return Ok(await BuildAuthResponseAsync(user, request.Password));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return StatusCode(503, new { message = ex.Message });
+        }
+        catch (AuthException ex)
+        {
+            return StatusCode(503, new { message = ex.Message });
+        }
+    }
+
+    [HttpPost("register")]
+    public async Task<IActionResult> Register([FromBody] RegisterRequest request)
+    {
+        var ipAddress = GetClientIp();
+        var userAgent = GetUserAgent();
+
+        try
+        {
+            var newUser = await _authDb.RegisterAsync(request.Email, request.Password, request.Name);
+
+            await _authLog.LogRegistrationAsync(
+                request.Email,
+                "success",
+                registeredUserId: ParseUserId(newUser.Id),
+                ipAddress: ipAddress,
+                userAgent: userAgent);
+
+            return Ok(await BuildAuthResponseAsync(newUser, request.Password));
+        }
+        catch (AuthException ex)
+        {
+            await _authLog.LogRegistrationAsync(
+                request.Email,
+                "failed",
+                ipAddress: ipAddress,
+                userAgent: userAgent);
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return StatusCode(503, new { message = ex.Message });
+        }
+    }
+
+    [HttpPost("google")]
+    public async Task<IActionResult> GoogleLogin([FromBody] GoogleLoginRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.Credential))
+            return BadRequest(new { message = "Thiếu thông tin xác thực Google" });
+
+        var ipAddress = GetClientIp();
+        var userAgent = GetUserAgent();
+        string? googleEmail = null;
+
+        try
+        {
+            var googleUser = await _googleAuth.ValidateIdTokenAsync(request.Credential);
+            googleEmail = googleUser.Email;
+            var user = await _authDb.LoginOrRegisterGoogleAsync(
+                googleUser.GoogleId,
+                googleUser.Email,
+                googleUser.Name,
+                googleUser.Picture);
+
+            await _authLog.LogLoginAsync(
+                googleUser.Email,
+                "success",
+                userId: ParseUserId(user.Id),
+                ipAddress: ipAddress,
+                userAgent: userAgent);
+
+            return Ok(await BuildAuthResponseAsync(user));
+        }
+        catch (AuthException ex)
+        {
+            await _authLog.LogLoginAsync(
+                googleEmail ?? "google",
+                "failed",
+                ipAddress: ipAddress,
+                userAgent: userAgent);
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return StatusCode(503, new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = ex.Message });
+        }
+    }
+
+    [HttpPost("realtime-token")]
+    public async Task<IActionResult> RefreshRealtimeToken([FromBody] RealtimeTokenRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.Id) || string.IsNullOrWhiteSpace(request.Email))
+            return BadRequest(new { message = "Thiếu thông tin người dùng" });
+
+        try
+        {
+            var user = await _authDb.GetUserByIdAndEmailAsync(request.Id, request.Email);
+            if (user == null)
+                return Unauthorized(new { message = "Phiên đăng nhập không hợp lệ" });
+
+            var token = await _realtimeAuth.IssueTokenAsync(
+                user.Email,
+                user.Id,
+                user.Name,
+                user.Role,
+                request.Password);
+
+            if (token == null)
+            {
+                return StatusCode(503, new
                 {
-                    return Unauthorized(new { message = "Email hoặc mật khẩu không chính xác" });
-                }
-
-                return Ok(new
-                {
-                    id = user.Id,
-                    email = user.Email,
-                    name = user.Name,
-                    role = user.Role,
-                    avatar = user.Avatar
+                    message = "Không thể tạo token Realtime. Kiểm tra SUPABASE_SERVICE_ROLE_KEY và đăng nhập lại.",
                 });
             }
-            catch (InvalidOperationException ex)
 
+            return Ok(new
             {
-                return StatusCode(503, new { message = ex.Message });
-            }
-            catch (AuthException ex)
-            {
-                return StatusCode(503, new { message = ex.Message });
-            }
+                accessToken = token.AccessToken,
+                tokenExpiresAt = token.ExpiresAt,
+            });
         }
-
-        [HttpPost("register")]
-        public async Task<IActionResult> Register([FromBody] RegisterRequest request)
+        catch (InvalidOperationException ex)
         {
-            try
-            {
-                var newUser = await _authDb.RegisterAsync(request.Email, request.Password, request.Name);
-
-                return Ok(new
-                {
-                    id = newUser.Id,
-                    email = newUser.Email,
-                    name = newUser.Name,
-                    role = newUser.Role,
-                    avatar = newUser.Avatar
-                });
-            }
-            catch (AuthException ex)
-
-            {
-                return BadRequest(new { message = ex.Message });
-            }
-            catch (InvalidOperationException ex)
-            {
-                return StatusCode(503, new { message = ex.Message });
-            }
+            return StatusCode(503, new { message = ex.Message });
         }
+    }
 
-        [HttpPost("google")]
-        public async Task<IActionResult> GoogleLogin([FromBody] GoogleLoginRequest request)
+    private async Task<object> BuildAuthResponseAsync(AuthResult user, string? password = null)
+    {
+        var token = await _realtimeAuth.IssueTokenAsync(
+            user.Email,
+            user.Id,
+            user.Name,
+            user.Role,
+            password);
+
+        return new
         {
-            if (string.IsNullOrWhiteSpace(request.Credential))
-                return BadRequest(new { message = "Thiếu thông tin xác thực Google" });
-
-            try
-            {
-                var googleUser = await _googleAuth.ValidateIdTokenAsync(request.Credential);
-                var user = await _authDb.LoginOrRegisterGoogleAsync(
-                    googleUser.GoogleId,
-                    googleUser.Email,
-                    googleUser.Name,
-                    googleUser.Picture);
-
-                return Ok(new
-                {
-                    id = user.Id,
-                    email = user.Email,
-                    name = user.Name,
-                    role = user.Role,
-                    avatar = user.Avatar
-                });
-            }
-            catch (AuthException ex)
-
-            {
-                return BadRequest(new { message = ex.Message });
-            }
-            catch (InvalidOperationException ex)
-            {
-                return StatusCode(503, new { message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = ex.Message });
-            }
-        }
+            id = user.Id,
+            email = user.Email,
+            name = user.Name,
+            role = user.Role,
+            avatar = user.Avatar,
+            accessToken = token?.AccessToken,
+            tokenExpiresAt = token?.ExpiresAt,
+            realtimeConfigured = token != null,
+        };
     }
 
-    public class LoginRequest
+    private string? GetClientIp()
     {
-        public string Email { get; set; } = string.Empty;
-        public string Password { get; set; } = string.Empty;
-        public string Role { get; set; } = "user";
+        var forwarded = Request.Headers["X-Forwarded-For"].FirstOrDefault();
+        if (!string.IsNullOrWhiteSpace(forwarded))
+            return forwarded.Split(',')[0].Trim();
+
+        return HttpContext.Connection.RemoteIpAddress?.ToString();
     }
 
-    public class RegisterRequest
-    {
-        public string Email { get; set; } = string.Empty;
-        public string Password { get; set; } = string.Empty;
-        public string Name { get; set; } = string.Empty;
-    }
+    private string? GetUserAgent() =>
+        Request.Headers.UserAgent.ToString();
 
-    public class GoogleLoginRequest
-    {
-        public string Credential { get; set; } = string.Empty;
-    }
+    private static long? ParseUserId(string? userId) =>
+        long.TryParse(userId, out var parsed) ? parsed : null;
+}
+
+public class LoginRequest
+{
+    public string Email { get; set; } = string.Empty;
+    public string Password { get; set; } = string.Empty;
+    public string Role { get; set; } = "user";
+}
+
+public class RegisterRequest
+{
+    public string Email { get; set; } = string.Empty;
+    public string Password { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+}
+
+public class GoogleLoginRequest
+{
+    public string Credential { get; set; } = string.Empty;
+}
+
+public class RealtimeTokenRequest
+{
+    public string Id { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public string? Password { get; set; }
 }

@@ -12,7 +12,7 @@ export function getBackendUrl(): string {
   return normalizeBackendUrl(process.env.NEXT_PUBLIC_BACKEND_URL);
 }
 
-/** Same-origin path; Vercel/Next rewrites proxy /api/* to the Railway backend. */
+/** Same-origin path; Vercel/Next rewrites proxy /api/* tới backend (xem next.config.ts) */
 export function apiUrl(path: string): string {
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
   return normalizedPath;

@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import Link from 'next/link';
 import {
   Bell,
   Search,
@@ -14,7 +15,8 @@ import {
   Save,
   CheckCircle2,
   User,
-  FileText
+  FileText,
+  MessageSquare,
 } from 'lucide-react';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
@@ -206,6 +208,13 @@ export default function EmployeeDashboard() {
             <LayoutGrid className="size-5 text-blue-600" />
             Thông Tin Khách Hàng
           </button>
+          <Link
+            href="/employee/support"
+            className="w-full flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold text-slate-600 hover:bg-slate-200/50 transition-colors"
+          >
+            <MessageSquare className="size-5" />
+            Hỗ trợ chat
+          </Link>
         </nav>
 
         <div className="px-4 pb-8 space-y-2">

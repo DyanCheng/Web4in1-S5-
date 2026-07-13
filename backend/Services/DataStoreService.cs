@@ -3,6 +3,11 @@ using Backend.Models;
 
 namespace Backend.Services
 {
+    /// <summary>
+    /// Dữ liệu demo trong bộ nhớ — KHÔNG dùng cho production.
+    /// Còn được dùng bởi: BusService, RoomsController, fallback HotelDbService.
+    /// Tours/Auth đã chuyển sang Supabase; cần migrate bus/rooms trước khi xóa class này.
+    /// </summary>
     public class DataStoreService
     {
         public List<User> Users { get; } = new();

@@ -366,7 +366,11 @@ export default function HomePage() {
                   <Slider
                     defaultValue={[0, 100000000]}
                     value={priceRange}
-                    onValueChange={(val) => setPriceRange(val)}
+                    onValueChange={(val) => {
+                      if (Array.isArray(val)) {
+                        setPriceRange([...val]);
+                      }
+                    }}
                     min={0}
                     max={100000000}
                     step={1000000}
