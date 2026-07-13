@@ -20,6 +20,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { useIsMobile } from '@/components/ui/use-mobile';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -346,6 +352,7 @@ export default function HotelPage() {
   const [children, setChildren] = useState<number>(1);
   const [roomQuantity, setRoomQuantity] = useState<number>(1);
   const [svcSlide, setSvcSlide] = useState<number>(0);
+  const [mapHotel, setMapHotel] = useState<Hotel | null>(null);
 
   const hotelRooms = useMemo(() => {
     if (!selectedHotel) return [];
@@ -576,6 +583,7 @@ export default function HotelPage() {
                     <p className="mt-1 flex items-center gap-1.5 text-xs font-bold text-slate-500 dark:text-slate-400">
                       <MapPin className="size-3.5 text-blue-600 shrink-0" />
                       <span>{selectedHotel.location}, Việt Nam</span>
+                      <button onClick={() => setMapHotel(selectedHotel)} className="text-blue-600 hover:underline ml-1 font-semibold">Xem bản đồ</button>
                     </p>
                   </div>
 
@@ -1093,6 +1101,7 @@ export default function HotelPage() {
                   </button>
                 </div>
               </div>
+            </div>
             </section>
 
             <section className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-10">
@@ -1304,7 +1313,7 @@ export default function HotelPage() {
                               <MapPin className="size-3.5 shrink-0 text-blue-600" />
                               <span>{hotel.location}</span>
                               <button
-                                onClick={() => setNotice(`Đang mở bản đồ cho ${hotel.name}.`)}
+                                onClick={() => setMapHotel(hotel)}
                                 className="font-bold text-blue-600 underline underline-offset-2 dark:text-blue-400"
                               >
                                 Xem trên bản đồ
@@ -1393,6 +1402,29 @@ export default function HotelPage() {
           }}
         />
       )}
+
+      <Dialog open={!!mapHotel} onOpenChange={(open) => !open && setMapHotel(null)}>
+        <DialogContent className="max-w-4xl w-[90vw] h-[80vh] flex flex-col p-0 overflow-hidden bg-white dark:bg-slate-900 border-none">
+          <DialogHeader className="p-4 border-b border-slate-100 dark:border-slate-800 shrink-0">
+            <DialogTitle className="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
+              <MapPin className="size-5 text-blue-600" />
+              Vị trí {mapHotel?.name}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 w-full relative bg-slate-100 dark:bg-slate-800">
+            {mapHotel && (
+              <iframe
+                width="100%"
+                height="100%"
+                style={{ border: 0 }}
+                loading="lazy"
+                allowFullScreen
+                src={`https://maps.google.com/maps?q=${encodeURIComponent(`${mapHotel.name}, ${mapHotel.location}, Việt Nam`)}&t=&z=16&ie=UTF8&iwloc=&output=embed`}
+              ></iframe>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
