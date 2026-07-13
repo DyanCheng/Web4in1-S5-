@@ -8,9 +8,18 @@ const backendUrl = normalizeBackendUrl(
 );
 
 const nextConfig: NextConfig = {
+  env: {
+    NEXT_PUBLIC_SUPABASE_URL:
+      process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL ?? "",
+    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:
+      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
+      process.env.SUPABASE_KEY ??
+      "",
+  },
+
   async rewrites() {
-    return [
-      {
+    // Browser gọi /api/* cùng origin → Next proxy tới backend (tránh CORS)
+    return [      {
         source: "/api/:path*",
         destination: `${backendUrl}/api/:path*`,
       },

@@ -34,7 +34,7 @@ import Footer from '@/components/Footer';
 import { useTheme } from '@/contexts/ThemeContext';
 import { getFavorites, toggleFavorite } from '@/lib/tourStorage';
 
-import { apiUrl } from '@/lib/backendUrl';
+import { fetchAllTours } from '@/lib/tourApi';
 
 interface Tour {
   id: string;
@@ -49,6 +49,7 @@ interface Tour {
   description: string;
   badge?: string;
 }
+
 
 function isDomesticTour(tour: Tour): boolean {
   const idNum = parseInt(tour.cityId || tour.id, 10);
@@ -98,17 +99,25 @@ const destinationImages: Record<string, string> = {
   'Mũi Né': 'https://images.unsplash.com/photo-1596422846543-75c6fc18a523?auto=format&fit=crop&w=800&q=80',
 };
 
+
 export default function HomePage() {
   const router = useRouter();
   const navigate = (url: string) => router.push(url);
   const { theme } = useTheme();
   
+  // Get today's date
+  const getTodayDate = () => {
+    const today = new Date();
+    today.setMinutes(today.getMinutes() - today.getTimezoneOffset());
+    return today.toISOString().split('T')[0];
+  };
+
   // Search state
   const [searchQuery, setSearchQuery] = useState({ 
     startLocation: 'Hà Nội', 
     destination: '', 
-    date: '2026-06-02' 
-  });
+    date: getTodayDate()
+  }); 
   const [searchType, setSearchType] = useState<'domestic' | 'international'>('domestic');
   const [priceRange, setPriceRange] = useState<number[]>([0, 100000000]);
   const [isFilterExpanded, setIsFilterExpanded] = useState(false);
@@ -141,31 +150,18 @@ export default function HomePage() {
   }, [tours]);
 
   useEffect(() => {
-    setSelectedLocation(null);
-    setSearchQuery(prev => ({ ...prev, destination: '' }));
-  }, [searchType]);
 
-  useEffect(() => {
-    const fetchTours = async () => {
-      try {
-        const response = await fetch(apiUrl('/api/tours'));
-        if (response.ok) {
-          const data = await response.json();
-          const mapped = data.map((t: any, index: number) => ({
-            ...t,
-            badge: t.badge || (index === 0 ? "Verified" : index === 1 ? "Bestseller" : undefined)
-          }));
-          setTours(mapped);
-        } else {
-          setTours([]);
-        }
-      } catch {
-        setTours([]);
-      } finally {
-        setLoading(false);
-      }
+    const loadTours = async () => {
+      const data = await fetchAllTours();
+      setTours(
+        data.map((t: Tour, index: number) => ({
+          ...t,
+          badge: t.badge || (index === 0 ? 'Verified' : index === 1 ? 'Bestseller' : undefined),
+        }))
+      );
+      setLoading(false);
     };
-    fetchTours();
+    loadTours();
   }, []);
 
   const handleSearch = () => {
@@ -367,11 +363,14 @@ export default function HomePage() {
                 <div className="flex-1 text-left">
                   <label className="text-[10px] uppercase tracking-wider text-slate-400 dark:text-slate-500 block font-bold">Ngày đi</label>
                   <input
+                    placeholder="Chọn ngày"
                     type="date"
-                    min={new Date().toISOString().split('T')[0]}
+                    min={getTodayDate()}
                     value={searchQuery.date}
                     onChange={(e) => setSearchQuery(prev => ({ ...prev, date: e.target.value }))}
                     className="w-full outline-none text-sm text-slate-800 dark:text-slate-100 font-bold bg-transparent focus:ring-0"
+                    onPaste={(e) => e.preventDefault()} // Prevent pasting
+                    onKeyDown={(e) => e.preventDefault()} // Prevent typing
                   />
                 </div>
               </div>
@@ -425,7 +424,11 @@ export default function HomePage() {
                   <Slider
                     defaultValue={[0, 100000000]}
                     value={priceRange}
-                    onValueChange={(val) => setPriceRange(val)}
+                    onValueChange={(val) => {
+                      if (Array.isArray(val)) {
+                        setPriceRange([...val]);
+                      }
+                    }}
                     min={0}
                     max={100000000}
                     step={1000000}
