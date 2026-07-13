@@ -156,6 +156,7 @@ BEGIN
   FROM (
     SELECT 
       t.tour_id::text AS id,
+      t.destination_city_id::text AS city_id,
       t.title,
       COALESCE(t.location, c.city_name) AS location,
       t.base_price AS price,
@@ -191,6 +192,7 @@ BEGIN
   FROM (
     SELECT 
       t.tour_id::text AS id,
+      t.destination_city_id::text AS city_id,
       t.title,
       COALESCE(t.location, c.city_name) AS location,
       t.base_price AS price,
@@ -566,3 +568,35 @@ GRANT EXECUTE ON FUNCTION public.get_user_bookings(text) TO anon, authenticated,
 GRANT EXECUTE ON FUNCTION public.create_booking(bigint, text, text, text, int, int) TO anon, authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.delete_booking(text) TO anon, authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.confirm_booking(text) TO anon, authenticated, service_role;
+
+-- 5. Chat System Tables
+CREATE TABLE IF NOT EXISTS public.chat_sessions (
+  session_id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  customer_name text NOT NULL,
+  customer_email text NOT NULL,
+  status text NOT NULL DEFAULT 'waiting',
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS public.chat_messages (
+  message_id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  session_id uuid REFERENCES public.chat_sessions(session_id) ON DELETE CASCADE,
+  sender_type text NOT NULL,
+  sender_id text,
+  content text NOT NULL,
+  created_at timestamp with time zone DEFAULT now()
+);
+
+ALTER TABLE public.chat_sessions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.chat_messages ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Allow all insert to chat_sessions" ON public.chat_sessions FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow all select to chat_sessions" ON public.chat_sessions FOR SELECT USING (true);
+CREATE POLICY "Allow all update to chat_sessions" ON public.chat_sessions FOR UPDATE USING (true);
+
+CREATE POLICY "Allow all insert to chat_messages" ON public.chat_messages FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow all select to chat_messages" ON public.chat_messages FOR SELECT USING (true);
+
+GRANT ALL ON public.chat_sessions TO anon, authenticated, service_role;
+GRANT ALL ON public.chat_messages TO anon, authenticated, service_role;

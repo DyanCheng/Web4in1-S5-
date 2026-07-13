@@ -20,6 +20,7 @@ namespace Backend.Services
 
         public TourDbService(IConfiguration configuration, IHttpClientFactory httpClientFactory)
         {
+
             _supabaseUrl = FirstConfig(configuration, "SUPABASE_URL", "Supabase:Url");
             _supabaseKey = FirstConfig(
                 configuration,
