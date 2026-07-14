@@ -19,8 +19,6 @@ import {
   MessageSquare,
 } from 'lucide-react';
 
-import LiveChatAdmin from '@/components/employee/LiveChatAdmin';
-
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
 
 interface Booking {
@@ -52,9 +50,6 @@ export default function EmployeeDashboard() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [notesMap, setNotesMap] = useState<Record<string, string>>({});
-  
-  // Tab State
-  const [activeTab, setActiveTab] = useState<'customers' | 'chat'>('customers');
   
   // Search & Filter State
   const [searchTerm, setSearchTerm] = useState('');
@@ -209,13 +204,13 @@ export default function EmployeeDashboard() {
         </div>
 
         <nav className="px-4 space-y-2 mt-4 flex-1">
-          <button 
-            onClick={() => setActiveTab('customers')}
-            className={`w-full flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold transition-colors text-left ${activeTab === 'customers' ? 'text-[#1e3a8a] bg-blue-50/50 shadow-sm border border-blue-100/50' : 'text-slate-600 hover:bg-slate-50 border border-transparent'}`}
+          <Link
+            href="/employee"
+            className="w-full flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold text-[#1e3a8a] bg-blue-50/50 shadow-sm border border-blue-100/50 transition-colors"
           >
-            <LayoutGrid className={`size-5 ${activeTab === 'customers' ? 'text-blue-600' : 'text-slate-400'}`} />
+            <LayoutGrid className="size-5 text-blue-600" />
             Thông Tin Khách Hàng
-          </button>
+          </Link>
 
           <Link
             href="/employee/support"
@@ -267,17 +262,7 @@ export default function EmployeeDashboard() {
 
         {/* Content */}
         <div className="p-8 flex-1 flex flex-col overflow-hidden">
-          {activeTab === 'chat' ? (
-            <div className="flex-1 flex flex-col h-full">
-              <div className="mb-2">
-                <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Live Chat Hỗ Trợ</h2>
-                <p className="text-sm font-medium text-slate-500 mt-1">
-                  Trò chuyện trực tiếp với khách hàng truy cập website.
-                </p>
-              </div>
-              <LiveChatAdmin />
-            </div>
-          ) : loading ? (
+          {loading ? (
              <div className="flex items-center justify-center py-20">
                <Loader2 className="size-8 animate-spin text-blue-600" />
              </div>
@@ -372,7 +357,7 @@ export default function EmployeeDashboard() {
       </main>
 
       {/* Modal chi tiết & Cập nhật ghi chú */}
-      {activeTab === 'customers' && selectedCustomer && (
+      {selectedCustomer && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl border border-slate-100 animate-in fade-in zoom-in-95 duration-200">
             {/* Header */}
