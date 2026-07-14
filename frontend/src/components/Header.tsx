@@ -124,19 +124,6 @@ export default function Header() {
             >
               Khách sạn
             </button>
-
-            {canAccessSupportInbox(user?.role) ? (
-              <button
-                onClick={() => navigate('/employee/support')}
-                className={`hover:text-blue-600 dark:hover:text-blue-400 transition-colors py-2 uppercase font-bold text-sm tracking-wider cursor-pointer inline-flex items-center gap-1 ${
-                  pathname.startsWith('/employee/support') ? 'text-blue-600 dark:text-blue-400' : ''
-                }`}
-              >
-                <MessageSquare className="size-4" />
-                Hỗ trợ
-              </button>
-            ) : null}
-
             {/* Xem thêm dropdown */}
             <div ref={moreRef} className="relative">
               <button
@@ -177,19 +164,9 @@ export default function Header() {
             {user?.role === 'admin' && (
               <button 
                 onClick={() => navigate('/#partners')} 
-                className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors py-2 cursor-pointer"
+                className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors py-2 uppercase font-bold text-sm tracking-wider cursor-pointer"
               >
                 Đối tác
-              </button>
-            )}
-            {canAccessAdmin && (
-              <button 
-                onClick={() => navigate(getAdminPath())} 
-                className={`hover:text-blue-600 dark:hover:text-blue-400 transition-colors py-2 uppercase font-bold text-sm tracking-wider cursor-pointer ${
-                  pathname === '/admin' || pathname === '/hotel-owner' || pathname === '/employee' || pathname === '/accountant' ? 'text-blue-600 dark:text-blue-400' : ''
-                }`}
-              >
-                Quản trị
               </button>
             )}
           </nav>
@@ -374,7 +351,7 @@ export default function Header() {
               <button 
                 onClick={() => { navigate('/#partners'); setMobileMenuOpen(false); }}
                 className="px-3 py-2 text-sm font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg text-left cursor-pointer"
-              >
+              >             
                 Đối tác
               </button>
             )}

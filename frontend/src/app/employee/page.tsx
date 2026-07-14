@@ -247,9 +247,9 @@ export default function EmployeeDashboard() {
             <button className="text-slate-500 hover:text-slate-700 transition-colors">
               <Mail className="size-5" />
             </button>
-            <div className="flex items-center gap-2 cursor-pointer" onClick={logout} title="Click to logout">
+            <div className="flex items-center gap-2 cursor-pointer"  title="Click to logout">
               <div className="size-8 rounded-full bg-slate-200 overflow-hidden">
-                <img src="https://i.pravatar.cc/150?img=68" alt="Avatar" className="w-full h-full object-cover" />
+                <img src={user.avatar || '/default-avatar.png'} alt={user.name} className="w-full h-full object-cover" />
               </div>
               <span className="text-sm font-semibold text-slate-700">{user.name}</span>
             </div>
