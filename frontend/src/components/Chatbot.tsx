@@ -124,7 +124,7 @@ export default function Chatbot() {
       const welcomeMsg = {
         session_id: sid,
         sender_type: 'employee',
-        content: `Chào ${customerName}, bạn đang quan tâm đến tour trong nước hay ngoài nước?`
+        content: `Chào ${customerName}, bạn đang quan tâm đến địa điểm du lịch nào?`
       };
       
       await supabase.from('chat_messages').insert(welcomeMsg);
@@ -275,7 +275,7 @@ export default function Chatbot() {
               {!messages.some(m => m.sender_type === 'customer') && messages.length > 0 && (
                 <div className="px-4 py-3 bg-white border-t border-slate-100 flex flex-wrap gap-2">
                   <p className="w-full text-xs text-slate-500 mb-1">Gợi ý câu hỏi:</p>
-                  {["Tour trong nước", "Tour ngoài nước", "Tư vấn tour HOT", "Gặp nhân viên hỗ trợ"].map((q, idx) => (
+                  {["Tour trọn gói", "Tour khuyến mãi", "Tư vấn tour HOT", "Gặp nhân viên hỗ trợ"].map((q, idx) => (
                     <button
                       key={idx}
                       onClick={() => handleSendMessage(q)}

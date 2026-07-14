@@ -48,29 +48,7 @@ interface Tour {
   reviews: number;
   description: string;
   badge?: string;
-}
-
-function isDomesticTour(tour: Tour): boolean {
-  const idNum = parseInt(tour.cityId || tour.id, 10);
-  
-  // Nước ngoài: Từ ID 35 đến 100
-  if (idNum >= 35 && idNum <= 100) {
-    return false;
-  }
-  
-  // Trong nước: Từ ID 1 đến 34, và 101 đến 110
-  if ((idNum >= 1 && idNum <= 34) || (idNum >= 101 && idNum <= 110)) {
-    return true;
-  }
-  
-  // Dự phòng: Dựa vào địa điểm nếu ID nằm ngoài các khoảng trên
-  const locationLower = (tour.location || '').toLowerCase();
-  if (!locationLower) return true; 
-  
-  const hasVietnameseAccents = /[àáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệđìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵ]/i.test(locationLower);
-  if (hasVietnameseAccents) return true;
-
-  return false;
+  isDomestic?: boolean;
 }
 
 const destinationImages: Record<string, string> = {
@@ -109,7 +87,6 @@ export default function HomePage() {
     destination: '', 
     date: '2026-06-02' 
   });
-  const [searchType, setSearchType] = useState<'domestic' | 'international'>('domestic');
   const [priceRange, setPriceRange] = useState<number[]>([0, 100000000]);
   const [isFilterExpanded, setIsFilterExpanded] = useState(false);
   const [durationFilter, setDurationFilter] = useState('');
@@ -143,7 +120,7 @@ export default function HomePage() {
   useEffect(() => {
     setSelectedLocation(null);
     setSearchQuery(prev => ({ ...prev, destination: '' }));
-  }, [searchType]);
+  }, []);
 
   useEffect(() => {
     const fetchTours = async () => {
@@ -186,11 +163,8 @@ export default function HomePage() {
     const matchesPrice = tour.price >= priceRange[0] && tour.price <= priceRange[1];
     const keyword = searchQuery.destination.trim().toLowerCase();
     const matchesDestination = !keyword || tour.title.toLowerCase().includes(keyword) || tour.location.toLowerCase().includes(keyword);
-    
-    const domestic = isDomesticTour(tour);
-    const matchesSearchType = (searchType === 'domestic' && domestic) || (searchType === 'international' && !domestic);
 
-    return matchesDuration && matchesPrice && matchesDestination && matchesSearchType;
+    return matchesDuration && matchesPrice && matchesDestination;
   });
 
   // Top tours for Hero Slider
@@ -256,34 +230,6 @@ export default function HomePage() {
           {/* Elegant Search Panel */}
           <div className="w-full max-w-4xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-lg rounded-3xl shadow-2xl p-6 sm:p-8 border border-white/40 dark:border-slate-800 transition-all duration-300">
             
-            {/* Domestic / International Radio Tabs */}
-            <div className="flex items-center gap-6 mb-6">
-              <label className="flex items-center gap-2.5 cursor-pointer select-none">
-                <input
-                  type="radio"
-                  name="searchType"
-                  checked={searchType === 'domestic'}
-                  onChange={() => setSearchType('domestic')}
-                  className="size-5 text-blue-600 border-slate-300 focus:ring-blue-500 cursor-pointer"
-                />
-                <span className={`text-sm font-bold tracking-wide ${searchType === 'domestic' ? 'text-blue-900 dark:text-blue-400 font-extrabold' : 'text-slate-500'}`}>
-                  Trong nước
-                </span>
-              </label>
-              <label className="flex items-center gap-2.5 cursor-pointer select-none">
-                <input
-                  type="radio"
-                  name="searchType"
-                  checked={searchType === 'international'}
-                  onChange={() => setSearchType('international')}
-                  className="size-5 text-blue-600 border-slate-300 focus:ring-blue-500 cursor-pointer"
-                />
-                <span className={`text-sm font-bold tracking-wide ${searchType === 'international' ? 'text-blue-900 dark:text-blue-400 font-extrabold' : 'text-slate-500'}`}>
-                  Nước ngoài
-                </span>
-              </label>
-            </div>
-
             {/* Primary Inputs Grid */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
               
@@ -307,7 +253,8 @@ export default function HomePage() {
                     {startLocationSuggestions.map((tour) => (
                       <button
                         key={`start-${tour.id}`}
-                        onClick={() => {
+                        onMouseDown={(e) => {
+                          e.preventDefault();
                           setSearchQuery(prev => ({ ...prev, startLocation: tour.location }));
                           setShowStartSuggestions(false);
                         }}
@@ -344,7 +291,8 @@ export default function HomePage() {
                     {destinationSuggestions.map((tour) => (
                       <button
                         key={tour.id}
-                        onClick={() => {
+                        onMouseDown={(e) => {
+                          e.preventDefault();
                           setSearchQuery(prev => ({ ...prev, destination: tour.location }));
                           setShowDestinationSuggestions(false);
                         }}
