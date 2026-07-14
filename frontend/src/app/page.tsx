@@ -151,25 +151,19 @@ export default function HomePage() {
   }, [searchType]);
 
   useEffect(() => {
-    const fetchTours = async () => {
+    const loadTours = async () => {
       try {
-        const response = await fetch(apiUrl('/api/tours'));
-        if (response.ok) {
-          const data = await response.json();
-          const mapped = data.map((t: any, index: number) => ({
-            ...t,
-            badge: t.badge || (index === 0 ? "Verified" : index === 1 ? "Bestseller" : undefined)
-          }));
-          setTours(mapped);
-        } else {
-          setTours([]);
-        }
+        const data = await fetchAllTours();
+        const mapped = data.map((t: any, index: number) => ({
+          ...t,
+          badge: t.badge || (index === 0 ? "Verified" : index === 1 ? "Bestseller" : undefined)
+        }));
+        setTours(mapped);
       } catch {
         setTours([]);
       } finally {
         setLoading(false);
       }
-
     };
     loadTours();
   }, []);
@@ -598,146 +592,103 @@ export default function HomePage() {
                   const index = Object.keys(groupedTours).indexOf(selectedLocation);
                   const layoutType = index % 3;
 
-
-                      <div className="flex flex-col lg:flex-row gap-6">
-                        {/* Big Card */}
-                        <div 
-                          onClick={() => navigate(`/tour/${locTours[0].id}`)}
-                          className="w-full lg:w-2/3 h-[400px] md:h-[500px] relative rounded-2xl overflow-hidden cursor-pointer group shadow-md"
-                        >
-                          <ImageWithFallback src={locTours[0].image} alt={locTours[0].title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                          {/* Badges */}
-                          <div className="absolute top-4 left-4 flex gap-2">
-                            {locTours[0].badge && (
-                              <span className="bg-[#fef08a] text-amber-900 px-3 py-1 rounded-sm text-xs font-bold uppercase">
-                                {locTours[0].badge}
-                              </span>
-                            )}
-                            <button onClick={(e) => handleToggleFavorite(e, locTours[0])} className="bg-white/90 p-1.5 rounded-full hover:bg-white text-slate-400">
-                              <Heart className={`size-4 ${favoriteIds.includes(locTours[0].id) ? 'fill-red-500 text-red-500' : ''}`} />
-                            </button>
-                          </div>
-                          
-                          <div className="absolute bottom-4 left-4 bg-white/20 backdrop-blur-md text-white px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 border border-white/30">
-                            <Clock className="size-3" /> {locTours[0].duration}
-                          </div>
-
-                          <div className="absolute bottom-0 left-0 w-full p-6 bg-white transform translate-y-2 group-hover:translate-y-0 transition-transform text-left">
-                            <div className="flex items-center gap-1 mb-2">
-                              <Star className="size-4 fill-amber-400 text-amber-400" />
-                              <span className="font-bold text-sm text-slate-800">{locTours[0].rating}</span>
-                              <span className="text-slate-400 text-xs">({locTours[0].reviews} đánh giá)</span>
-                            </div>
-                            <h4 className="text-lg font-bold text-slate-900 line-clamp-1">{locTours[0].title}</h4>
-                            <div className="flex justify-between items-end mt-4">
-                              <div>
-                                <p className="text-xs text-slate-500">Giá từ</p>
-                                <p className="text-xl font-black text-blue-700">{locTours[0].price.toLocaleString('vi-VN')}đ</p>
-                              </div>
-                              <button className="bg-blue-100 text-blue-700 p-2 rounded-lg group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                                <ArrowRight className="size-5" />
+                  return (
+                    <section className="w-full">
+                      {/* STYLE 0: 1 Big Left, 2 Small Right */}
+                      {layoutType === 0 && (
+                        <div className="flex flex-col lg:flex-row gap-6">
+                          <div
+                            onClick={() => navigate(`/tour/${locTours[0].id}`)}
+                            className="w-full lg:w-2/3 h-[400px] md:h-[500px] relative rounded-2xl overflow-hidden cursor-pointer group shadow-md"
+                          >
+                            <ImageWithFallback src={locTours[0].image} alt={locTours[0].title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                            <div className="absolute top-4 left-4 flex gap-2">
+                              {locTours[0].badge && (
+                                <span className="bg-[#fef08a] text-amber-900 px-3 py-1 rounded-sm text-xs font-bold uppercase">
+                                  {locTours[0].badge}
+                                </span>
+                              )}
+                              <button onClick={(e) => handleToggleFavorite(e, locTours[0])} className="bg-white/90 p-1.5 rounded-full hover:bg-white text-slate-400">
+                                <Heart className={`size-4 ${favoriteIds.includes(locTours[0].id) ? 'fill-red-500 text-red-500' : ''}`} />
                               </button>
                             </div>
-                          </div>
-                        </div>
 
-                        {/* 2 Small Cards */}
-                        <div className="w-full lg:w-1/3 flex flex-col gap-6">
-                          {locTours.slice(1, 3).map(tour => (
-                            <div 
-                              onClick={() => navigate(`/tour/${locTours[0].id}`)}
-                              className="w-full lg:w-2/3 h-[400px] md:h-[500px] relative rounded-2xl overflow-hidden cursor-pointer group shadow-md"
-                            >
-                              <ImageWithFallback src={locTours[0].image} alt={locTours[0].title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
-                              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                              
-                              {/* Badges */}
-                              <div className="absolute top-4 left-4 flex gap-2">
-                                {locTours[0].badge && (
-                                  <span className="bg-[#fef08a] text-amber-950 px-3 py-1 rounded-sm text-xs font-bold uppercase">
-                                    {locTours[0].badge}
-                                  </span>
-                                )}
-                                <button onClick={(e) => handleToggleFavorite(e, locTours[0])} className="bg-white/90 p-1.5 rounded-full hover:bg-white text-slate-400">
-                                  <Heart className={`size-4 ${favoriteIds.includes(locTours[0].id) ? 'fill-red-500 text-red-500' : ''}`} />
+                            <div className="absolute bottom-4 left-4 bg-white/20 backdrop-blur-md text-white px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 border border-white/30">
+                              <Clock className="size-3" /> {locTours[0].duration}
+                            </div>
+
+                            <div className="absolute bottom-0 left-0 w-full p-6 bg-white transform translate-y-2 group-hover:translate-y-0 transition-transform text-left">
+                              <div className="flex items-center gap-1 mb-2">
+                                <Star className="size-4 fill-amber-400 text-amber-400" />
+                                <span className="font-bold text-sm text-slate-800">{locTours[0].rating}</span>
+                                <span className="text-slate-400 text-xs">({locTours[0].reviews} đánh giá)</span>
+                              </div>
+                              <h4 className="text-lg font-bold text-slate-900 line-clamp-1">{locTours[0].title}</h4>
+                              <div className="flex justify-between items-end mt-4">
+                                <div>
+                                  <p className="text-xs text-slate-500">Giá từ</p>
+                                  <p className="text-xl font-black text-blue-700">{locTours[0].price.toLocaleString('vi-VN')}đ</p>
+                                </div>
+                                <button className="bg-blue-100 text-blue-700 p-2 rounded-lg group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                                  <ArrowRight className="size-5" />
                                 </button>
                               </div>
-                              
-                              <div className="absolute bottom-4 left-4 bg-white/20 backdrop-blur-md text-white px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 border border-white/30">
-                                <Clock className="size-3" /> {locTours[0].duration}
-                              </div>
-
-                              <div className="absolute bottom-0 left-0 w-full p-6 bg-white transform translate-y-2 group-hover:translate-y-0 transition-transform text-left">
-                                <div className="flex items-center gap-1 mb-2">
-                                  <Star className="size-4 fill-amber-400 text-amber-400" />
-                                  <span className="font-bold text-sm text-slate-800">{locTours[0].rating}</span>
-                                  <span className="text-slate-400 text-xs">({locTours[0].reviews} đánh giá)</span>
-                                </div>
-                                <h4 className="text-lg font-bold text-slate-900 line-clamp-1">{locTours[0].title}</h4>
-                                <div className="flex justify-between items-end mt-4">
-                                  <div>
-                                    <p className="text-xs text-slate-500">Giá từ</p>
-                                    <p className="text-xl font-black text-blue-700">{locTours[0].price.toLocaleString('vi-VN')}đ</p>
-                                  </div>
-                                  <button className="bg-blue-100 text-blue-700 p-2 rounded-lg group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                                    <ArrowRight className="size-5" />
-                                  </button>
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* 2 Small Cards */}
-                            <div className="w-full lg:w-1/3 flex flex-col gap-6">
-                              {locTours.slice(1, 3).map(tour => (
-                                <div 
-                                  key={tour.id} 
-                                  onClick={() => navigate(`/tour/${tour.id}`)}
-                                  className="relative flex-1 rounded-2xl overflow-hidden group cursor-pointer shadow-md min-h-[200px]"
-                                >
-                                  <ImageWithFallback src={tour.image} alt={tour.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
-                                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
-                                  <div className="absolute top-3 right-3 z-10">
-                                    <button onClick={(e) => handleToggleFavorite(e, tour)} className="bg-white/90 p-1.5 rounded-full hover:bg-white text-slate-400 shadow-sm transition-colors">
-                                      <Heart className={`size-4 ${favoriteIds.includes(tour.id) ? 'fill-red-500 text-red-500' : ''}`} />
-                                    </button>
-                                  </div>
-                                  <div className="absolute bottom-4 left-4 right-4 text-left text-white">
-                                    <h4 className="text-base font-bold line-clamp-2 mb-1">{tour.title}</h4>
-                                    <p className="font-black text-[#fef08a]">{tour.price.toLocaleString('vi-VN')}đ</p>
-                                  </div>
-                                </div>
-                              ))}
-                              {locTours.length <= 1 && (
-                                <div className="flex-1 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl flex flex-col items-center justify-center p-6 text-center text-slate-400">
-                                  <MapPin className="size-8 mb-2" />
-                                  <p className="text-xs font-semibold">Khám phá các điểm đến thú vị</p>
-                                </div>
-                              )}
-                              {locTours.length <= 2 && (
-                                <div className="flex-1 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl flex flex-col items-center justify-center p-6 text-center text-slate-400">
-                                  <MapPin className="size-8 mb-2" />
-                                  <p className="text-xs font-semibold">Trải nghiệm du lịch cao cấp</p>
-                                </div>
-                              )}
                             </div>
                           </div>
-                        </div>
 
-                        {/* 4 Small Mini Cards Grid */}
-                        <div className="w-full lg:w-1/2 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          {locTours.slice(1, 4).map(tour => (
-                            <div key={tour.id} onClick={() => navigate(`/tour/${tour.id}`)} className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm hover:shadow-md transition-shadow cursor-pointer flex flex-col justify-between h-full min-h-[200px]">
-                              <div>
-                                <div className="h-32 rounded-xl overflow-hidden mb-3 relative">
-                                  <ImageWithFallback src={tour.image} alt={tour.title} className="w-full h-full object-cover" />
+                          <div className="w-full lg:w-1/3 flex flex-col gap-6">
+                            {locTours.slice(1, 3).map(tour => (
+                              <div
+                                key={tour.id}
+                                onClick={() => navigate(`/tour/${tour.id}`)}
+                                className="relative flex-1 rounded-2xl overflow-hidden group cursor-pointer shadow-md min-h-[200px]"
+                              >
+                                <ImageWithFallback src={tour.image} alt={tour.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
+                                <div className="absolute top-3 right-3 z-10">
+                                  <button onClick={(e) => handleToggleFavorite(e, tour)} className="bg-white/90 p-1.5 rounded-full hover:bg-white text-slate-400 shadow-sm transition-colors">
+                                    <Heart className={`size-4 ${favoriteIds.includes(tour.id) ? 'fill-red-500 text-red-500' : ''}`} />
+                                  </button>
+                                </div>
+                                <div className="absolute bottom-4 left-4 right-4 text-left text-white">
+                                  <h4 className="text-base font-bold line-clamp-2 mb-1">{tour.title}</h4>
+                                  <p className="font-black text-[#fef08a]">{tour.price.toLocaleString('vi-VN')}đ</p>
+                                </div>
+                              </div>
+                            ))}
+                            {locTours.length <= 1 && (
+                              <div className="flex-1 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl flex flex-col items-center justify-center p-6 text-center text-slate-400">
+                                <MapPin className="size-8 mb-2" />
+                                <p className="text-xs font-semibold">Khám phá các điểm đến thú vị</p>
+                              </div>
+                            )}
+                            {locTours.length <= 2 && (
+                              <div className="flex-1 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl flex flex-col items-center justify-center p-6 text-center text-slate-400">
+                                <MapPin className="size-8 mb-2" />
+                                <p className="text-xs font-semibold">Trải nghiệm du lịch cao cấp</p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* STYLE 1: Horizontal grid */}
+                      {layoutType === 1 && (
+                        <div className="bg-[#f4f7fb] dark:bg-slate-900/50 rounded-[2rem] p-6 md:p-10 text-left">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                            {locTours.slice(0, 3).map(tour => (
+                              <div key={tour.id} onClick={() => navigate(`/tour/${tour.id}`)} className="bg-white dark:bg-slate-900 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-shadow cursor-pointer group flex flex-col">
+                                <div className="relative h-48 overflow-hidden">
+                                  <ImageWithFallback src={tour.image} alt={tour.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                                  {tour.badge && <span className="absolute bottom-2 left-2 bg-white text-blue-700 text-[10px] font-bold px-2 py-0.5 rounded">{tour.badge}</span>}
                                   <div className="absolute top-2 right-2 z-10">
                                     <button onClick={(e) => handleToggleFavorite(e, tour)} className="bg-white/90 p-1.5 rounded-full hover:bg-white text-slate-400 shadow-sm transition-colors">
                                       <Heart className={`size-3.5 ${favoriteIds.includes(tour.id) ? 'fill-red-500 text-red-500' : ''}`} />
                                     </button>
                                   </div>
                                 </div>
-                                <div className="p-4 flex flex-col flex-1 text-left">
+                                <div className="p-4 flex flex-col flex-1">
                                   <h4 className="font-bold text-slate-900 dark:text-white text-sm mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors">{tour.title}</h4>
                                   <div className="flex items-center gap-1 mb-3">
                                     <Star className="size-3 fill-amber-400 text-amber-400" />
@@ -750,28 +701,35 @@ export default function HomePage() {
                                 </div>
                               </div>
                             ))}
+                            <div className="bg-white dark:bg-slate-900 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl flex flex-col items-center justify-center p-6 text-center cursor-pointer hover:bg-blue-50 dark:hover:bg-slate-800 hover:border-blue-300 transition-colors">
+                              <div className="size-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mb-4">
+                                <MapPin className="size-5" />
+                              </div>
+                              <p className="font-bold text-slate-700 dark:text-slate-300 text-sm">
+                                Khám phá thêm {locTours.length > 3 ? locTours.length - 3 : 'nhiều'} tour tại {selectedLocation}
+                              </p>
+                            </div>
                           </div>
                         </div>
                       )}
 
-                      {/* STYLE 2: Đà Lạt (Vertical Bar Title, 1 Big Left, 4 Small Right) */}
+                      {/* STYLE 2: 1 Big Left, 4 Small Right */}
                       {layoutType === 2 && (
                         <div className="text-left">
                           <div className="flex flex-col lg:flex-row gap-6">
-                            {/* Big Feature Card */}
-                            <div 
+                            <div
                               onClick={() => navigate(`/tour/${locTours[0].id}`)}
                               className="w-full lg:w-1/2 h-[500px] relative rounded-3xl overflow-hidden cursor-pointer group shadow-lg"
                             >
                               <ImageWithFallback src={locTours[0].image} alt={locTours[0].title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
                               <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
-                              
+
                               <div className="absolute top-4 right-4 z-10">
                                 <button onClick={(e) => handleToggleFavorite(e, locTours[0])} className="bg-white/90 p-2 rounded-full hover:bg-white text-slate-400 shadow-sm transition-colors">
                                   <Heart className={`size-5 ${favoriteIds.includes(locTours[0].id) ? 'fill-red-500 text-red-500' : ''}`} />
                                 </button>
                               </div>
-                              
+
                               <div className="absolute bottom-0 left-0 p-8 w-full">
                                 <span className="bg-blue-600 text-white px-3 py-1 rounded-sm text-xs font-bold uppercase mb-3 inline-block">Được yêu thích nhất</span>
                                 <div className="flex items-center gap-1 mb-2 text-white">
@@ -791,10 +749,9 @@ export default function HomePage() {
                               </div>
                             </div>
 
-                            {/* 4 Small Mini Cards Grid */}
                             <div className="w-full lg:w-1/2 grid grid-cols-1 sm:grid-cols-2 gap-4">
                               {locTours.slice(1, 5).map(tour => (
-                                <div key={tour.id} onClick={() => navigate(`/tour/${tour.id}`)} className="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-100 dark:border-slate-850 shadow-sm hover:shadow-md transition-shadow cursor-pointer flex flex-col justify-between h-full min-h-[200px]">
+                                <div key={tour.id} onClick={() => navigate(`/tour/${tour.id}`)} className="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-md transition-shadow cursor-pointer flex flex-col justify-between h-full min-h-[200px]">
                                   <div>
                                     <div className="h-32 rounded-xl overflow-hidden mb-3 relative">
                                       <ImageWithFallback src={tour.image} alt={tour.title} className="w-full h-full object-cover" />
