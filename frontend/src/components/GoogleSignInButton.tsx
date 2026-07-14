@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 type GoogleCredentialResponse = {
   credential: string;
@@ -34,18 +34,19 @@ declare global {
 const loadingButtonClass =
   'w-full py-2.5 sm:py-3 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm font-bold text-slate-500';
 
+let gsiInitializedForClientId: string | null = null;
+
 export default function GoogleSignInButton({ onSuccess, onError, disabled }: GoogleSignInButtonProps) {
   const buttonRef = useRef<HTMLDivElement>(null);
+  const onSuccessRef = useRef(onSuccess);
+  const onErrorRef = useRef(onError);
   const [mounted, setMounted] = useState(false);
   const [ready, setReady] = useState(false);
   const [clientId, setClientId] = useState<string | null>(null);
 
-  const handleCredential = useCallback((response: GoogleCredentialResponse) => {
-    if (response.credential) {
-      onSuccess(response.credential);
-    } else {
-      onError?.('Không nhận được thông tin từ Google');
-    }
+  useEffect(() => {
+    onSuccessRef.current = onSuccess;
+    onErrorRef.current = onError;
   }, [onSuccess, onError]);
 
   useEffect(() => {
@@ -56,13 +57,24 @@ export default function GoogleSignInButton({ onSuccess, onError, disabled }: Goo
   useEffect(() => {
     if (!mounted || !clientId) return;
 
-    const initializeGoogle = () => {
+    const handleCredential = (response: GoogleCredentialResponse) => {
+      if (response.credential) {
+        onSuccessRef.current(response.credential);
+      } else {
+        onErrorRef.current?.('Không nhận được thông tin từ Google');
+      }
+    };
+
+    const renderGoogleButton = () => {
       if (!window.google?.accounts?.id || !buttonRef.current) return;
 
-      window.google.accounts.id.initialize({
-        client_id: clientId,
-        callback: handleCredential,
-      });
+      if (gsiInitializedForClientId !== clientId) {
+        window.google.accounts.id.initialize({
+          client_id: clientId,
+          callback: handleCredential,
+        });
+        gsiInitializedForClientId = clientId;
+      }
 
       buttonRef.current.innerHTML = '';
       window.google.accounts.id.renderButton(buttonRef.current, {
@@ -77,14 +89,14 @@ export default function GoogleSignInButton({ onSuccess, onError, disabled }: Goo
     };
 
     if (window.google?.accounts?.id) {
-      initializeGoogle();
+      renderGoogleButton();
       return;
     }
 
     const existingScript = document.querySelector<HTMLScriptElement>('script[data-google-gsi="true"]');
     if (existingScript) {
-      existingScript.addEventListener('load', initializeGoogle);
-      return () => existingScript.removeEventListener('load', initializeGoogle);
+      existingScript.addEventListener('load', renderGoogleButton);
+      return () => existingScript.removeEventListener('load', renderGoogleButton);
     }
 
     const script = document.createElement('script');
@@ -92,14 +104,14 @@ export default function GoogleSignInButton({ onSuccess, onError, disabled }: Goo
     script.async = true;
     script.defer = true;
     script.dataset.googleGsi = 'true';
-    script.onload = initializeGoogle;
-    script.onerror = () => onError?.('Không thể tải Google Sign-In');
+    script.onload = renderGoogleButton;
+    script.onerror = () => onErrorRef.current?.('Không thể tải Google Sign-In');
     document.body.appendChild(script);
 
     return () => {
-      script.removeEventListener('load', initializeGoogle);
+      script.removeEventListener('load', renderGoogleButton);
     };
-  }, [mounted, clientId, handleCredential, onError]);
+  }, [mounted, clientId]);
 
   if (!mounted) {
     return (

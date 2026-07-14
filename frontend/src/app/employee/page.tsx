@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import Link from 'next/link';
 import {
   Bell,
   Search,
@@ -15,7 +16,7 @@ import {
   CheckCircle2,
   User,
   FileText,
-  MessageCircle
+  MessageSquare,
 } from 'lucide-react';
 
 import LiveChatAdmin from '@/components/employee/LiveChatAdmin';
@@ -215,13 +216,14 @@ export default function EmployeeDashboard() {
             <LayoutGrid className={`size-5 ${activeTab === 'customers' ? 'text-blue-600' : 'text-slate-400'}`} />
             Thông Tin Khách Hàng
           </button>
-          <button 
-            onClick={() => setActiveTab('chat')}
-            className={`w-full flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold transition-colors text-left ${activeTab === 'chat' ? 'text-[#1e3a8a] bg-blue-50/50 shadow-sm border border-blue-100/50' : 'text-slate-600 hover:bg-slate-50 border border-transparent'}`}
+
+          <Link
+            href="/employee/support"
+            className="w-full flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold text-slate-600 hover:bg-slate-200/50 transition-colors"
           >
-            <MessageCircle className={`size-5 ${activeTab === 'chat' ? 'text-blue-600' : 'text-slate-400'}`} />
-            Live Chat Hỗ Trợ
-          </button>
+            <MessageSquare className="size-5" />
+            Hỗ trợ chat
+          </Link>
         </nav>
 
         <div className="px-4 pb-8 space-y-2">
@@ -254,9 +256,9 @@ export default function EmployeeDashboard() {
             <button className="text-slate-500 hover:text-slate-700 transition-colors">
               <Mail className="size-5" />
             </button>
-            <div className="flex items-center gap-2 cursor-pointer" onClick={logout} title="Click to logout">
+            <div className="flex items-center gap-2 cursor-pointer"  title="Click to logout">
               <div className="size-8 rounded-full bg-slate-200 overflow-hidden">
-                <img src="https://i.pravatar.cc/150?img=68" alt="Avatar" className="w-full h-full object-cover" />
+                <img src={user.avatar || '/default-avatar.png'} alt={user.name} className="w-full h-full object-cover" />
               </div>
               <span className="text-sm font-semibold text-slate-700">{user.name}</span>
             </div>

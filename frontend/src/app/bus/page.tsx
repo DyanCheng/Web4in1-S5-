@@ -427,13 +427,15 @@ export default function BusPage() {
                           return;
                         }
                         addToCart({
-                          tourId: selectedBus.id,
-                          title: selectedBus.company,
+                          serviceType: 'bus',
+                          referenceId: selectedBus.id,
+                          title: `${selectedBus.company} – ${selectedBus.code}`,
                           image: 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=800&q=80',
                           price: selectedBus.price,
                           quantity: 1,
                           date: date,
                           guests: parseInt(passengers) || 1,
+                          metadata: { route: `${selectedBus.from} → ${selectedBus.to}` },
                         });
                         router.push('/checkout');
                       }}
