@@ -209,12 +209,8 @@ BEGIN
       (c.country_id = c_dep.country_id) AS is_domestic
     FROM public.tours t
     LEFT JOIN public.cities c ON t.destination_city_id = c.city_id
-<<<<<<< HEAD
     LEFT JOIN public.cities c_dep ON t.departure_city_id = c_dep.city_id
-    WHERE t.tour_id = p_id
-=======
-    WHERE t.tour_id = p_id AND t.status = true
->>>>>>> 0aa52d2f13ac014f40b4ba278c07dc93fc693008
+    WHERE t.tour_id = p_id AND t.status = true 
   ) t;
 
   IF v_result IS NULL AND p_id IS DISTINCT FROM v_fallback_id THEN

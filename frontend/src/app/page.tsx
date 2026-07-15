@@ -91,7 +91,8 @@ export default function HomePage() {
     startLocation: 'Hà Nội', 
     destination: '', 
     date: getTodayDate()
-  });
+  }); 
+  const [searchType, setSearchType] = useState<'domestic' | 'international'>('domestic');
   const [priceRange, setPriceRange] = useState<number[]>([0, 100000000]);
   const [isFilterExpanded, setIsFilterExpanded] = useState(false);
   const [durationFilter, setDurationFilter] = useState('');
