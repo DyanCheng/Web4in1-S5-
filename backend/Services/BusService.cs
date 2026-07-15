@@ -71,6 +71,13 @@ namespace Backend.Services
 
         public BusBooking BookTicket(string tripId, string userId, string seatNumber, string passengerName, string passengerPhone, string? email = null)
         {
+            var booking = ReserveTicket(tripId, userId, seatNumber, passengerName, passengerPhone, email);
+            ConfirmBooking(booking.Id);
+            return booking;
+        }
+
+        public BusBooking ReserveTicket(string tripId, string userId, string seatNumber, string passengerName, string passengerPhone, string? email = null)
+        {
             var trip = GetTripById(tripId);
             if (trip == null)
                 throw new Exception("Chuyến xe không tồn tại");
@@ -86,22 +93,41 @@ namespace Backend.Services
 
             var booking = new BusBooking
             {
-                Id = $"BB-{DateTime.Now.Ticks}",
+                Id = $"BB-{DateTime.UtcNow:yyyyMMddHHmmss}{Random.Shared.Next(1000, 9999)}",
                 BusTripId = tripId,
                 UserId = userId,
                 SeatNumber = seatNumber,
                 TotalPrice = trip.Price,
                 BookingDate = DateTime.Now,
-                Status = "confirmed",
+                Status = "pending",
                 PassengerName = passengerName,
                 PassengerPhone = passengerPhone,
                 PassengerEmail = email
             };
 
             _dataStore.BusBookings?.Add(booking);
-            trip.AvailableSeats -= 1;
-
             return booking;
+        }
+
+        public bool ConfirmBooking(string bookingId)
+        {
+            var booking = _dataStore.BusBookings?.FirstOrDefault(b => b.Id == bookingId);
+            if (booking == null || booking.Status == "confirmed")
+                return booking != null;
+
+            if (booking.Status == "cancelled")
+                return false;
+
+            var trip = GetTripById(booking.BusTripId);
+            if (trip == null)
+                return false;
+
+            if (trip.AvailableSeats <= 0)
+                return false;
+
+            booking.Status = "confirmed";
+            trip.AvailableSeats -= 1;
+            return true;
         }
 
         public List<BusBooking> GetUserBookings(string userId)
@@ -122,9 +148,10 @@ namespace Backend.Services
             if (trip != null && trip.DepartureTime < DateTime.Now.AddHours(2))
                 throw new Exception("Không thể hủy vé trong vòng 2 giờ trước khi khởi hành");
 
+            var wasConfirmed = booking.Status == "confirmed";
             booking.Status = "cancelled";
             
-            if (trip != null)
+            if (trip != null && wasConfirmed)
                 trip.AvailableSeats += 1;
 
             return true;

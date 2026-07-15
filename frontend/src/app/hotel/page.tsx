@@ -26,7 +26,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { useIsMobile } from '@/components/ui/use-mobile';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
 import {
@@ -100,6 +100,7 @@ const otherServices = [
   },
 ];
 
+// TODO: dữ liệu mock — backend HotelsController/HotelDbService đã sẵn sàng, cần wire fetch API
 const hotels = [
   {
     id: 'ocean-view',
@@ -325,10 +326,10 @@ export default function HotelPage() {
   const [searchDestination, setSearchDestination] = useState('');
   const [bookingMode, setBookingMode] = useState<BookingMode>('daily');
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
-  const [dateRange, setDateRange] = useState<DateRange | undefined>({
-    from: new Date(2024, 7, 15),
-    to: new Date(2024, 7, 18),
-  });
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(() => ({
+    from: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000),
+    to: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
+  }));
   const [startTime, setStartTime] = useState('14:00');
   const [endTime, setEndTime] = useState('18:00');
   const [datePopoverOpen, setDatePopoverOpen] = useState(false);
@@ -340,12 +341,14 @@ export default function HotelPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [favorites, setFavorites] = useState<string[]>([]);
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setFavorites(getHotelFavorites().map((h) => h.id));
   }, []);
   const [notice, setNotice] = useState('');
   // Modal state for room selection
   const [showRoomModal, setShowRoomModal] = useState(false);
   const [selectedHotel, setSelectedHotel] = useState<Hotel | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [selectedRooms, setSelectedRooms] = useState<Record<string, { room: any; quantity: number }>>({});
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [adults, setAdults] = useState<number>(2);
@@ -747,10 +750,11 @@ export default function HotelPage() {
                         </div>
 
                         <Popover>
-                          <PopoverTrigger asChild>
-                            <button className="rounded-full p-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-blue-600 transition-colors cursor-pointer shadow-sm flex items-center justify-center">
-                              <CalendarDays className="size-3.5 text-slate-500" />
-                            </button>
+                          <PopoverTrigger
+                            type="button"
+                            className="rounded-full p-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-blue-600 transition-colors cursor-pointer shadow-sm flex items-center justify-center"
+                          >
+                            <CalendarDays className="size-3.5 text-slate-500" />
                           </PopoverTrigger>
                           <PopoverContent className="w-auto p-0" align="end">
                             <div className="p-3">
@@ -788,8 +792,11 @@ export default function HotelPage() {
                             {adults} Người lớn, {children} Trẻ em
                           </span>
                           <Popover>
-                            <PopoverTrigger asChild>
-                              <button className="text-[10px] font-black text-blue-600 underline ml-1 cursor-pointer">Sửa</button>
+                            <PopoverTrigger
+                              type="button"
+                              className="text-[10px] font-black text-blue-600 underline ml-1 cursor-pointer"
+                            >
+                              Sửa
                             </PopoverTrigger>
                             <PopoverContent className="w-56 p-3">
                               <div className="space-y-2 text-xs">
@@ -865,17 +872,19 @@ export default function HotelPage() {
                           {user && hasSelectedRooms ? 'Đặt phòng' : 'Tiếp tục đặt phòng'}
                         </button>
                         <p className="text-[10px] text-slate-400 text-center mt-2 font-medium">Bạn sẽ không bị trừ tiền ngay lúc này</p>
+                      </div>
+                          </>
+                        );
+                      })()}
                     </div>
                   </div>
-                </div>
 
                   {/* Booking Confirmation Dialog */}
                   <AlertDialog open={showConfirmModal} onOpenChange={setShowConfirmModal}>
                     <AlertDialogContent>
                       <AlertDialogHeader>
                         <AlertDialogTitle>Xác nhận đặt phòng</AlertDialogTitle>
-                        <AlertDialogDescription asChild>
-                          <div className="space-y-2 mt-2">
+                        <AlertDialogDescription className="space-y-2 mt-2" render={<div />}>
                             <p>Bạn có chắc chắn muốn đặt <strong>{Object.values(selectedRooms).reduce((acc, curr) => acc + curr.quantity, 0)}</strong> phòng tại khách sạn <strong>{selectedHotel?.name}</strong> không?</p>
                             <div className="mt-4 p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
                               <p className="text-xs text-slate-500 mb-1">Thời gian: {format(displayFromDate, "dd/MM/yyyy")} - {format(displayToDate, "dd/MM/yyyy")} ({computedNights} đêm)</p>
@@ -889,7 +898,6 @@ export default function HotelPage() {
                               </div>
                               <p className="mt-2 text-[#0b5cd5] font-black text-base">Tổng cộng: {Object.values(selectedRooms).reduce((acc, curr) => acc + ((curr.room.price + curr.room.taxAndFee) * computedNights * curr.quantity), 0).toLocaleString('vi-VN')} đ</p>
                             </div>
-                          </div>
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
@@ -1055,14 +1063,12 @@ export default function HotelPage() {
                         ? 'Đêm nhận - trả phòng'
                         : 'Ngày nhận - trả phòng'}
                     <Popover open={datePopoverOpen} onOpenChange={setDatePopoverOpen}>
-                      <PopoverTrigger asChild>
-                        <button
-                          type="button"
-                          className="flex w-full items-center gap-2 rounded-md border border-slate-200 dark:border-slate-800 px-3 py-2 text-left text-sm font-bold text-slate-800 dark:text-slate-100"
-                        >
-                          <CalendarDays className="size-4 text-blue-600 shrink-0" />
-                          <span className="truncate">{dateSummary}</span>
-                        </button>
+                      <PopoverTrigger
+                        type="button"
+                        className="flex w-full items-center gap-2 rounded-md border border-slate-200 dark:border-slate-800 px-3 py-2 text-left text-sm font-bold text-slate-800 dark:text-slate-100"
+                      >
+                        <CalendarDays className="size-4 text-blue-600 shrink-0" />
+                        <span className="truncate">{dateSummary}</span>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0" align="start">
                         {bookingMode === 'hourly' ? (
@@ -1439,7 +1445,7 @@ export default function HotelPage() {
       )}
 
       <Dialog open={!!mapHotel} onOpenChange={(open) => !open && setMapHotel(null)}>
-        <DialogContent className="max-w-4xl w-[90vw] h-[80vh] flex flex-col p-0 overflow-hidden bg-white dark:bg-slate-900 border-none">
+        <DialogContent className="max-w-4xl sm:max-w-4xl md:max-w-5xl lg:max-w-6xl w-[95vw] md:w-[85vw] h-[60vh] sm:h-[70vh] md:h-[75vh] flex flex-col p-0 overflow-hidden bg-white dark:bg-slate-900 border-none">
           <DialogHeader className="p-4 border-b border-slate-100 dark:border-slate-800 shrink-0">
             <DialogTitle className="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
               <MapPin className="size-5 text-blue-600" />

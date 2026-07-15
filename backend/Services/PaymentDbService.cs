@@ -11,15 +11,26 @@ public class PaymentDbService
 
     public PaymentDbService(IConfiguration configuration, IHttpClientFactory httpClientFactory)
     {
-        _supabaseUrl = !string.IsNullOrWhiteSpace(configuration["SUPABASE_URL"]) 
-            ? configuration["SUPABASE_URL"] 
-            : configuration["Supabase:Url"];
-        _supabaseKey = !string.IsNullOrWhiteSpace(configuration["SUPABASE_SERVICE_ROLE_KEY"])
-            ? configuration["SUPABASE_SERVICE_ROLE_KEY"]
-            : (!string.IsNullOrWhiteSpace(configuration["SUPABASE_KEY"])
-                ? configuration["SUPABASE_KEY"]
-                : configuration["Supabase:Key"]);
+
+        _supabaseUrl = FirstConfig(configuration, "SUPABASE_URL", "Supabase:Url");
+        _supabaseKey = FirstConfig(
+            configuration,
+            "SUPABASE_SERVICE_ROLE_KEY",
+            "SUPABASE_KEY",
+            "Supabase:Key");
         _http = httpClientFactory.CreateClient("Supabase");
+    }
+
+    private static string? FirstConfig(IConfiguration configuration, params string[] keys)
+    {
+        foreach (var key in keys)
+        {
+            var value = configuration[key]?.Trim();
+            if (!string.IsNullOrWhiteSpace(value))
+                return value;
+        }
+
+        return null;
     }
 
     public async Task<JsonElement> CreateOrderPaymentAsync(
