@@ -20,6 +20,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -347,6 +353,7 @@ export default function HotelPage() {
   const [children, setChildren] = useState<number>(1);
   const [roomQuantity, setRoomQuantity] = useState<number>(1);
   const [svcSlide, setSvcSlide] = useState<number>(0);
+  const [mapHotel, setMapHotel] = useState<Hotel | null>(null);
 
   const hotelRooms = useMemo(() => {
     if (!selectedHotel) return [];
@@ -541,9 +548,8 @@ export default function HotelPage() {
   };
 
   return (
-    <div className={`min-h-screen bg-slate-100 dark:bg-slate-950 font-sans transition-colors duration-300 flex flex-col ${
-      theme === 'dark' ? 'dark text-white' : 'text-slate-900'
-    }`}>
+    <div className={`min-h-screen bg-slate-100 dark:bg-slate-950 font-sans transition-colors duration-300 flex flex-col ${theme === 'dark' ? 'dark text-white' : 'text-slate-900'
+      }`}>
       <Header />
 
       <main className="flex-1">
@@ -578,6 +584,7 @@ export default function HotelPage() {
                     <p className="mt-1 flex items-center gap-1.5 text-xs font-bold text-slate-500 dark:text-slate-400">
                       <MapPin className="size-3.5 text-blue-600 shrink-0" />
                       <span>{selectedHotel.location}, Việt Nam</span>
+                      <button onClick={() => setMapHotel(selectedHotel)} className="text-blue-600 hover:underline ml-1 font-semibold">Xem bản đồ</button>
                     </p>
                   </div>
 
@@ -591,11 +598,10 @@ export default function HotelPage() {
                     </button>
                     <button
                       onClick={() => toggleFavorite(selectedHotel)}
-                      className={`inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-black transition-colors shadow-sm cursor-pointer ${
-                        favorites.includes(selectedHotel.id)
+                      className={`inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-black transition-colors shadow-sm cursor-pointer ${favorites.includes(selectedHotel.id)
                           ? 'border-red-200 bg-red-50 text-red-600 dark:border-red-950 dark:bg-red-950/20'
                           : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-850 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-800'
-                      }`}
+                        }`}
                     >
                       <Heart className={`size-3.5 ${favorites.includes(selectedHotel.id) ? 'fill-red-500 text-red-500' : 'text-slate-500'}`} />
                       {favorites.includes(selectedHotel.id) ? 'Đã lưu' : 'Lưu lại'}
@@ -613,11 +619,10 @@ export default function HotelPage() {
                     return (
                       <div
                         key={room.id}
-                        className={`bg-white dark:bg-slate-900 rounded-xl overflow-hidden border transition-all shadow-sm ${
-                          isSelected
+                        className={`bg-white dark:bg-slate-900 rounded-xl overflow-hidden border transition-all shadow-sm ${isSelected
                             ? 'border-blue-600 dark:border-blue-500 ring-1 ring-blue-600 dark:ring-blue-500'
                             : 'border-slate-200 dark:border-slate-850 hover:shadow-md'
-                        }`}
+                          }`}
                       >
                         <div className="grid grid-cols-1 md:grid-cols-[260px_1fr] md:items-stretch">
                           <div className="relative h-44 w-full md:h-auto overflow-hidden shrink-0">
@@ -682,11 +687,10 @@ export default function HotelPage() {
 
                               <button
                                 onClick={() => setSelectedRoom(room)}
-                                className={`rounded-lg px-4 py-2 text-xs font-black transition-all cursor-pointer ${
-                                  isSelected
+                                className={`rounded-lg px-4 py-2 text-xs font-black transition-all cursor-pointer ${isSelected
                                     ? 'bg-[#0b5cd5] text-white hover:bg-blue-700'
                                     : 'bg-[#0b5cd5] text-white hover:bg-blue-700'
-                                }`}
+                                  }`}
                               >
                                 {isSelected ? 'Đã chọn' : 'Chọn phòng'}
                               </button>
@@ -715,7 +719,7 @@ export default function HotelPage() {
                             {format(displayFromDate, "dd 'Th'MM, yyyy")}
                           </span>
                         </div>
-                        
+
                         <Popover>
                           <PopoverTrigger
                             type="button"
@@ -829,11 +833,10 @@ export default function HotelPage() {
                             }
                             setShowConfirmModal(true);
                           }}
-                          className={`w-full py-2.5 rounded-lg text-xs font-black shadow-md transition-all cursor-pointer ${
-                            selectedRoom
+                          className={`w-full py-2.5 rounded-lg text-xs font-black shadow-md transition-all cursor-pointer ${selectedRoom
                               ? 'bg-[#0b5cd5] text-white hover:bg-blue-700'
                               : 'bg-[#85a8e6] text-white cursor-not-allowed opacity-100'
-                          }`}
+                            }`}
                         >
                           {user && selectedRoom ? 'Đặt phòng' : 'Tiếp tục đặt phòng'}
                         </button>
@@ -883,74 +886,96 @@ export default function HotelPage() {
                       <p className="text-xs font-black text-slate-800 dark:text-slate-100 mt-1">Gọi ngay: 1900 1234</p>
                     </div>
                   </div>
-                      {/* Services Section */}
-                      <div className="space-y-3 pt-2">
-                        <div className="flex items-center justify-between">
-                          <h4 className="text-xs font-black text-slate-700 dark:text-slate-350 uppercase tracking-wider text-left">
-                            Khám phá các dịch vụ khác
-                          </h4>
-                          <div className="flex gap-1">
-                            <button
-                              onClick={() => setSvcSlide((prev) => Math.max(0, prev - 1))}
-                              disabled={svcSlide === 0}
-                              className="rounded-full p-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-blue-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer shadow-sm flex items-center justify-center"
-                            >
-                              <ChevronLeft className="size-3.5" />
-                            </button>
-                            <button
-                              onClick={() => setSvcSlide((prev) => Math.min(otherServices.length - 1, prev + 1))}
-                              disabled={svcSlide === otherServices.length - 1}
-                              className="rounded-full p-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-blue-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer shadow-sm flex items-center justify-center"
-                            >
-                              <ChevronRight className="size-3.5" />
-                            </button>
-                          </div>
-                        </div>
+                  {/* Services Section */}
+                  <div className="space-y-3 pt-2">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-xs font-black text-slate-700 dark:text-slate-350 uppercase tracking-wider text-left">
+                        Khám phá các dịch vụ khác
+                      </h4>
+                      <div className="flex gap-1">
+                        <button
+                          onClick={() => setSvcSlide((prev) => Math.max(0, prev - 1))}
+                          disabled={svcSlide === 0}
+                          className="rounded-full p-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-blue-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer shadow-sm flex items-center justify-center"
+                        >
+                          <ChevronLeft className="size-3.5" />
+                        </button>
+                        <button
+                          onClick={() => setSvcSlide((prev) => Math.min(otherServices.length - 1, prev + 1))}
+                          disabled={svcSlide === otherServices.length - 1}
+                          className="rounded-full p-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-blue-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer shadow-sm flex items-center justify-center"
+                        >
+                          <ChevronRight className="size-3.5" />
+                        </button>
+                      </div>
+                    </div>
 
-                        <div className="overflow-hidden w-full py-1">
+                    <div className="overflow-hidden w-full py-1">
+                      <div
+                        className="flex gap-3 transition-transform duration-300 ease-in-out"
+                        style={{ transform: `translateX(-${svcSlide * 140}px)` }}
+                      >
+                        {otherServices.map((svc) => (
                           <div
-                            className="flex gap-3 transition-transform duration-300 ease-in-out"
-                            style={{ transform: `translateX(-${svcSlide * 140}px)` }}
+                            key={svc.id}
+                            className="min-w-[130px] w-[130px] bg-white dark:bg-slate-900 rounded-xl p-3 border border-slate-150 dark:border-slate-800 shadow-sm flex flex-col items-center text-center justify-between shrink-0"
                           >
-                            {otherServices.map((svc) => (
-                              <div
-                                key={svc.id}
-                                className="min-w-[130px] w-[130px] bg-white dark:bg-slate-900 rounded-xl p-3 border border-slate-150 dark:border-slate-800 shadow-sm flex flex-col items-center text-center justify-between shrink-0"
-                              >
-                                <div className={`size-12 rounded-xl flex items-center justify-center ${svc.bgColor} mb-2`}>
-                                  {svc.icon === 'sprout' && <Sprout className="size-6" />}
-                                  {svc.icon === 'utensils' && <Utensils className="size-6" />}
-                                  {svc.icon === 'mountain' && <Mountain className="size-6" />}
-                                </div>
-                                <div className="flex-1 flex flex-col justify-between w-full">
-                                  <div>
-                                    <h5 className="text-[11px] font-black text-slate-850 dark:text-slate-100 leading-tight line-clamp-1">
-                                      {svc.name}
-                                    </h5>
-                                    <p className="text-[9px] text-slate-400 line-clamp-2 mt-1 leading-snug font-medium">
-                                      {svc.desc}
-                                    </p>
-                                  </div>
-                                  <button
-                                    onClick={() => setNotice(`Đang mở thông tin chi tiết dịch vụ ${svc.name}.`)}
-                                    className="mt-2.5 w-full text-[9px] font-black text-white bg-[#e07a5f] hover:bg-[#c6654a] py-1.5 rounded-md transition-colors cursor-pointer"
-                                  >
-                                    Xem chi tiết
-                                  </button>
-                                </div>
+                            <div className={`size-12 rounded-xl flex items-center justify-center ${svc.bgColor} mb-2`}>
+                              {svc.icon === 'sprout' && <Sprout className="size-6" />}
+                              {svc.icon === 'utensils' && <Utensils className="size-6" />}
+                              {svc.icon === 'mountain' && <Mountain className="size-6" />}
+                            </div>
+                            <div className="flex-1 flex flex-col justify-between w-full">
+                              <div>
+                                <h5 className="text-[11px] font-black text-slate-850 dark:text-slate-100 leading-tight line-clamp-1">
+                                  {svc.name}
+                                </h5>
+                                <p className="text-[9px] text-slate-400 line-clamp-2 mt-1 leading-snug font-medium">
+                                  {svc.desc}
+                                </p>
                               </div>
-                            ))}
+                              <button
+                                onClick={() => setNotice(`Đang mở thông tin chi tiết dịch vụ ${svc.name}.`)}
+                                className="mt-2.5 w-full text-[9px] font-black text-white bg-[#e07a5f] hover:bg-[#c6654a] py-1.5 rounded-md transition-colors cursor-pointer"
+                              >
+                                Xem chi tiết
+                              </button>
+                            </div>
                           </div>
-                        </div>
+                        ))}
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
         ) : (
           <>
-            <section className="bg-blue-700 dark:bg-blue-950 px-4 py-4">
-              <div className="max-w-7xl mx-auto bg-white dark:bg-slate-900 rounded-lg p-3 shadow-lg">
+            <section className="relative min-h-[640px] flex items-center justify-center py-20 overflow-hidden bg-slate-900">
+              {/* Background Image */}
+              <div className="absolute inset-0 z-0">
+                <img
+                  src="https://truongnauan.com/test_disk/photos/shares/kien-thuc-nghe-bep/hotel-la-gi/hotel-la-gi.jpg"
+                  alt="Hotel Background"
+                  className="w-full h-full object-cover opacity-85"
+                />
+                {/* Subtle gradient overlay */}
+                <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/30 to-slate-50/50 dark:to-slate-950/50"></div>
+              </div>
+
+              <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+                <div className="text-left max-w-3xl mb-10">
+                  <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-white leading-tight drop-shadow-md font-serif">
+                    Tìm Kiếm Khách Sạn <br />
+                    Đẳng Cấp 5 Sao
+                  </h1>
+                  <p className="mt-4 text-lg font-medium text-white/90 drop-shadow max-w-xl">
+                    Khám phá những không gian nghỉ dưỡng tuyệt vời nhất cho chuyến đi của bạn.
+                  </p>
+                </div>
+
+                <div className="bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-[2rem] shadow-2xl border border-slate-100 dark:border-slate-800">
                 <div className="grid grid-cols-1 md:grid-cols-[1.1fr_0.9fr_1.2fr_auto] gap-3">
                   <label className="flex flex-col gap-1 text-xs font-black text-slate-500 dark:text-slate-400">
                     Điểm đến
@@ -1077,6 +1102,7 @@ export default function HotelPage() {
                   </button>
                 </div>
               </div>
+            </div>
             </section>
 
             <section className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-10">
@@ -1210,11 +1236,10 @@ export default function HotelPage() {
                             setSortMode(item.id);
                             setCurrentPage(1);
                           }}
-                          className={`rounded-md px-3 py-2 text-xs font-black transition-colors ${
-                            sortMode === item.id
+                          className={`rounded-md px-3 py-2 text-xs font-black transition-colors ${sortMode === item.id
                               ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300'
                               : 'bg-slate-50 text-slate-500 hover:text-blue-600 dark:bg-slate-800 dark:text-slate-300'
-                          }`}
+                            }`}
                         >
                           {item.label}
                         </button>
@@ -1253,9 +1278,8 @@ export default function HotelPage() {
                             )}
                             <button
                               onClick={() => toggleFavorite(hotel)}
-                              className={`absolute top-3 right-3 flex size-9 items-center justify-center rounded-full bg-white shadow-md transition-colors ${
-                                favorites.includes(hotel.id) ? 'text-red-500' : 'text-slate-400 hover:text-red-500'
-                              }`}
+                              className={`absolute top-3 right-3 flex size-9 items-center justify-center rounded-full bg-white shadow-md transition-colors ${favorites.includes(hotel.id) ? 'text-red-500' : 'text-slate-400 hover:text-red-500'
+                                }`}
                               aria-label="Yêu thích khách sạn"
                             >
                               <Heart className={`size-4 ${favorites.includes(hotel.id) ? 'fill-red-500' : ''}`} />
@@ -1290,7 +1314,7 @@ export default function HotelPage() {
                               <MapPin className="size-3.5 shrink-0 text-blue-600" />
                               <span>{hotel.location}</span>
                               <button
-                                onClick={() => setNotice(`Đang mở bản đồ cho ${hotel.name}.`)}
+                                onClick={() => setMapHotel(hotel)}
                                 className="font-bold text-blue-600 underline underline-offset-2 dark:text-blue-400"
                               >
                                 Xem trên bản đồ
@@ -1345,9 +1369,8 @@ export default function HotelPage() {
                         <button
                           key={page}
                           onClick={() => goToPage(page)}
-                          className={`size-9 rounded-md text-sm font-black ${
-                            page === currentPage ? 'bg-blue-700 text-white' : 'bg-white text-slate-500 dark:bg-slate-900 dark:text-slate-300'
-                          }`}
+                          className={`size-9 rounded-md text-sm font-black ${page === currentPage ? 'bg-blue-700 text-white' : 'bg-white text-slate-500 dark:bg-slate-900 dark:text-slate-300'
+                            }`}
                         >
                           {page}
                         </button>
@@ -1368,18 +1391,41 @@ export default function HotelPage() {
         )}
       </main>
 
-        <Footer />
-        {showRoomModal && selectedHotel && (
-          <RoomTypeModal
-            open={showRoomModal}
-            onClose={closeRoomModal}
-            hotel={selectedHotel}
-            onConfirm={(room) => {
-              setNotice(`Bạn đã chọn ${room.label} cho ${selectedHotel.name}.`);
-              closeRoomModal();
-            }}
-          />
-        )}
-      </div>
+      <Footer />
+      {showRoomModal && selectedHotel && (
+        <RoomTypeModal
+          open={showRoomModal}
+          onClose={closeRoomModal}
+          hotel={selectedHotel}
+          onConfirm={(room) => {
+            setNotice(`Bạn đã chọn ${room.label} cho ${selectedHotel.name}.`);
+            closeRoomModal();
+          }}
+        />
+      )}
+
+      <Dialog open={!!mapHotel} onOpenChange={(open) => !open && setMapHotel(null)}>
+        <DialogContent className="max-w-4xl w-[90vw] h-[80vh] flex flex-col p-0 overflow-hidden bg-white dark:bg-slate-900 border-none">
+          <DialogHeader className="p-4 border-b border-slate-100 dark:border-slate-800 shrink-0">
+            <DialogTitle className="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
+              <MapPin className="size-5 text-blue-600" />
+              Vị trí {mapHotel?.name}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 w-full relative bg-slate-100 dark:bg-slate-800">
+            {mapHotel && (
+              <iframe
+                width="100%"
+                height="100%"
+                style={{ border: 0 }}
+                loading="lazy"
+                allowFullScreen
+                src={`https://maps.google.com/maps?q=${encodeURIComponent(`${mapHotel.name}, ${mapHotel.location}, Việt Nam`)}&t=&z=16&ie=UTF8&iwloc=&output=embed`}
+              ></iframe>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 }
