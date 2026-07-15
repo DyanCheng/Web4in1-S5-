@@ -167,9 +167,11 @@ BEGIN
       t.description,
       COALESCE(t.highlights, ARRAY[]::text[]) AS highlights,
       COALESCE(t.included, ARRAY[]::text[]) AS included,
-      COALESCE(t.excluded, ARRAY[]::text[]) AS excluded
+      COALESCE(t.excluded, ARRAY[]::text[]) AS excluded,
+      (c.country_id = c_dep.country_id) AS is_domestic
     FROM public.tours t
     LEFT JOIN public.cities c ON t.destination_city_id = c.city_id
+    LEFT JOIN public.cities c_dep ON t.departure_city_id = c_dep.city_id
     WHERE t.status = true
       AND (p_destination IS NULL OR p_destination = '' OR LOWER(t.title) LIKE '%' || LOWER(p_destination) || '%' OR LOWER(c.city_name) LIKE '%' || LOWER(p_destination) || '%')
     ORDER BY t.tour_id DESC
@@ -203,10 +205,12 @@ BEGIN
       t.description,
       COALESCE(t.highlights, ARRAY[]::text[]) AS highlights,
       COALESCE(t.included, ARRAY[]::text[]) AS included,
-      COALESCE(t.excluded, ARRAY[]::text[]) AS excluded
+      COALESCE(t.excluded, ARRAY[]::text[]) AS excluded,
+      (c.country_id = c_dep.country_id) AS is_domestic
     FROM public.tours t
     LEFT JOIN public.cities c ON t.destination_city_id = c.city_id
-    WHERE t.tour_id = p_id AND t.status = true
+    LEFT JOIN public.cities c_dep ON t.departure_city_id = c_dep.city_id
+    WHERE t.tour_id = p_id AND t.status = true 
   ) t;
 
   IF v_result IS NULL AND p_id IS DISTINCT FROM v_fallback_id THEN
@@ -282,7 +286,8 @@ BEGIN
       description,
       highlights,
       included,
-      excluded
+      excluded,
+      true AS is_domestic
     FROM public.tours
     WHERE tour_id = v_tour_id
   ) t;
@@ -347,7 +352,8 @@ BEGIN
       description,
       highlights,
       included,
-      excluded
+      excluded,
+      true AS is_domestic
     FROM public.tours
     WHERE tour_id = p_id
   ) t;
