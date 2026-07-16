@@ -32,6 +32,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { getFavorites, toggleFavorite } from '@/lib/tourStorage';
 
 import { fetchAllTours } from '@/lib/tourApi';
+import { Popover } from '@/components/ui/popover';
 
 interface Tour {
   id: string;
