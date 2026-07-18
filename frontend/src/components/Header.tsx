@@ -3,7 +3,7 @@
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
-import { Sun, Moon, Menu, Heart, ChevronDown, Plane, Bus, Car, Shield, MessageSquare } from 'lucide-react';
+import { Sun, Moon, Menu, Heart, ChevronDown, Plane, Bus, Car, Shield, MessageSquare, LayoutDashboard, History, LogOut } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { canAccessSupportInbox } from '@/lib/chat/support-constants';
 
@@ -16,7 +16,23 @@ export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const moreRef = useRef<HTMLDivElement>(null);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+
+  const canAccessAdmin =
+    user?.role === 'admin' ||
+    user?.role === 'hotel_owner' ||
+    user?.role === 'employee' ||
+    user?.role === 'accountant';
+
+  const getAdminPath = () => {
+    if (user?.role === 'admin') return '/admin';
+    if (user?.role === 'hotel_owner') return '/hotel-owner';
+    if (user?.role === 'employee') return '/employee';
+    if (user?.role === 'accountant') return '/accountant';
+    return '/dashboard';
+  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -32,10 +48,20 @@ export default function Header() {
       if (moreRef.current && !moreRef.current.contains(e.target as Node)) {
         setMoreOpen(false);
       }
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setUserMenuOpen(false);
+      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Đóng dropdown khi đổi trang
+  useEffect(() => {
+    setUserMenuOpen(false);
+    setMoreOpen(false);
+    setMobileMenuOpen(false);
+  }, [pathname]);
 
   // Lấy chữ cái đầu để hiển thị trong avatar khi chưa có ảnh
   const getInitials = (name: string) => {
@@ -53,6 +79,11 @@ export default function Header() {
     { label: 'Phương tiện cho thuê', icon: Car, href: '/vehicle' },
     { label: 'Bảo hiểm du lịch', icon: Shield, href: '/insurance' },
   ];
+
+  const goAndCloseUserMenu = (url: string) => {
+    navigate(url);
+    setUserMenuOpen(false);
+  };
 
   return (
     <header className={`sticky top-0 z-50 transition-all duration-300 ${
@@ -93,30 +124,6 @@ export default function Header() {
             >
               Khách sạn
             </button>
-
-            {canAccessSupportInbox(user?.role) ? (
-              <button
-                onClick={() => navigate('/employee/support')}
-                className={`hover:text-blue-600 dark:hover:text-blue-400 transition-colors py-2 uppercase font-bold text-sm tracking-wider cursor-pointer inline-flex items-center gap-1 ${
-                  pathname.startsWith('/employee/support') ? 'text-blue-600 dark:text-blue-400' : ''
-                }`}
-              >
-                <MessageSquare className="size-4" />
-                Hỗ trợ
-              </button>
-            ) : null}
-
-            {/* Yêu thích */}
-            <button
-              onClick={() => navigate('/favorites')}
-              className={`hover:text-blue-600 dark:hover:text-blue-400 transition-colors py-2 uppercase font-bold text-sm tracking-wider cursor-pointer inline-flex items-center gap-1 ${
-                pathname.startsWith('/favorites') ? 'text-blue-600 dark:text-blue-400' : ''
-              }`}
-            >
-              <Heart className="size-4" />
-              Yêu thích
-            </button>
-
             {/* Xem thêm dropdown */}
             <div ref={moreRef} className="relative">
               <button
@@ -157,24 +164,9 @@ export default function Header() {
             {user?.role === 'admin' && (
               <button 
                 onClick={() => navigate('/#partners')} 
-                className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors py-2 cursor-pointer"
+                className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors py-2 uppercase font-bold text-sm tracking-wider cursor-pointer"
               >
                 Đối tác
-              </button>
-            )}
-            {user && (user?.role === 'admin' || user?.role === 'hotel_owner' || user?.role === 'employee' || user?.role === 'accountant') && (
-              <button 
-                onClick={() => {
-                  if (user?.role === 'admin') navigate('/admin');
-                  else if (user?.role === 'hotel_owner') navigate('/hotel-owner');
-                  else if (user?.role === 'employee') navigate('/employee');
-                  else if (user?.role === 'accountant') navigate('/accountant');
-                }} 
-                className={`hover:text-blue-600 dark:hover:text-blue-400 transition-colors py-2 uppercase font-bold text-sm tracking-wider cursor-pointer ${
-                  pathname === '/admin' || pathname === '/hotel-owner' || pathname === '/employee' || pathname === '/accountant' ? 'text-blue-600 dark:text-blue-400' : ''
-                }`}
-              >
-                Quản trị
               </button>
             )}
           </nav>
@@ -193,18 +185,12 @@ export default function Header() {
 
             {/* Auth Buttons */}
             {user ? (
-              <div className="flex items-center gap-3">
-                {/* Avatar vòng tròn */}
+              <div ref={userMenuRef} className="relative hidden sm:block w-full">
                 <button
-                  onClick={() => {
-                    if (user?.role === 'admin') navigate('/admin');
-                    else if (user?.role === 'hotel_owner') navigate('/hotel-owner');
-                    else if (user?.role === 'employee') navigate('/employee');
-                    else if (user?.role === 'accountant') navigate('/accountant');
-                    else navigate('/dashboard');
-                  }}
-                  className="cursor-pointer group"
-                  title={user.name}
+                  onClick={() => setUserMenuOpen(!userMenuOpen)} 
+                  className="relative flex items-center gap-1 pl-1 pr-2 py-1 rounded-full hover transition-transform duration-200 cursor-pointer before:absolute before:inset-0 before:rounded-full before:bg-white/30 before:opacity-0 before:transition-opacity hover:before:opacity-100"
+                  aria-expanded={userMenuOpen}
+                  aria-haspopup="menu"
                 >
                   {user.avatar ? (
                     <img
@@ -219,12 +205,69 @@ export default function Header() {
                   )}
                 </button>
 
-                <button
-                  onClick={logout}
-                  className="hidden sm:block px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-200 rounded-full transition-all text-xs font-bold cursor-pointer"
-                >
-                  Đăng xuất
-                </button>
+                {userMenuOpen && (
+                  <div
+                    role="menu"
+                    className="absolute right-0 top-full mt-3 w-64 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-700 py-2 z-50"
+                  >
+                    <div className="absolute -top-2 right-6 w-4 h-2 overflow-hidden">
+                      <div className="w-3 h-3 bg-white dark:bg-slate-800 border-l border-t border-slate-100 dark:border-slate-700 rotate-45 mx-auto mt-1" />
+                    </div>
+
+                    <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-700">
+                      <p className="text-sm font-bold text-slate-900 dark:text-white truncate">{user.name}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">{user.email}</p>
+                    </div>
+
+                    <div className="p-1.5">
+                      <button
+                        role="menuitem"
+                        onClick={() => goAndCloseUserMenu('/dashboard')}
+                        className="w-full flex items-center gap-3 px-3 py-2.5 text-left text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-slate-700 hover:text-blue-600 dark:hover:text-blue-400 rounded-xl transition-colors cursor-pointer"
+                      >
+                        <LayoutDashboard className="size-4 shrink-0" />
+                        Dashboard / Hồ sơ
+                      </button>
+                      <button
+                        role="menuitem"
+                        onClick={() => goAndCloseUserMenu('/dashboard')}
+                        className="w-full flex items-center gap-3 px-3 py-2.5 text-left text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-slate-700 hover:text-blue-600 dark:hover:text-blue-400 rounded-xl transition-colors cursor-pointer"
+                      >
+                        <History className="size-4 shrink-0" />
+                        Lịch sử đặt tour
+                      </button>
+                      <button
+                        role="menuitem"
+                        onClick={() => goAndCloseUserMenu('/favorites')}
+                        className="w-full flex items-center gap-3 px-3 py-2.5 text-left text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-slate-700 hover:text-blue-600 dark:hover:text-blue-400 rounded-xl transition-colors cursor-pointer"
+                      >
+                        <Heart className="size-4 shrink-0" />
+                        Yêu thích
+                      </button>
+                      {canAccessAdmin && (
+                        <button
+                          role="menuitem"
+                          onClick={() => goAndCloseUserMenu(getAdminPath())}
+                          className="w-full flex items-center gap-3 px-3 py-2.5 text-left text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-slate-700 hover:text-blue-600 dark:hover:text-blue-400 rounded-xl transition-colors cursor-pointer"
+                        >
+                          <Shield className="size-4 shrink-0" />
+                          Quản trị
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="border-t border-slate-100 dark:border-slate-700 p-1.5 mt-1">
+                      <button
+                        role="menuitem"
+                        onClick={() => { logout(); setUserMenuOpen(false); }}
+                        className="w-full flex items-center gap-3 px-3 py-2.5 text-left text-sm font-semibold text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-xl transition-colors cursor-pointer"
+                      >
+                        <LogOut className="size-4 shrink-0" />
+                        Đăng xuất
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="hidden sm:flex items-center gap-3">
@@ -308,39 +351,62 @@ export default function Header() {
               <button 
                 onClick={() => { navigate('/#partners'); setMobileMenuOpen(false); }}
                 className="px-3 py-2 text-sm font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg text-left cursor-pointer"
-              >
+              >             
                 Đối tác
               </button>
             )}
 
             <div className="border-t border-slate-100 dark:border-slate-800 my-2 pt-2">
               {user ? (
-                <div className="flex flex-col gap-2">
-                  {/* Avatar + tên trong mobile */}
-                  <button
-                    onClick={() => {
-                      if (user?.role === 'admin') navigate('/admin');
-                      else if (user?.role === 'hotel_owner') navigate('/hotel-owner');
-                      else if (user?.role === 'employee') navigate('/employee');
-                      else if (user?.role === 'accountant') navigate('/accountant');
-                      else navigate('/dashboard');
-                      setMobileMenuOpen(false);
-                    }}
-                    className="px-3 py-2 flex items-center gap-3 text-left text-sm font-bold text-blue-600 dark:text-blue-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg cursor-pointer"
-                  >
+                <div className="flex flex-col gap-1">
+                  <div className="px-3 py-2 flex items-center gap-3">
                     {user.avatar ? (
-                      <img src={user.avatar} alt={user.name} className="w-8 h-8 rounded-full object-cover border-2 border-blue-500" />
+                      <img src={user.avatar} alt={user.name} className="w-9 h-9 rounded-full object-cover border-2 border-blue-500" />
                     ) : (
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white text-xs font-bold border-2 border-blue-500 select-none">
+                      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white text-xs font-bold border-2 border-blue-500 select-none">
                         {getInitials(user.name)}
                       </div>
                     )}
-                    {user.name}
+                    <div className="min-w-0">
+                      <p className="text-sm font-bold text-slate-900 dark:text-white truncate">{user.name}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{user.email}</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => { navigate('/dashboard'); setMobileMenuOpen(false); }}
+                    className="px-3 py-2 flex items-center gap-3 text-left text-sm font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg cursor-pointer"
+                  >
+                    <LayoutDashboard className="size-4" />
+                    Dashboard / Hồ sơ
                   </button>
                   <button
-                    onClick={() => { logout(); setMobileMenuOpen(false); }}
-                    className="px-3 py-2 text-left text-sm font-bold text-red-500 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg cursor-pointer"
+                    onClick={() => { navigate('/dashboard'); setMobileMenuOpen(false); }}
+                    className="px-3 py-2 flex items-center gap-3 text-left text-sm font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg cursor-pointer"
                   >
+                    <History className="size-4" />
+                    Lịch sử đặt tour
+                  </button>
+                  <button
+                    onClick={() => { navigate('/favorites'); setMobileMenuOpen(false); }}
+                    className="px-3 py-2 flex items-center gap-3 text-left text-sm font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg cursor-pointer"
+                  >
+                    <Heart className="size-4" />
+                    Yêu thích
+                  </button>
+                  {canAccessAdmin && (
+                    <button
+                      onClick={() => { navigate(getAdminPath()); setMobileMenuOpen(false); }}
+                      className="px-3 py-2 flex items-center gap-3 text-left text-sm font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg cursor-pointer"
+                    >
+                      <Shield className="size-4" />
+                      Quản trị
+                    </button>
+                  )}
+                  <button
+                    onClick={() => { logout(); setMobileMenuOpen(false); }}
+                    className="px-3 py-2 flex items-center gap-3 text-left text-sm font-bold text-red-500 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg cursor-pointer"
+                  >
+                    <LogOut className="size-4" />
                     Đăng xuất
                   </button>
                 </div>

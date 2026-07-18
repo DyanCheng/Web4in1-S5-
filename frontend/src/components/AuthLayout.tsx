@@ -88,7 +88,7 @@ interface AuthInputProps {
 export function AuthInput({ label, children }: AuthInputProps) {
   return (
     <div className="text-left">
-      <label className="block text-xs font-black uppercase text-slate-400 dark:text-slate-550 mb-2">
+      <label className="block text-xs font-black uppercase text-slate-400 dark:text-slate-500 mb-2">
         {label}
       </label>
       {children}
@@ -146,7 +146,7 @@ export function AuthFooter({ question, linkText, linkHref, showBackLink = true }
   return (
     <>
       <div className="mt-6 text-center">
-        <p className="text-xs text-slate-500 dark:text-slate-455 font-bold">
+        <p className="text-xs text-slate-500 dark:text-slate-400 font-bold">
           {question}{' '}
           <Link
             href={linkHref}

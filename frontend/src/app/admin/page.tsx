@@ -102,6 +102,16 @@ export default function AdminDashboard() {
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [activeTab, setActiveTab] = useState<AdminTab>('overview');
+
+  const getInitials = (name: string) => {
+    if (!name) return '';
+    return name
+      .split(' ')
+      .map((w) => w[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
   const [tours, setTours] = useState<Tour[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [paymentSummary, setPaymentSummary] = useState<PaymentSummary | null>(null);
@@ -109,6 +119,10 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [paymentSearch, setPaymentSearch] = useState('');
+  const [tourPage, setTourPage] = useState(1);
+  const [bookingPage, setBookingPage] = useState(1);
+  const [paymentPage, setPaymentPage] = useState(1);
+  const [roomPage, setRoomPage] = useState(1);
   const [tourDialogOpen, setTourDialogOpen] = useState(false);
   const [editingTour, setEditingTour] = useState<Tour | null>(null);
   const [tourActionLoading, setTourActionLoading] = useState(false);
@@ -202,6 +216,45 @@ export default function AdminDashboard() {
       }),
     [paymentSearch, paymentTransactions]
   );
+
+  const ITEMS_PER_PAGE = 10;
+  
+  const tourTotalPages = Math.ceil(filteredTours.length / ITEMS_PER_PAGE);
+  const paginatedTours = filteredTours.slice((tourPage - 1) * ITEMS_PER_PAGE, tourPage * ITEMS_PER_PAGE);
+
+  const bookingTotalPages = Math.ceil(bookings.length / ITEMS_PER_PAGE);
+  const paginatedBookings = bookings.slice((bookingPage - 1) * ITEMS_PER_PAGE, bookingPage * ITEMS_PER_PAGE);
+
+  const paymentTotalPages = Math.ceil(filteredPayments.length / ITEMS_PER_PAGE);
+  const paginatedPayments = filteredPayments.slice((paymentPage - 1) * ITEMS_PER_PAGE, paymentPage * ITEMS_PER_PAGE);
+
+  const roomTotalPages = Math.ceil(rooms.length / ITEMS_PER_PAGE);
+  const paginatedRooms = rooms.slice((roomPage - 1) * ITEMS_PER_PAGE, roomPage * ITEMS_PER_PAGE);
+
+  const renderPagination = (currentPage: number, totalPages: number, setPage: (p: number) => void) => {
+    if (totalPages <= 1) return null;
+    return (
+      <div className="flex items-center justify-between px-6 py-4 border-t border-slate-200/70 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60">
+        <button 
+          onClick={() => setPage(Math.max(1, currentPage - 1))}
+          disabled={currentPage === 1}
+          className="px-4 py-2 text-sm font-bold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl disabled:opacity-50 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+        >
+          Trước
+        </button>
+        <span className="text-sm font-semibold text-slate-500 dark:text-slate-400">
+          Trang <span className="text-slate-900 dark:text-white">{currentPage}</span> / {totalPages}
+        </span>
+        <button 
+          onClick={() => setPage(Math.min(totalPages, currentPage + 1))}
+          disabled={currentPage === totalPages}
+          className="px-4 py-2 text-sm font-bold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl disabled:opacity-50 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+        >
+          Tiếp theo
+        </button>
+      </div>
+    );
+  };
 
   const handleConfirmBooking = (id: string) => {
     setBookings((prev) => prev.map((booking) => (booking.id === id ? { ...booking, status: 'confirmed' } : booking)));
@@ -331,8 +384,8 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className={`min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white flex ${theme === 'dark' ? 'dark' : ''}`}>
-      <aside className="hidden xl:flex w-70 flex-col border-r border-slate-200/70 dark:border-slate-800 bg-slate-100/80 dark:bg-slate-900/80 backdrop-blur-sm">
+    <div className={`h-screen overflow-hidden bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white flex ${theme === 'dark' ? 'dark' : ''}`}>
+      <aside className="hidden xl:flex h-full w-70 flex-col shrink-0 border-r border-slate-200/70 dark:border-slate-800 bg-slate-100/80 dark:bg-slate-900/80 backdrop-blur-sm">
         <div className="p-8">
           <div className="text-left">
             <h1 className="text-3xl font-black text-blue-700 dark:text-blue-400 font-serif">CMC Travel</h1>
@@ -371,7 +424,17 @@ export default function AdminDashboard() {
 
         <div className="mt-auto p-6 border-t border-slate-200/70 dark:border-slate-800">
           <div className="flex items-center gap-3">
-            <div className="size-12 rounded-full bg-slate-300 dark:bg-slate-700" />
+            {user.avatar ? (
+              <img
+                src={user.avatar}
+                alt={user.name}
+                className="size-12 rounded-full object-cover border-2 border-blue-500 shadow-sm"
+              />
+            ) : (
+              <div className="size-12 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white text-sm font-bold border-2 border-blue-500 shadow-sm select-none">
+                {getInitials(user.name)}
+              </div>
+            )}
             <div className="text-left">
               <p className="font-bold">{user.name}</p>
               <p className="text-sm text-slate-500 dark:text-slate-400">Quản trị hệ thống</p>
@@ -388,7 +451,7 @@ export default function AdminDashboard() {
         </div>
       </aside>
 
-      <main className="flex-1">
+      <main className="flex-1 h-full overflow-y-auto relative">
         <header className="sticky top-0 z-20 border-b border-slate-200/70 dark:border-slate-800 bg-slate-50/90 dark:bg-slate-950/90 backdrop-blur-sm">
           <div className="px-4 sm:px-6 lg:px-8 py-5 flex items-center justify-between gap-4">
             <div className="min-w-0">
@@ -446,7 +509,7 @@ export default function AdminDashboard() {
                     <h3 className="text-xl font-black font-serif">Giao dịch gần đây</h3>
                     <p className="text-sm text-slate-500 dark:text-slate-400">Các đơn thanh toán SePay mới nhất</p>
                   </div>
-                  <div className="overflow-x-auto overflow-y-auto max-h-[400px]">
+                  <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead className="bg-slate-50 dark:bg-slate-950/60 text-slate-500 dark:text-slate-400 uppercase tracking-widest text-xs">
                         <tr>
@@ -564,7 +627,7 @@ export default function AdminDashboard() {
                     </div>
                   </div>
                 </div>
-                <div className="overflow-x-auto overflow-y-auto max-h-[500px]">
+                <div className="overflow-x-auto">
 
 
                   <table className="w-full text-sm">
@@ -579,7 +642,7 @@ export default function AdminDashboard() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-200/70 dark:divide-slate-800">
-                      {filteredTours.map((tour) => (
+                      {paginatedTours.map((tour) => (
                         <tr key={tour.id} className="hover:bg-slate-50 dark:hover:bg-slate-950/40">
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
@@ -626,6 +689,7 @@ export default function AdminDashboard() {
 
                     </tbody>
                   </table>
+                  {renderPagination(tourPage, tourTotalPages, setTourPage)}
                 </div>
               </section>
               )}
@@ -639,7 +703,7 @@ export default function AdminDashboard() {
                   </div>
                   <span className="text-sm font-bold text-slate-500 dark:text-slate-400">{bookings.length} đơn</span>
                 </div>
-                <div className="overflow-x-auto overflow-y-auto max-h-[500px]">
+                <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead className="bg-slate-50 dark:bg-slate-950/60 text-slate-500 dark:text-slate-400 uppercase tracking-widest text-xs">
                       <tr>
@@ -654,7 +718,7 @@ export default function AdminDashboard() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-200/70 dark:divide-slate-800">
-                      {bookings.map((booking) => (
+                      {paginatedBookings.map((booking) => (
                         <tr key={booking.id} className="hover:bg-slate-50 dark:hover:bg-slate-950/40">
                           <td className="px-6 py-4 font-bold">{booking.id}</td>
                           <td className="px-6 py-4">{booking.userEmail}</td>
@@ -687,6 +751,7 @@ export default function AdminDashboard() {
                       ))}
                     </tbody>
                   </table>
+                  {renderPagination(bookingPage, bookingTotalPages, setBookingPage)}
                 </div>
               </section>
               )}
@@ -709,7 +774,7 @@ export default function AdminDashboard() {
                   </div>
                 </div>
 
-                <div className="overflow-x-auto overflow-y-auto max-h-[500px]">
+                <div className="overflow-x-auto">
 
                   <table className="w-full text-sm">
                     <thead className="bg-slate-50 dark:bg-slate-950/60 text-slate-500 dark:text-slate-400 uppercase tracking-widest text-xs">
@@ -724,7 +789,7 @@ export default function AdminDashboard() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-200/70 dark:divide-slate-800">
-                      {filteredPayments.map((tx) => (
+                      {paginatedPayments.map((tx) => (
                         <tr key={tx.order_payment_id} className="hover:bg-slate-50 dark:hover:bg-slate-950/40 align-top">
                           <td className="px-6 py-4 font-bold">{tx.payment_code}</td>
                           <td className="px-6 py-4">
@@ -769,6 +834,7 @@ export default function AdminDashboard() {
                       )}
                     </tbody>
                   </table>
+                  {renderPagination(paymentPage, paymentTotalPages, setPaymentPage)}
                 </div>
               </section>
               )}
@@ -786,7 +852,7 @@ export default function AdminDashboard() {
                     Thêm phòng mới
                   </button>
                 </div>
-                <div className="overflow-x-auto overflow-y-auto max-h-[500px]">
+                <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead className="bg-slate-50 dark:bg-slate-950/60 text-slate-500 dark:text-slate-400 uppercase tracking-widest text-xs">
                       <tr>
@@ -799,7 +865,7 @@ export default function AdminDashboard() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-200/70 dark:divide-slate-800">
-                      {rooms.map((room) => (
+                      {paginatedRooms.map((room) => (
                         <tr key={room.id} className="hover:bg-slate-50 dark:hover:bg-slate-950/40">
                           <td className="px-6 py-4 font-bold text-slate-900 dark:text-white">{room.name}</td>
                           <td className="px-6 py-4 text-slate-600 dark:text-slate-300">{room.type}</td>
@@ -835,6 +901,7 @@ export default function AdminDashboard() {
                       )}
                     </tbody>
                   </table>
+                  {renderPagination(roomPage, roomTotalPages, setRoomPage)}
                 </div>
               </section>
               )}

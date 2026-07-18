@@ -204,10 +204,14 @@ export default function EmployeeDashboard() {
         </div>
 
         <nav className="px-4 space-y-2 mt-4 flex-1">
-          <button className="w-full flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold text-[#1e3a8a] bg-blue-50/50 shadow-sm border border-blue-100/50 transition-colors text-left">
+          <Link
+            href="/employee"
+            className="w-full flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold text-[#1e3a8a] bg-blue-50/50 shadow-sm border border-blue-100/50 transition-colors"
+          >
             <LayoutGrid className="size-5 text-blue-600" />
             Thông Tin Khách Hàng
-          </button>
+          </Link>
+
           <Link
             href="/employee/support"
             className="w-full flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold text-slate-600 hover:bg-slate-200/50 transition-colors"
@@ -247,9 +251,9 @@ export default function EmployeeDashboard() {
             <button className="text-slate-500 hover:text-slate-700 transition-colors">
               <Mail className="size-5" />
             </button>
-            <div className="flex items-center gap-2 cursor-pointer" onClick={logout} title="Click to logout">
+            <div className="flex items-center gap-2 cursor-pointer"  title="Click to logout">
               <div className="size-8 rounded-full bg-slate-200 overflow-hidden">
-                <img src="https://i.pravatar.cc/150?img=68" alt="Avatar" className="w-full h-full object-cover" />
+                <img src={user.avatar || '/default-avatar.png'} alt={user.name} className="w-full h-full object-cover" />
               </div>
               <span className="text-sm font-semibold text-slate-700">{user.name}</span>
             </div>
@@ -257,7 +261,7 @@ export default function EmployeeDashboard() {
         </header>
 
         {/* Content */}
-        <div className="p-8 flex-1">
+        <div className="p-8 flex-1 flex flex-col overflow-hidden">
           {loading ? (
              <div className="flex items-center justify-center py-20">
                <Loader2 className="size-8 animate-spin text-blue-600" />
