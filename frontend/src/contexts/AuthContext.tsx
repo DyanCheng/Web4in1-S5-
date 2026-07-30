@@ -23,6 +23,7 @@ interface User {
 interface AuthContextType {
   user: User | null
   accessToken: string | null
+  apiToken: string | null
   tokenExpiresAt: number | null
   realtimeConfigured: boolean
   login: (email: string, password: string, role?: string) => Promise<User>
@@ -42,6 +43,7 @@ interface AuthResponse {
   role: User['role']
   avatar?: string
   accessToken?: string | null
+  apiToken?: string | null
   tokenExpiresAt?: number | null
   realtimeConfigured?: boolean
   message?: string
@@ -50,6 +52,7 @@ interface AuthResponse {
 interface StoredSession {
   user: User
   accessToken?: string | null
+  apiToken?: string | null
   tokenExpiresAt?: number | null
   realtimeConfigured?: boolean
 }
@@ -82,6 +85,7 @@ function toUser(data: AuthResponse): User {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [accessToken, setAccessToken] = useState<string | null>(null)
+  const [apiToken, setApiToken] = useState<string | null>(null)
   const [tokenExpiresAt, setTokenExpiresAt] = useState<number | null>(null)
   const [realtimeConfigured, setRealtimeConfigured] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
@@ -90,6 +94,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!session) {
       setUser(null)
       setAccessToken(null)
+      setApiToken(null)
       setTokenExpiresAt(null)
       setRealtimeConfigured(false)
       localStorage.removeItem(STORAGE_KEY)
@@ -98,6 +103,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     setUser(session.user)
     setAccessToken(session.accessToken ?? null)
+    setApiToken(session.apiToken ?? null)
     setTokenExpiresAt(session.tokenExpiresAt ?? null)
     setRealtimeConfigured(!!session.realtimeConfigured)
     localStorage.setItem(STORAGE_KEY, JSON.stringify(session))
@@ -127,6 +133,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       persistSession({
         user: userData,
         accessToken: data.accessToken ?? null,
+        apiToken: data.apiToken ?? null,
         tokenExpiresAt: data.tokenExpiresAt ?? null,
         realtimeConfigured: data.realtimeConfigured ?? false,
       })
@@ -202,6 +209,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     persistSession({
       user: { ...user, ...data },
       accessToken,
+      apiToken,
       tokenExpiresAt,
       realtimeConfigured,
     })
@@ -229,6 +237,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     persistSession({
       user,
       accessToken: data.accessToken,
+      apiToken, // keep existing apiToken
       tokenExpiresAt: data.tokenExpiresAt ?? null,
       realtimeConfigured: true,
     })
@@ -244,6 +253,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       persistSession({
         user,
         accessToken: null,
+        apiToken, // retain apiToken even if realtime token fails
         tokenExpiresAt: null,
         realtimeConfigured: false,
       })
@@ -255,6 +265,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       value={{
         user,
         accessToken,
+        apiToken,
         tokenExpiresAt,
         realtimeConfigured,
         login,

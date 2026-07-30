@@ -38,7 +38,7 @@ export default function AccountantDashboard() {
 
   if (!user || user?.role !== 'accountant') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 text-slate-600 font-bold">
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 text-slate-600 dark:text-slate-400 font-bold">
         Đang chuyển hướng quyền truy cập...
       </div>
     );
@@ -59,11 +59,11 @@ export default function AccountantDashboard() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50/50 text-slate-800 flex font-sans">
+    <div className="min-h-screen bg-slate-50/50 text-slate-800 dark:text-slate-200 flex font-sans">
       {/* Sidebar */}
       <aside className="w-[260px] flex-shrink-0 border-r border-slate-200 bg-slate-50/50 flex flex-col fixed h-full left-0 top-0">
         <div className="p-6">
-          <h1 className="text-xl font-black text-blue-700 tracking-tight">CMC Travel</h1>
+          <img src="/logo.png" alt="CMC Travel" className="h-10 w-auto" />
         </div>
 
         <div className="px-6 mb-8 flex items-center gap-3">
@@ -71,8 +71,8 @@ export default function AccountantDashboard() {
             <img src="https://i.pravatar.cc/150?img=11" alt="Avatar" className="w-full h-full object-cover" />
           </div>
           <div>
-            <p className="font-bold text-sm text-slate-900">{user.name}</p>
-            <p className="text-xs text-slate-500">Kế toán</p>
+            <p className="font-bold text-sm text-slate-900 dark:text-slate-50">{user.name}</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">Kế toán</p>
           </div>
         </div>
 
@@ -84,7 +84,7 @@ export default function AccountantDashboard() {
         </nav>
 
         <div className="px-4 pb-6 mt-4 space-y-1">
-          <button onClick={logout} className="w-full flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-200/50 transition-colors text-left">
+          <button onClick={logout} className="w-full flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-200/50 transition-colors text-left">
             <LogOut className="size-5" />
             Đăng xuất
           </button>
@@ -96,8 +96,8 @@ export default function AccountantDashboard() {
         {/* Header */}
         <header className="flex items-center justify-between px-8 py-6">
           <div>
-            <h2 className="text-xl font-medium text-slate-800">Kế toán & Tổng hợp doanh thu</h2>
-            <p className="text-sm text-slate-500 mt-1">Tổng quan tài chính hệ thống TravelHub</p>
+            <h2 className="text-xl font-medium text-slate-800 dark:text-slate-200">Kế toán & Tổng hợp doanh thu</h2>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Tổng quan tài chính hệ thống TravelHub</p>
           </div>
           <div className="flex items-center gap-4">
             <div className="relative">
@@ -108,7 +108,7 @@ export default function AccountantDashboard() {
                 className="w-64 rounded-xl bg-slate-100/80 border-none px-10 py-2.5 text-sm font-medium focus:ring-2 focus:ring-blue-100 outline-none"
               />
             </div>
-            <button className="relative p-2.5 rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition-colors">
+            <button className="relative p-2.5 rounded-xl border border-slate-200 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:bg-slate-50 transition-colors">
               <Bell className="size-5" />
               <span className="absolute top-2 right-2.5 size-2 rounded-full bg-red-500 border-2 border-white" />
             </button>
@@ -121,7 +121,7 @@ export default function AccountantDashboard() {
           {/* Stats Cards */}
           <div className="grid grid-cols-4 gap-6 mb-6">
             {/* Card 1 */}
-            <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 flex flex-col">
+            <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-sm border border-slate-100 flex flex-col">
               <div className="flex items-start justify-between mb-8">
                 <div className="size-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
                   <TrendingUp className="size-5" strokeWidth={2.5} />
@@ -130,12 +130,12 @@ export default function AccountantDashboard() {
                   +12.5% <TrendingUp className="size-3" />
                 </span>
               </div>
-              <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">Tổng doanh thu (Gross)</p>
-              <p className="text-xl font-bold text-slate-800">2,450,000,000 <span className="underline decoration-1 underline-offset-2">đ</span></p>
+              <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Tổng doanh thu (Gross)</p>
+              <p className="text-xl font-bold text-slate-800 dark:text-slate-200">2,450,000,000 <span className="underline decoration-1 underline-offset-2">đ</span></p>
             </div>
 
             {/* Card 2 */}
-            <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 flex flex-col">
+            <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-sm border border-slate-100 flex flex-col">
               <div className="flex items-start justify-between mb-8">
                 <div className="size-10 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center">
                   <Banknote className="size-5" strokeWidth={2.5} />
@@ -144,19 +144,19 @@ export default function AccountantDashboard() {
                   +8.2% <TrendingUp className="size-3" />
                 </span>
               </div>
-              <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">Doanh thu thuần (Net)</p>
-              <p className="text-xl font-bold text-slate-800">1,890,200,000 <span className="underline decoration-1 underline-offset-2">đ</span></p>
+              <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Doanh thu thuần (Net)</p>
+              <p className="text-xl font-bold text-slate-800 dark:text-slate-200">1,890,200,000 <span className="underline decoration-1 underline-offset-2">đ</span></p>
             </div>
 
             {/* Card 3 */}
-            <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 flex flex-col">
+            <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-sm border border-slate-100 flex flex-col">
               <div className="flex items-start justify-between mb-8">
                 <div className="size-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
                   <Wallet className="size-5" strokeWidth={2.5} />
                 </div>
               </div>
-              <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">Số dư khả dụng</p>
-              <p className="text-xl font-bold text-slate-800">560,450,000 <span className="underline decoration-1 underline-offset-2">đ</span></p>
+              <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Số dư khả dụng</p>
+              <p className="text-xl font-bold text-slate-800 dark:text-slate-200">560,450,000 <span className="underline decoration-1 underline-offset-2">đ</span></p>
             </div>
 
             {/* Card 4 */}
@@ -177,17 +177,17 @@ export default function AccountantDashboard() {
             <div className="space-y-6">
               
               {/* Chart Section */}
-              <div className="bg-white rounded-3xl border border-slate-100 p-6 shadow-sm min-h-[380px] flex flex-col relative">
+              <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 p-6 shadow-sm min-h-[380px] flex flex-col relative">
                 <div className="flex items-start justify-between mb-8">
                   <div>
-                    <h3 className="text-base font-semibold text-slate-800">Doanh thu theo thời gian</h3>
-                    <p className="text-sm text-slate-500 mt-1">Phân tích dòng tiền hàng kỳ</p>
+                    <h3 className="text-base font-semibold text-slate-800 dark:text-slate-200">Doanh thu theo thời gian</h3>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Phân tích dòng tiền hàng kỳ</p>
                   </div>
                   <div className="flex bg-slate-100/80 p-1 rounded-xl">
-                    <button className="px-4 py-1.5 text-xs font-semibold text-slate-500 rounded-lg">Ngày</button>
-                    <button className="px-4 py-1.5 text-xs font-semibold text-slate-500 rounded-lg">Tuần</button>
-                    <button className="px-4 py-1.5 text-xs font-bold text-blue-700 bg-white rounded-lg shadow-sm">Tháng</button>
-                    <button className="px-4 py-1.5 text-xs font-semibold text-slate-500 rounded-lg">Năm</button>
+                    <button className="px-4 py-1.5 text-xs font-semibold text-slate-500 dark:text-slate-400 rounded-lg">Ngày</button>
+                    <button className="px-4 py-1.5 text-xs font-semibold text-slate-500 dark:text-slate-400 rounded-lg">Tuần</button>
+                    <button className="px-4 py-1.5 text-xs font-bold text-blue-700 bg-white dark:bg-slate-900 rounded-lg shadow-sm">Tháng</button>
+                    <button className="px-4 py-1.5 text-xs font-semibold text-slate-500 dark:text-slate-400 rounded-lg">Năm</button>
                   </div>
                 </div>
                 
@@ -209,16 +209,16 @@ export default function AccountantDashboard() {
               </div>
 
               {/* Table Section */}
-              <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden flex flex-col">
+              <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 shadow-sm overflow-hidden flex flex-col">
                 <div className="p-6 flex items-center justify-between border-b border-slate-100">
-                  <h3 className="text-base font-semibold text-slate-800">Bảng giao dịch gần đây</h3>
+                  <h3 className="text-base font-semibold text-slate-800 dark:text-slate-200">Bảng giao dịch gần đây</h3>
                   <button className="text-sm font-semibold text-blue-600 flex items-center gap-1 hover:text-blue-700">
                     Xem tất cả <ChevronRight className="size-4" />
                   </button>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-left">
-                    <thead className="bg-slate-50/50 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                    <thead className="bg-slate-50/50 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                       <tr>
                         <th className="px-6 py-4">ID Giao Dịch</th>
                         <th className="px-6 py-4">Ngày</th>
@@ -231,8 +231,8 @@ export default function AccountantDashboard() {
                       {transactions.map((tx) => (
                         <tr key={tx.id} className="hover:bg-slate-50/50">
                           <td className="px-6 py-4 font-semibold text-blue-600">{tx.id}</td>
-                          <td className="px-6 py-4 text-slate-600">{tx.date}</td>
-                          <td className="px-6 py-4 font-medium text-slate-800">{tx.partner}</td>
+                          <td className="px-6 py-4 text-slate-600 dark:text-slate-400">{tx.date}</td>
+                          <td className="px-6 py-4 font-medium text-slate-800 dark:text-slate-200">{tx.partner}</td>
                           <td className="px-6 py-4">
                             <span className={`px-2.5 py-1 text-[10px] font-bold rounded-md ${
                               tx.type === 'TOUR' ? 'bg-amber-100 text-amber-700' : 'bg-indigo-100 text-indigo-700'
@@ -240,7 +240,7 @@ export default function AccountantDashboard() {
                               {tx.type}
                             </span>
                           </td>
-                          <td className="px-6 py-4 text-right font-bold text-slate-900">{tx.amount}</td>
+                          <td className="px-6 py-4 text-right font-bold text-slate-900 dark:text-slate-50">{tx.amount}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -251,23 +251,23 @@ export default function AccountantDashboard() {
             </div>
 
             {/* Right Column (Settlements) */}
-            <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6 flex flex-col min-h-full">
-              <div className="flex items-center gap-2 mb-6 text-slate-800">
+            <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 shadow-sm p-6 flex flex-col min-h-full">
+              <div className="flex items-center gap-2 mb-6 text-slate-800 dark:text-slate-200">
                 <CreditCard className="size-5" />
                 <h3 className="font-semibold text-base">Quyết toán đối tác</h3>
               </div>
 
               <div className="bg-blue-50/50 rounded-2xl p-5 mb-8 border border-blue-100/50">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-semibold text-slate-600">Tổng cần thanh toán</span>
+                  <span className="text-sm font-semibold text-slate-600 dark:text-slate-400">Tổng cần thanh toán</span>
                   <Info className="size-4 text-blue-500" />
                 </div>
                 <p className="text-2xl font-bold text-blue-700">845,300,000 <span className="underline decoration-1 underline-offset-2">đ</span></p>
-                <p className="text-[11px] text-slate-500 mt-2">Dự kiến thanh toán vào Thứ 6 tới</p>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-2">Dự kiến thanh toán vào Thứ 6 tới</p>
               </div>
 
               <div>
-                <p className="text-xs font-bold text-slate-500 tracking-wider mb-4">DANH SÁCH CHỜ</p>
+                <p className="text-xs font-bold text-slate-500 dark:text-slate-400 tracking-wider mb-4">DANH SÁCH CHỜ</p>
                 <div className="space-y-4">
                   {partners.map((partner) => (
                     <div key={partner.name} className="flex items-center justify-between group">
@@ -276,12 +276,12 @@ export default function AccountantDashboard() {
                           {partner.prefix}
                         </div>
                         <div>
-                          <p className="font-semibold text-slate-800 text-sm">{partner.name}</p>
-                          <p className="text-[11px] text-slate-500 mt-0.5">{partner.txCount} Giao dịch</p>
+                          <p className="font-semibold text-slate-800 dark:text-slate-200 text-sm">{partner.name}</p>
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">{partner.txCount} Giao dịch</p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="font-bold text-sm text-slate-900">{partner.amount}</p>
+                        <p className="font-bold text-sm text-slate-900 dark:text-slate-50">{partner.amount}</p>
                         <button className="text-[9px] font-bold text-blue-600 uppercase tracking-wider opacity-0 group-hover:opacity-100 transition-opacity mt-1">Chi tiết</button>
                       </div>
                     </div>
@@ -307,7 +307,7 @@ export default function AccountantDashboard() {
             <span className="hover:text-white cursor-pointer transition-colors">Terms of Service</span>
             <span className="hover:text-white cursor-pointer transition-colors">Newsletter</span>
           </div>
-          <div className="text-slate-500">
+          <div className="text-slate-500 dark:text-slate-400">
             © 2024 TravelHub. All rights reserved.
           </div>
         </footer>

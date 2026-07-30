@@ -118,7 +118,7 @@ function BookingContent() {
       </div>
 
       <main className="flex-1 max-w-5xl mx-auto w-full px-4 py-8">
-        <button onClick={() => router.back()} className="flex items-center gap-2 text-slate-500 hover:text-blue-600 mb-6 font-semibold transition-colors">
+        <button onClick={() => router.back()} className="flex items-center gap-2 text-slate-500 dark:text-slate-400 hover:text-blue-600 mb-6 font-semibold transition-colors">
           <ChevronLeft className="size-4" /> Quay lại
         </button>
 
@@ -134,20 +134,20 @@ function BookingContent() {
               </div>
               <div>
                 <h2 className="text-xl font-extrabold">Chọn ghế ngồi</h2>
-                <p className="text-sm text-slate-500">Mã chuyến bay: <span className="font-bold text-slate-700 dark:text-slate-300 uppercase">{flightId}</span></p>
+                <p className="text-sm text-slate-500 dark:text-slate-400">Mã chuyến bay: <span className="font-bold text-slate-700 dark:text-slate-300 uppercase">{flightId}</span></p>
               </div>
             </div>
 
             <div className="flex justify-center mb-6">
-              <div className="inline-flex gap-1 p-1.5 bg-slate-100 dark:bg-slate-800/80 rounded-xl text-xs font-bold text-slate-500 cursor-pointer select-none border border-slate-200 dark:border-slate-700 shadow-inner">
+              <div className="inline-flex gap-1 p-1.5 bg-slate-100 dark:bg-slate-800/80 rounded-xl text-xs font-bold text-slate-500 dark:text-slate-400 cursor-pointer select-none border border-slate-200 dark:border-slate-700 shadow-inner">
                  <div onClick={() => toggleFilter('empty')} className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-300 ${seatFilter === 'empty' ? 'bg-blue-600 text-white shadow-md scale-105' : 'hover:bg-slate-200 dark:hover:bg-slate-700'}`}>
-                   <span className={`size-3 rounded border ${seatFilter === 'empty' ? 'bg-white border-white' : 'bg-white dark:bg-slate-600 border-slate-300 dark:border-slate-500'}`}></span> Các ghế trống
+                   <span className={`size-3 rounded border ${seatFilter === 'empty' ? 'bg-white dark:bg-slate-900 border-white' : 'bg-white dark:bg-slate-600 border-slate-300 dark:border-slate-500'}`}></span> Các ghế trống
                  </div>
                  <div onClick={() => toggleFilter('selected')} className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-300 ${seatFilter === 'selected' ? 'bg-blue-600 text-white shadow-md scale-105' : 'hover:bg-slate-200 dark:hover:bg-slate-700'}`}>
-                   <span className={`size-3 rounded ${seatFilter === 'selected' ? 'bg-white' : isPremium ? 'bg-amber-500' : 'bg-blue-600'}`}></span> Đã chọn
+                   <span className={`size-3 rounded ${seatFilter === 'selected' ? 'bg-white dark:bg-slate-900' : isPremium ? 'bg-amber-500' : 'bg-blue-600'}`}></span> Đã chọn
                  </div>
                  <div onClick={() => toggleFilter('occupied')} className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-300 ${seatFilter === 'occupied' ? 'bg-blue-600 text-white shadow-md scale-105' : 'hover:bg-slate-200 dark:hover:bg-slate-700'}`}>
-                   <span className={`size-3 rounded ${seatFilter === 'occupied' ? 'bg-white' : 'bg-slate-300 dark:bg-slate-600'}`}></span> Đã đặt
+                   <span className={`size-3 rounded ${seatFilter === 'occupied' ? 'bg-white dark:bg-slate-900' : 'bg-slate-300 dark:bg-slate-600'}`}></span> Đã đặt
                  </div>
               </div>
             </div>
@@ -276,7 +276,7 @@ function BookingContent() {
             {/* Total and Submit */}
             <div className="bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-800">
               <div className="flex justify-between items-center mb-6">
-                <span className="text-slate-500 font-semibold text-lg">Tổng thanh toán:</span>
+                <span className="text-slate-500 dark:text-slate-400 font-semibold text-lg">Tổng thanh toán:</span>
                 <div className="text-right">
                    <div className="text-3xl font-black text-rose-600 leading-none">{price.toLocaleString('vi-VN')}đ</div>
                    <div className="text-sm font-medium text-slate-400 mt-1">{ticketName}</div>
@@ -304,7 +304,7 @@ function BookingContent() {
 
 export default function BookingPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center font-bold text-xl text-slate-500">Đang tải thông tin chuyến bay...</div>}>
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center font-bold text-xl text-slate-500 dark:text-slate-400">Đang tải thông tin chuyến bay...</div>}>
       <BookingContent />
     </Suspense>
   );

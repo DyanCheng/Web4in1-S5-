@@ -9,14 +9,14 @@
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
+  --primary: #026de0;
+  --primary-foreground: #ffffff;
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
   --muted: oklch(0.97 0 0);
   --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
+  --accent: #f0f7ff;
+  --accent-foreground: #026de0;
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: #ffffff;
   --border: oklch(0.922 0 0);
@@ -51,14 +51,14 @@
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.205 0 0);
   --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
+  --primary: #36a4fa;
+  --primary-foreground: #072852;
   --secondary: oklch(0.269 0 0);
   --secondary-foreground: oklch(0.985 0 0);
   --muted: oklch(0.269 0 0);
   --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
+  --accent: #072852;
+  --accent-foreground: #e0f0fe;
   --destructive: oklch(0.704 0.191 22.216);
   --destructive-foreground: oklch(0.637 0.237 25.331);
   --border: oklch(1 0 0 / 10%);
@@ -82,6 +82,19 @@
 }
 
 @theme inline {
+  /* Ocean Blue Theme Override */
+  --color-blue-50: #f0f7ff;
+  --color-blue-100: #e0f0fe;
+  --color-blue-200: #b9dffd;
+  --color-blue-300: #7cc3fc;
+  --color-blue-400: #36a4fa;
+  --color-blue-500: #0d8df3;
+  --color-blue-600: #026de0;
+  --color-blue-700: #0357b5;
+  --color-blue-800: #064a95;
+  --color-blue-900: #0a3f7a;
+  --color-blue-950: #072852;
+
   --font-sans: var(--font-sans);
   --font-serif: var(--font-serif), ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
   --font-mono: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;

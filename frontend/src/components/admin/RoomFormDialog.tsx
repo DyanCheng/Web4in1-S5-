@@ -105,12 +105,12 @@ export default function RoomFormDialog({ open, onOpenChange, initial, onSubmit }
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <label className="block">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Tên phòng *</span>
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Tên phòng *</span>
             <input required value={form.name} onChange={(e) => handleChange('name', e.target.value)} placeholder="Phòng 101" className={`${inputClass} mt-1`} />
           </label>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <label className="block">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Loại phòng *</span>
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Loại phòng *</span>
               <select required value={form.type} onChange={(e) => handleChange('type', e.target.value)} className={`${inputClass} mt-1`}>
                 <option value="Standard">Standard</option>
                 <option value="Deluxe">Deluxe</option>
@@ -119,20 +119,20 @@ export default function RoomFormDialog({ open, onOpenChange, initial, onSubmit }
               </select>
             </label>
             <label className="block">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Giá mỗi đêm (VNĐ) *</span>
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Giá mỗi đêm (VNĐ) *</span>
               <input required type="number" min={0} value={form.price || ''} onChange={(e) => handleChange('price', Number(e.target.value))} className={`${inputClass} mt-1`} />
             </label>
             <label className="block">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Số giường *</span>
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Số giường *</span>
               <input required type="number" min={1} value={form.beds} onChange={(e) => handleChange('beds', Number(e.target.value))} className={`${inputClass} mt-1`} />
             </label>
             <label className="block">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Sức chứa (Khách) *</span>
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Sức chứa (Khách) *</span>
               <input required type="number" min={1} value={form.guests} onChange={(e) => handleChange('guests', Number(e.target.value))} className={`${inputClass} mt-1`} />
             </label>
           </div>
           <label className="block">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Trạng thái *</span>
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Trạng thái *</span>
             <select required value={form.status} onChange={(e) => handleChange('status', e.target.value)} className={`${inputClass} mt-1`}>
               <option value="available">Trống</option>
               <option value="booked">Đã đặt</option>

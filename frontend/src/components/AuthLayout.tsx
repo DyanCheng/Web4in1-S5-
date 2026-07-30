@@ -16,7 +16,7 @@ export function AuthLayout({ children, heroContent, showHero = true }: AuthLayou
   return (
     <div
       className={`min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 flex items-center justify-center p-4 sm:p-6 font-sans transition-colors duration-300 ${
-        theme === 'dark' ? 'dark text-white' : 'text-slate-900'
+        theme === 'dark' ? 'dark text-white' : 'text-slate-900 dark:text-slate-50'
       }`}
     >
       {/* Theme Toggle */}
@@ -88,7 +88,7 @@ interface AuthInputProps {
 export function AuthInput({ label, children }: AuthInputProps) {
   return (
     <div className="text-left">
-      <label className="block text-xs font-black uppercase text-slate-400 dark:text-slate-500 mb-2">
+      <label className="block text-xs font-black uppercase text-slate-400 dark:text-slate-400 mb-2">
         {label}
       </label>
       {children}
@@ -109,8 +109,8 @@ export function HeroSection({ imageUrl, title, description, stats }: HeroSection
       <img src={imageUrl} alt="Hero" className="absolute inset-0 w-full h-full object-cover" />
       <div className="absolute inset-0 bg-black/35" />
       <div className="relative z-10 flex flex-col justify-between p-8 sm:p-12 text-white h-full">
-        <div>
-          <span className="text-base sm:text-lg font-semibold opacity-80">CMC Travel</span>
+        <div className="flex items-center gap-3">
+          <img src="/logo.png" alt="CMC Travel" className="h-8 sm:h-10 w-auto opacity-90" />
         </div>
 
         <div>
@@ -161,7 +161,7 @@ export function AuthFooter({ question, linkText, linkHref, showBackLink = true }
         <div className="mt-4 text-center">
           <Link
             href="/"
-            className="text-xs text-slate-400 dark:text-slate-500 hover:underline font-bold"
+            className="text-xs text-slate-400 dark:text-slate-400 hover:underline font-bold"
           >
             ← Quay lại trang chủ
           </Link>
