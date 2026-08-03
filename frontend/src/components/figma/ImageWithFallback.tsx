@@ -1,29 +1,59 @@
-import React, { useState } from 'react'
+'use client'
+
+import React, { useCallback, useRef, useState } from 'react'
+import { cn } from '@/lib/utils'
 
 const ERROR_IMG_SRC =
   'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODgiIGhlaWdodD0iODgiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgc3Ryb2tlPSIjMDAwIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBvcGFjaXR5PSIuMyIgZmlsbD0ibm9uZSIgc3Ryb2tlLXdpZHRoPSIzLjciPjxyZWN0IHg9IjE2IiB5PSIxNiIgd2lkdGg9IjU2IiBoZWlnaHQ9IjU2IiByeD0iNiIvPjxwYXRoIGQ9Im0xNiA1OCAxNi0xOCAzMiAzMiIvPjxjaXJjbGUgY3g9IjUzIiBjeT0iMzUiIHI9IjciLz48L3N2Zz4KCg=='
 
 export function ImageWithFallback(props: React.ImgHTMLAttributes<HTMLImageElement>) {
   const [didError, setDidError] = useState(false)
+  const [loaded, setLoaded] = useState(false)
+  const imgRef = useRef<HTMLImageElement | null>(null)
+
+  const markLoaded = useCallback(() => setLoaded(true), [])
+
+  const setImgRef = useCallback(
+    (node: HTMLImageElement | null) => {
+      imgRef.current = node
+      if (node?.complete && node.naturalWidth > 0) {
+        markLoaded()
+      }
+    },
+    [markLoaded]
+  )
 
   const handleError = () => {
     setDidError(true)
+    markLoaded()
   }
 
-  const { src, alt, style, className, ...rest } = props
+  const { src, alt, style, className, onLoad, ...rest } = props
 
-  if (!src) return null;
+  if (!src) return null
 
   return didError ? (
     <div
-      className={`inline-block bg-gray-100 text-center align-middle ${className ?? ''}`}
+      className={cn('inline-block bg-gray-100 text-center align-middle', className)}
       style={style}
     >
-      <div className="flex items-center justify-center w-full h-full">
+      <div className="flex h-full w-full items-center justify-center">
         <img src={ERROR_IMG_SRC} alt="Error loading image" {...rest} data-original-url={src} />
       </div>
     </div>
   ) : (
-    <img src={src} alt={alt} className={className} style={style} {...rest} onError={handleError} />
+    <img
+      ref={setImgRef}
+      src={src}
+      alt={alt}
+      className={cn('img-fade', loaded && 'is-loaded', className)}
+      style={style}
+      {...rest}
+      onLoad={(event) => {
+        markLoaded()
+        onLoad?.(event)
+      }}
+      onError={handleError}
+    />
   )
 }

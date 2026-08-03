@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { useAuth } from '@/contexts/AuthContext';
+import { PanelSkeleton } from '@/components/ux/PageSkeleton';
 
 interface ReviewModalProps {
   isOpen: boolean;
@@ -129,8 +130,8 @@ export default function ReviewModal({ isOpen, onClose, hotel, onReviewAdded }: R
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-0">
-      <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-slate-50 shadow-2xl dark:bg-slate-900 sm:h-[600px]">
+      <div className="modal-overlay-enter absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="modal-panel-enter relative flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-slate-50 shadow-2xl dark:bg-slate-900 sm:h-[600px]">
         {/* Header */}
         <div className="flex shrink-0 items-center justify-between border-b border-slate-200 bg-white px-6 py-4 dark:border-slate-800 dark:bg-slate-950">
           <div>
@@ -160,7 +161,7 @@ export default function ReviewModal({ isOpen, onClose, hotel, onReviewAdded }: R
               </h3>
               
               {loading ? (
-                <div className="text-sm font-semibold text-slate-500">Đang tải...</div>
+                <PanelSkeleton rows={4} />
               ) : reviews.length === 0 ? (
                 <div className="text-sm font-semibold text-slate-500">Chưa có đánh giá nào từ cộng đồng. Hãy là người đầu tiên!</div>
               ) : (

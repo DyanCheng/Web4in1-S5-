@@ -3,13 +3,13 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
+import { PageSkeleton } from '@/components/ux/PageSkeleton';
 import {
   Bell,
   Search,
   LayoutGrid,
   Settings,
   Mail,
-  Loader2,
   Phone,
   X,
   Save,
@@ -263,9 +263,7 @@ export default function EmployeeDashboard() {
         {/* Content */}
         <div className="p-8 flex-1 flex flex-col overflow-hidden">
           {loading ? (
-             <div className="flex items-center justify-center py-20">
-               <Loader2 className="size-8 animate-spin text-blue-600" />
-             </div>
+            <PageSkeleton variant="dashboard" hideChrome className="min-h-0 bg-transparent dark:bg-transparent" />
           ) : (
             <>
               {/* Title & Actions */}

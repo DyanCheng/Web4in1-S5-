@@ -4,9 +4,10 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
-import { Package, FileText, User, Download, Trash2, Star, Calendar, Loader2, Ticket, Key, Camera, Building } from 'lucide-react';
+import { Package, FileText, User, Download, Trash2, Star, Calendar, Ticket, Key, Camera, Building } from 'lucide-react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import { PanelSkeleton } from '@/components/ux/PageSkeleton';
 import { useTheme } from '@/contexts/ThemeContext';
 
 import { getExperiencedTourIds, getUserReviews, addUserReview, hasReviewedTourTitle } from '@/lib/tourStorage';
@@ -322,9 +323,8 @@ export default function DashboardPage() {
                 <h2 className="text-2xl font-black text-slate-900 dark:text-white font-serif leading-tight mb-4">Các hành trình đã đặt</h2>
 
                 {loading ? (
-                  <div className="flex justify-center items-center py-20 bg-white dark:bg-slate-900 rounded-3xl border border-slate-100/40 dark:border-slate-800/40 shadow-sm">
-                    <Loader2 className="size-8 animate-spin text-blue-600" />
-                    <span className="ml-3 text-slate-500 dark:text-slate-400 font-bold">Đang tải lịch sử...</span>
+                  <div className="rounded-3xl border border-slate-100/40 bg-white p-6 shadow-sm dark:border-slate-800/40 dark:bg-slate-900">
+                    <PanelSkeleton rows={4} />
                   </div>
                 ) : bookings.length === 0 ? (
                   <div className="text-center py-16 bg-white dark:bg-slate-900 rounded-3xl border border-slate-100/40 dark:border-slate-800/40 p-8 shadow-sm">
@@ -403,9 +403,8 @@ export default function DashboardPage() {
                 <h2 className="text-2xl font-black text-slate-900 dark:text-white font-serif leading-tight mb-4">Các khách sạn đã đặt</h2>
 
                 {loadingHotels ? (
-                  <div className="flex justify-center items-center py-20 bg-white dark:bg-slate-900 rounded-3xl border border-slate-100/40 dark:border-slate-800/40 shadow-sm">
-                    <Loader2 className="size-8 animate-spin text-blue-600" />
-                    <span className="ml-3 text-slate-500 dark:text-slate-400 font-bold">Đang tải lịch sử...</span>
+                  <div className="rounded-3xl border border-slate-100/40 bg-white p-6 shadow-sm dark:border-slate-800/40 dark:bg-slate-900">
+                    <PanelSkeleton rows={4} />
                   </div>
                 ) : hotelBookings.length === 0 ? (
                   <div className="text-center py-16 bg-white dark:bg-slate-900 rounded-3xl border border-slate-100/40 dark:border-slate-800/40 p-8 shadow-sm">

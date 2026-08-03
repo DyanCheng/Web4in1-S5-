@@ -33,8 +33,8 @@ export default function RoomTypeModal({ open, onClose, hotel, onConfirm }: RoomT
   const formatVnd = (value: number) => `${value.toLocaleString('vi-VN')} đ`;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-      <div className="relative w-full max-w-md p-6 bg-white/90 dark:bg-gray-800/90 backdrop-blur-lg rounded-xl shadow-xl">
+    <div className="modal-overlay-enter fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+      <div className="modal-panel-enter relative w-full max-w-md p-6 bg-white/90 dark:bg-gray-800/90 backdrop-blur-lg rounded-xl shadow-xl">
         <button
           onClick={onClose}
           className="absolute top-3 right-3 text-gray-600 hover:text-gray-800 dark:text-gray-300 dark:hover:text-white"

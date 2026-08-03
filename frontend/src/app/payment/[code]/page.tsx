@@ -2,9 +2,10 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Check, Loader2, QrCode, RefreshCw, Clock } from 'lucide-react';
+import { Check, QrCode, RefreshCw, Clock } from 'lucide-react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import { PageSkeleton } from '@/components/ux/PageSkeleton';
 import { useTheme } from '@/contexts/ThemeContext';
 
 import { apiUrl } from '@/lib/backendUrl';
@@ -108,11 +109,7 @@ export default function PaymentPage() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="size-8 animate-spin text-blue-600" />
-      </div>
-    );
+    return <PageSkeleton variant="form" />;
   }
 
   if (error || !payment) {

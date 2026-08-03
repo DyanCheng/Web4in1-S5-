@@ -5,9 +5,10 @@ import { useParams, useRouter } from 'next/navigation';
 import { ImageWithFallback } from '@/components/figma/ImageWithFallback';
 import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { MapPin, Calendar, Users, Star, Clock, CheckCircle, X, Heart, Share2, Loader2 } from 'lucide-react';
+import { MapPin, Calendar, Users, Star, Clock, CheckCircle, X, Heart, Share2 } from 'lucide-react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import { PageSkeleton } from '@/components/ux/PageSkeleton';
 import { useTheme } from '@/contexts/ThemeContext';
 
 import { isFavorite, toggleFavorite, isTourExperienced, markTourExperienced, hasReviewedTourId, addUserReview } from '@/lib/tourStorage';
@@ -173,12 +174,7 @@ export default function TourDetailPage() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-400 font-bold">
-        <Loader2 className="size-10 text-blue-600 animate-spin" />
-        <span className="ml-3 text-lg">Đang tải thông tin tour...</span>
-      </div>
-    );
+    return <PageSkeleton variant="detail" />;
   }
 
   if (!tour) {

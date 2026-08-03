@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import TourFormDialog, { type TourRecord } from '@/components/admin/TourFormDialog';
 import RoomFormDialog, { type RoomRecord } from '@/components/admin/RoomFormDialog';
+import { PageSkeleton } from '@/components/ux/PageSkeleton';
 import {
   BarChart3,
   Bell,
@@ -13,7 +14,6 @@ import {
   CreditCard,
   DollarSign,
   Edit,
-  Loader2,
   Plus,
   Search,
   Settings,
@@ -543,9 +543,7 @@ export default function AdminDashboard() {
 
         <div className="px-4 sm:px-6 lg:px-8 py-8">
           {loading ? (
-            <div className="flex items-center justify-center py-20">
-              <Loader2 className="size-8 animate-spin text-blue-600" />
-            </div>
+            <PageSkeleton variant="dashboard" hideChrome className="min-h-0 bg-transparent dark:bg-transparent" />
           ) : (
             <>
               {(activeTab === 'overview' || activeTab === 'payments') && (

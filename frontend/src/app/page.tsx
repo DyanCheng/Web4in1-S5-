@@ -14,7 +14,6 @@ import {
   Shield, 
   Headphones, 
   TrendingUp, 
-  Loader2, 
   ArrowRight, 
   ChevronDown, 
   Sparkles, 
@@ -28,6 +27,7 @@ import { useRouter } from 'next/navigation';
 import { useState, useEffect, useMemo } from 'react';
 import { Slider } from '@/components/ui/slider';
 import Header from '@/components/Header';
+import { PageSkeleton } from '@/components/ux/PageSkeleton';
 import Footer from '@/components/Footer';
 import { useTheme } from '@/contexts/ThemeContext';
 import { getFavorites, toggleFavorite } from '@/lib/tourStorage';
@@ -381,7 +381,7 @@ export default function HomePage() {
               {/* Search Submit Button */}
               <button
                 onClick={handleSearch}
-                className="bg-blue-900 hover:bg-blue-950 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-2xl p-4 transition-all duration-200 flex items-center justify-center gap-2 font-bold shadow-lg shadow-blue-900/10 cursor-pointer w-full"
+                className="interactive-press bg-blue-900 hover:bg-blue-950 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-2xl p-4 transition-all duration-200 flex items-center justify-center gap-2 font-bold shadow-lg shadow-blue-900/10 cursor-pointer w-full"
               >
                 <Search className="size-5" />
                 Tìm kiếm
@@ -473,9 +473,7 @@ export default function HomePage() {
       <main id="tours" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-20">
         
         {loading ? (
-          <div className="flex justify-center items-center h-96">
-            <Loader2 className="size-10 animate-spin text-blue-600" />
-          </div>
+          <PageSkeleton variant="list" hideChrome className="min-h-0 bg-transparent dark:bg-transparent" />
         ) : (
           <>
             {/* 1. Hero Slider (Best Sellers) */}
@@ -505,7 +503,7 @@ export default function HomePage() {
                       </p>
                       <button 
                         onClick={() => navigate(`/tour/${tour.id}`)}
-                        className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-xl self-start transition-colors"
+                        className="interactive-press bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-xl self-start transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
                       >
                         Đặt ngay
                       </button>
@@ -538,13 +536,13 @@ export default function HomePage() {
                       <div className="relative">
                         <div 
                           id={`carousel-${section.id}`}
-                          className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-4 [&::-webkit-scrollbar]:hidden"
+                          className="flex gap-4 overflow-x-auto scroll-smooth snap-x snap-mandatory pb-4 [&::-webkit-scrollbar]:hidden"
                           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                         >
                           {section.tours.map((tour) => (
                             <div 
                               key={tour.id} 
-                              className="flex-none w-[260px] md:w-[280px] snap-start bg-white dark:bg-slate-900 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer group flex flex-col border border-slate-100 dark:border-slate-800"
+                              className="interactive-press flex-none w-[260px] md:w-[280px] snap-start bg-white dark:bg-slate-900 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer group flex flex-col border border-slate-100 dark:border-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
                               onClick={() => navigate(`/tour/${tour.id}`)}
                             >
                               <div className="relative h-[180px] md:h-[200px] overflow-hidden">

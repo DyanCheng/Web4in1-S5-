@@ -21,6 +21,7 @@ const geistMono = Geist_Mono({
 
 import { BackToTop } from "@/components/BackToTop";
 import { SupportChatWidget } from "@/components/support/SupportChatWidget";
+import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { CartProvider } from "@/contexts/CartContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
@@ -49,6 +50,7 @@ export default function RootLayout({
               {children}
               <BackToTop />
               <SupportChatWidget />
+              <Toaster position="top-right" richColors closeButton />
             </CartProvider>
           </AuthProvider>
         </ThemeProvider>

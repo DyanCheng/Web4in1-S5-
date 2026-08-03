@@ -917,7 +917,7 @@ export default function HotelPage() {
                             }
                             setShowConfirmModal(true);
                           }}
-                          className={`w-full py-2.5 rounded-lg text-xs font-black shadow-md transition-all cursor-pointer ${hasSelectedRooms
+                          className={`interactive-press w-full py-2.5 rounded-lg text-xs font-black shadow-md transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 ${hasSelectedRooms
                               ? 'bg-blue-600 text-white hover:bg-blue-700'
                               : 'bg-[#85a8e6] text-white cursor-not-allowed opacity-100'
                             }`}
@@ -1487,7 +1487,7 @@ export default function HotelPage() {
                               </div>
                               <button
                                 onClick={() => openRoomModal(hotel)}
-                                className="shrink-0 rounded-lg bg-blue-700 px-8 py-3 text-sm font-black text-white hover:bg-blue-800 transition-colors"
+                                className="interactive-press shrink-0 rounded-lg bg-blue-700 px-8 py-3 text-sm font-black text-white hover:bg-blue-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
                               >
                                 Chọn phòng
                               </button>
