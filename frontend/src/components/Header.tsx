@@ -160,15 +160,6 @@ export default function Header() {
                 </div>
               )}
             </div>
-
-            {user?.role === 'admin' && (
-              <button 
-                onClick={() => navigate('/#partners')} 
-                className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors py-2 uppercase font-bold text-sm tracking-wider cursor-pointer"
-              >
-                Đối tác
-              </button>
-            )}
           </nav>
 
           {/* Right Action buttons */}
