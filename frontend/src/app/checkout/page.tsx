@@ -139,18 +139,13 @@ export default function CheckoutPage() {
                       type="tel"
                       value={formData.phone}
                       onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-<<<<<<< HEAD
                       minLength={10}
                       maxLength={15}
                       pattern="^[0-9]{10,15}$"
-=======
->>>>>>> df4d10b49d35ff9fe7728104bb285846f65c0818
                       className="w-full px-4 py-3 border border-slate-150 dark:border-slate-800 bg-transparent rounded-2xl outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 text-slate-855 dark:text-slate-100 font-bold text-sm transition-all"
                       required
                     />
                   </div>
-<<<<<<< HEAD
-=======
                   {hasTour && (
                     <div>
                       <label className="block text-xs font-black uppercase text-slate-400 dark:text-slate-555 mb-2">Địa chỉ xuất phát</label>
@@ -164,7 +159,6 @@ export default function CheckoutPage() {
                       />
                     </div>
                   )}
->>>>>>> df4d10b49d35ff9fe7728104bb285846f65c0818
                 </div>
               </div>
 

@@ -348,24 +348,28 @@ export default function HotelPage() {
 
   useEffect(() => {
     async function fetchStats() {
-      const supabase = createClient();
-      const { data } = await supabase.from('hotel_reviews').select('hotel_id, rating');
-      if (data) {
-        const stats: Record<string, { totalRating: number, count: number }> = {};
-        data.forEach((r: any) => {
-          if (!stats[r.hotel_id]) stats[r.hotel_id] = { totalRating: 0, count: 0 };
-          stats[r.hotel_id].totalRating += r.rating;
-          stats[r.hotel_id].count += 1;
-        });
-        
-        const finalStats: Record<string, { rating: number, count: number }> = {};
-        Object.keys(stats).forEach(id => {
-          finalStats[id] = {
-            rating: stats[id].totalRating / stats[id].count,
-            count: stats[id].count
-          };
-        });
-        setReviewStats(finalStats);
+      try {
+        const supabase = createClient();
+        const { data } = await supabase.from('hotel_reviews').select('hotel_id, rating');
+        if (data) {
+          const stats: Record<string, { totalRating: number, count: number }> = {};
+          data.forEach((r: any) => {
+            if (!stats[r.hotel_id]) stats[r.hotel_id] = { totalRating: 0, count: 0 };
+            stats[r.hotel_id].totalRating += r.rating;
+            stats[r.hotel_id].count += 1;
+          });
+
+          const finalStats: Record<string, { rating: number, count: number }> = {};
+          Object.keys(stats).forEach(id => {
+            finalStats[id] = {
+              rating: stats[id].totalRating / stats[id].count,
+              count: stats[id].count
+            };
+          });
+          setReviewStats(finalStats);
+        }
+      } catch {
+        // Missing Supabase env or network — page still works without review stats
       }
     }
     fetchStats();

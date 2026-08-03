@@ -34,8 +34,6 @@ export default function ReviewModal({ isOpen, onClose, hotel, onReviewAdded }: R
   const [rating, setRating] = useState(5);
   const [content, setContent] = useState('');
 
-  const supabase = createClient();
-
   useEffect(() => {
     if (user) {
       setUserName(user.name || user.email || '');
@@ -50,21 +48,22 @@ export default function ReviewModal({ isOpen, onClose, hotel, onReviewAdded }: R
   }, [isOpen, hotel, user]);
 
   const checkBookingStatus = async () => {
-    if (!user) {
+    if (!user || !hotel) {
       setHasBooking(false);
       return;
     }
-    
+
+    const supabase = createClient();
     // Check if user has a confirmed booking for this hotel
     const { data, error } = await supabase
       .from('hotel_bookings')
       .select('booking_status, payment_status')
       .eq('hotel_id', hotel.id)
       .eq('user_id', user.id);
-      
+
     if (data && !error) {
       const validStatuses = ['confirmed', 'completed', 'paid', 'success'];
-      const hasValid = data.some((b: any) => 
+      const hasValid = data.some((b: any) =>
         validStatuses.includes(b.booking_status?.toLowerCase()) ||
         validStatuses.includes(b.payment_status?.toLowerCase())
       );
@@ -76,7 +75,9 @@ export default function ReviewModal({ isOpen, onClose, hotel, onReviewAdded }: R
   };
 
   const fetchReviews = async () => {
+    if (!hotel) return;
     setLoading(true);
+    const supabase = createClient();
     const { data, error } = await supabase
       .from('hotel_reviews')
       .select('*')
@@ -91,7 +92,7 @@ export default function ReviewModal({ isOpen, onClose, hotel, onReviewAdded }: R
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!userName.trim() || !content.trim()) return;
+    if (!hotel || !userName.trim() || !content.trim()) return;
     if (!hasBooking) {
       alert("Bạn cần đặt phòng thành công mới được đánh giá.");
       return;
@@ -105,6 +106,7 @@ export default function ReviewModal({ isOpen, onClose, hotel, onReviewAdded }: R
       content,
     };
 
+    const supabase = createClient();
     const { data, error } = await supabase
       .from('hotel_reviews')
       .insert([newReview])
