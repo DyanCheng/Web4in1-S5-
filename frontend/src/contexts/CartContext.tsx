@@ -29,6 +29,7 @@ export interface CartItem {
 interface CartContextType {
   items: CartItem[];
   addToCart: (item: Omit<CartItem, 'id' | 'referenceId' | 'tourId'> & { referenceId?: string; tourId?: string }) => void;
+  addMultipleToCart: (newItems: Array<Omit<CartItem, 'id' | 'referenceId' | 'tourId'> & { referenceId?: string; tourId?: string }>) => void;
   removeFromCart: (id: string) => void;
   updateQuantity: (id: string, quantity: number) => void;
   clearCart: () => void;
@@ -64,6 +65,20 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setItems([newItem]);
   };
 
+  const addMultipleToCart = (newItems: Array<Omit<CartItem, 'id' | 'referenceId' | 'tourId'> & { referenceId?: string; tourId?: string }>) => {
+    const formatted = newItems.map((item, index) => {
+      const referenceId = item.referenceId ?? item.tourId ?? '';
+      return {
+        ...item,
+        id: Date.now().toString() + index,
+        referenceId,
+        tourId: referenceId,
+        serviceType: item.serviceType ?? 'tour',
+      } as CartItem;
+    });
+    setItems(formatted); // replace entirely with the new items for direct checkout
+  };
+
   const removeFromCart = (id: string) => {
     setItems(prev => prev.filter(item => item.id !== id));
   };
@@ -97,6 +112,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     <CartContext.Provider value={{
       items,
       addToCart,
+      addMultipleToCart,
       removeFromCart,
       updateQuantity,
       clearCart,

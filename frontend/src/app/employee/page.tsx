@@ -95,7 +95,7 @@ export default function EmployeeDashboard() {
 
   if (!user || user?.role !== 'employee') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 text-slate-600 font-bold">
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 text-slate-600 dark:text-slate-400 font-bold">
         Đang chuyển hướng quyền truy cập...
       </div>
     );
@@ -195,12 +195,12 @@ export default function EmployeeDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-white text-slate-800 flex font-sans">
+    <div className="min-h-screen bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 flex font-sans">
       {/* Sidebar */}
       <aside className="w-[260px] flex-shrink-0 bg-[#f8faff] border-r border-slate-200 flex flex-col fixed h-full left-0 top-0 z-10">
         <div className="px-6 py-8">
-          <h1 className="text-xl font-black text-blue-700 tracking-tight">CMC Travel</h1>
-          <p className="text-xs font-bold text-slate-500 mt-1">Management Portal</p>
+          <img src="/logo.png" alt="CMC Travel" className="h-10 w-auto" />
+          <p className="text-xs font-bold text-slate-500 dark:text-slate-400 mt-1">Management Portal</p>
         </div>
 
         <nav className="px-4 space-y-2 mt-4 flex-1">
@@ -214,7 +214,7 @@ export default function EmployeeDashboard() {
 
           <Link
             href="/employee/support"
-            className="w-full flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold text-slate-600 hover:bg-slate-200/50 transition-colors"
+            className="w-full flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-200/50 transition-colors"
           >
             <MessageSquare className="size-5" />
             Hỗ trợ chat
@@ -223,7 +223,7 @@ export default function EmployeeDashboard() {
 
         <div className="px-4 pb-8 space-y-2">
           <div className="h-px bg-slate-200 mb-4 mx-2" />
-          <button onClick={logout} className="w-full flex items-center gap-3 rounded-xl px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-200/50 transition-colors text-left">
+          <button onClick={logout} className="w-full flex items-center gap-3 rounded-xl px-4 py-2 text-sm font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-200/50 transition-colors text-left">
             <Settings className="size-5" />
             Đăng xuất
           </button>
@@ -233,7 +233,7 @@ export default function EmployeeDashboard() {
       {/* Main Content Area */}
       <main className="ml-[260px] flex-1 flex flex-col min-h-screen">
         {/* Header */}
-        <header className="flex items-center justify-between px-8 py-4 border-b border-slate-200 bg-white sticky top-0 z-10">
+        <header className="flex items-center justify-between px-8 py-4 border-b border-slate-200 bg-white dark:bg-slate-900 sticky top-0 z-10">
           <div className="relative flex-1 max-w-xl">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
             <input 
@@ -241,21 +241,21 @@ export default function EmployeeDashboard() {
               placeholder="Tìm kiếm tên, email, số điện thoại, ghi chú..." 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full rounded-full bg-[#f4f7fb] border-none px-10 py-2.5 text-sm font-medium focus:ring-2 focus:ring-blue-100 outline-none text-slate-700"
+              className="w-full rounded-full bg-[#f4f7fb] border-none px-10 py-2.5 text-sm font-medium focus:ring-2 focus:ring-blue-100 outline-none text-slate-700 dark:text-slate-300"
             />
           </div>
           <div className="flex items-center gap-6">
-            <button className="text-slate-500 hover:text-slate-700 transition-colors">
+            <button className="text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-300 transition-colors">
               <Bell className="size-5" />
             </button>
-            <button className="text-slate-500 hover:text-slate-700 transition-colors">
+            <button className="text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-300 transition-colors">
               <Mail className="size-5" />
             </button>
             <div className="flex items-center gap-2 cursor-pointer"  title="Click to logout">
               <div className="size-8 rounded-full bg-slate-200 overflow-hidden">
                 <img src={user.avatar || '/default-avatar.png'} alt={user.name} className="w-full h-full object-cover" />
               </div>
-              <span className="text-sm font-semibold text-slate-700">{user.name}</span>
+              <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">{user.name}</span>
             </div>
           </div>
         </header>
@@ -271,8 +271,8 @@ export default function EmployeeDashboard() {
               {/* Title & Actions */}
               <div className="flex items-start justify-between mb-8">
                 <div>
-                  <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Thông Tin & Ghi Chú Khách Hàng</h2>
-                  <p className="text-sm font-medium text-slate-500 mt-1">
+                  <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-50 tracking-tight">Thông Tin & Ghi Chú Khách Hàng</h2>
+                  <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-1">
                     Xem thông tin liên lạc và quản lý ghi chú yêu cầu đặc biệt của khách hàng.
                   </p>
                 </div>
@@ -280,7 +280,7 @@ export default function EmployeeDashboard() {
                   <select 
                     value={filterType}
                     onChange={(e) => setFilterType(e.target.value as any)}
-                    className="rounded-lg border border-slate-300 text-sm font-semibold text-slate-700 bg-white px-3 py-2 outline-none focus:ring-2 focus:ring-blue-100 transition-all cursor-pointer shadow-sm"
+                    className="rounded-lg border border-slate-300 text-sm font-semibold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-900 px-3 py-2 outline-none focus:ring-2 focus:ring-blue-100 transition-all cursor-pointer shadow-sm"
                   >
                     <option value="all">Tất cả khách hàng</option>
                     <option value="has_notes">Có ghi chú đặc biệt</option>
@@ -290,10 +290,10 @@ export default function EmployeeDashboard() {
               </div>
 
               {/* Table Section */}
-              <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+              <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
                 <div className="overflow-x-auto">
                   <table className="w-full text-left border-collapse">
-                    <thead className="bg-[#f8faff] border-b border-slate-200 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                    <thead className="bg-[#f8faff] border-b border-slate-200 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                       <tr>
                         <th className="px-6 py-5">Khách Hàng</th>
                         <th className="px-6 py-5 w-[200px]">Số Điện Thoại</th>
@@ -310,12 +310,12 @@ export default function EmployeeDashboard() {
                                 {getInitials(customer.email)}
                               </div>
                               <div className="min-w-0">
-                                <p className="font-bold text-slate-900 truncate">{customer.name}</p>
-                                <p className="text-xs text-slate-500 truncate">{customer.email}</p>
+                                <p className="font-bold text-slate-900 dark:text-slate-50 truncate">{customer.name}</p>
+                                <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{customer.email}</p>
                               </div>
                             </div>
                           </td>
-                          <td className="px-6 py-5 align-middle text-slate-600 font-medium">
+                          <td className="px-6 py-5 align-middle text-slate-600 dark:text-slate-400 font-medium">
                             <div className="flex items-center gap-2">
                               <Phone className="size-4 text-slate-400" />
                               <span>{customer.phone}</span>
@@ -342,7 +342,7 @@ export default function EmployeeDashboard() {
                       ))}
                       {filteredCustomers.length === 0 && (
                         <tr>
-                          <td colSpan={4} className="px-6 py-12 text-center text-slate-500 font-medium">
+                          <td colSpan={4} className="px-6 py-12 text-center text-slate-500 dark:text-slate-400 font-medium">
                             Không tìm thấy khách hàng nào khớp với tìm kiếm
                           </td>
                         </tr>
@@ -359,7 +359,7 @@ export default function EmployeeDashboard() {
       {/* Modal chi tiết & Cập nhật ghi chú */}
       {selectedCustomer && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl border border-slate-100 animate-in fade-in zoom-in-95 duration-200">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full p-6 shadow-xl border border-slate-100 animate-in fade-in zoom-in-95 duration-200">
             {/* Header */}
             <div className="flex justify-between items-center border-b border-slate-100 pb-4 mb-4">
               <h3 className="text-lg font-bold text-slate-950 flex items-center gap-2">
@@ -368,7 +368,7 @@ export default function EmployeeDashboard() {
               </h3>
               <button 
                 onClick={() => setSelectedCustomer(null)}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-colors"
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:text-slate-400 hover:bg-slate-50 transition-colors"
               >
                 <X className="size-5" />
               </button>
@@ -382,27 +382,27 @@ export default function EmployeeDashboard() {
                 </div>
                 <div>
                   <h4 className="font-bold text-slate-950 text-base">{selectedCustomer.name}</h4>
-                  <p className="text-sm text-slate-500 font-medium">{selectedCustomer.email}</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">{selectedCustomer.email}</p>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4 text-sm pt-2 border-t border-slate-200/60">
                 <div>
                   <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Số điện thoại</span>
-                  <span className="font-semibold text-slate-800 flex items-center gap-1.5 mt-0.5">
+                  <span className="font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1.5 mt-0.5">
                     <Phone className="size-3.5 text-slate-400" />
                     {selectedCustomer.phone}
                   </span>
                 </div>
                 <div>
                   <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">ID Khách Hàng</span>
-                  <span className="font-mono font-semibold text-slate-800 mt-0.5 block">{selectedCustomer.id}</span>
+                  <span className="font-mono font-semibold text-slate-800 dark:text-slate-200 mt-0.5 block">{selectedCustomer.id}</span>
                 </div>
               </div>
             </div>
 
             {/* Notes Section */}
             <div className="mb-6">
-              <label className="text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
+              <label className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-2 flex items-center gap-2">
                 <FileText className="size-4 text-slate-400" />
                 Ghi Chú Yêu Cầu & Chăm Sóc
               </label>
@@ -410,7 +410,7 @@ export default function EmployeeDashboard() {
                 value={editNoteText}
                 onChange={(e) => setEditNoteText(e.target.value)}
                 placeholder="Nhập yêu cầu đặc biệt, dị ứng, phòng ở, đưa đón, hoặc ghi chú khác của khách hàng..."
-                className="w-full min-h-[120px] rounded-xl border border-slate-300 p-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-slate-700 placeholder:text-slate-400 transition-all resize-none shadow-inner"
+                className="w-full min-h-[120px] rounded-xl border border-slate-300 p-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-slate-700 dark:text-slate-300 placeholder:text-slate-400 transition-all resize-none shadow-inner"
               />
             </div>
 
@@ -418,7 +418,7 @@ export default function EmployeeDashboard() {
             <div className="flex justify-end gap-2 pt-4 border-t border-slate-100">
               <button
                 onClick={() => setSelectedCustomer(null)}
-                className="px-4 py-2 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 border border-slate-200 transition-colors"
+                className="px-4 py-2 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 border border-slate-200 transition-colors"
               >
                 Hủy
               </button>

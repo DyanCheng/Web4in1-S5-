@@ -255,7 +255,7 @@ export default function VehiclePage() {
   return (
     <div
       className={`min-h-screen bg-slate-100 dark:bg-slate-950 font-sans transition-colors duration-300 flex flex-col ${
-        theme === 'dark' ? 'dark text-white' : 'text-slate-900'
+        theme === 'dark' ? 'dark text-white' : 'text-slate-900 dark:text-slate-50'
       }`}
     >
       <Header />
@@ -317,7 +317,7 @@ export default function VehiclePage() {
               <div className="mb-5 relative">
                 <label className="block text-sm font-bold mb-2">Địa điểm thuê xe của bạn</label>
                 <div className="flex items-center gap-2 rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2.5 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 bg-white/50 dark:bg-slate-900/50">
-                  <MapPin className="size-5 text-slate-500" />
+                  <MapPin className="size-5 text-slate-500 dark:text-slate-400" />
                   <input
                     value={location}
                     onChange={(e) => {
@@ -357,7 +357,7 @@ export default function VehiclePage() {
                   <div>
                     <label className="block text-sm font-bold mb-2">Ngày bắt đầu</label>
                     <div className="flex items-center gap-2 rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2.5 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500">
-                      <CalendarDays className="size-5 text-slate-500" />
+                      <CalendarDays className="size-5 text-slate-500 dark:text-slate-400" />
                       <input
                         type="date"
                         min={new Date().toISOString().split('T')[0]}
@@ -370,14 +370,14 @@ export default function VehiclePage() {
                   <div>
                     <label className="block text-sm font-bold mb-2">Giờ bắt đầu</label>
                     <div className="flex items-center gap-2 rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2.5 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500">
-                      <Clock className="size-5 text-slate-500" />
+                      <Clock className="size-5 text-slate-500 dark:text-slate-400" />
                       <select
                         value={pickupTime}
                         onChange={(e) => setPickupTime(e.target.value)}
                         className="w-full bg-transparent outline-none text-sm font-medium cursor-pointer"
                       >
                         {timeOptions.map(time => (
-                          <option key={time} value={time} className="text-slate-900 dark:text-slate-900">
+                          <option key={time} value={time} className="text-slate-900 dark:text-slate-50">
                             {time}
                           </option>
                         ))}
@@ -387,7 +387,7 @@ export default function VehiclePage() {
                   <div>
                     <label className="block text-sm font-bold mb-2">Ngày kết thúc</label>
                     <div className="flex items-center gap-2 rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2.5 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500">
-                      <CalendarDays className="size-5 text-slate-500" />
+                      <CalendarDays className="size-5 text-slate-500 dark:text-slate-400" />
                       <input
                         type="date"
                         min={pickupDate || new Date().toISOString().split('T')[0]}
@@ -400,14 +400,14 @@ export default function VehiclePage() {
                   <div>
                     <label className="block text-sm font-bold mb-2">Giờ kết thúc</label>
                     <div className="flex items-center gap-2 rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2.5 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500">
-                      <Clock className="size-5 text-slate-500" />
+                      <Clock className="size-5 text-slate-500 dark:text-slate-400" />
                       <select
                         value={returnTime}
                         onChange={(e) => setReturnTime(e.target.value)}
                         className="w-full bg-transparent outline-none text-sm font-medium cursor-pointer"
                       >
                         {timeOptions.map(time => (
-                          <option key={time} value={time} className="text-slate-900 dark:text-slate-900">
+                          <option key={time} value={time} className="text-slate-900 dark:text-slate-50">
                             {time}
                           </option>
                         ))}
@@ -429,7 +429,7 @@ export default function VehiclePage() {
                   <div>
                     <label className="block text-sm font-bold mb-2">Ngày bắt đầu</label>
                     <div className="flex items-center gap-2 rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2.5 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500">
-                      <CalendarDays className="size-5 text-slate-500" />
+                      <CalendarDays className="size-5 text-slate-500 dark:text-slate-400" />
                       <input
                         type="date"
                         min={new Date().toISOString().split('T')[0]}
@@ -442,14 +442,14 @@ export default function VehiclePage() {
                   <div>
                     <label className="block text-sm font-bold mb-2">Thời gian thuê</label>
                     <div className="flex items-center gap-2 rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2.5 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500">
-                      <Clock className="size-5 text-slate-500" />
+                      <Clock className="size-5 text-slate-500 dark:text-slate-400" />
                       <select
                         value={rentalDuration}
                         onChange={(e) => setRentalDuration(e.target.value)}
                         className="w-full bg-transparent outline-none text-sm font-medium cursor-pointer"
                       >
                         {durationOptions.map(dur => (
-                          <option key={dur} value={dur} className="text-slate-900 dark:text-slate-900">
+                          <option key={dur} value={dur} className="text-slate-900 dark:text-slate-50">
                             {dur}
                           </option>
                         ))}
@@ -459,14 +459,14 @@ export default function VehiclePage() {
                   <div>
                     <label className="block text-sm font-bold mb-2">Giờ đón</label>
                     <div className="flex items-center gap-2 rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2.5 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500">
-                      <Clock className="size-5 text-slate-500" />
+                      <Clock className="size-5 text-slate-500 dark:text-slate-400" />
                       <select
                         value={pickupTime}
                         onChange={(e) => setPickupTime(e.target.value)}
                         className="w-full bg-transparent outline-none text-sm font-medium cursor-pointer"
                       >
                         {timeOptions.map(time => (
-                          <option key={time} value={time} className="text-slate-900 dark:text-slate-900">
+                          <option key={time} value={time} className="text-slate-900 dark:text-slate-50">
                             {time}
                           </option>
                         ))}
@@ -499,7 +499,7 @@ export default function VehiclePage() {
 
           {/* Selected vehicle panel */}
           {selectedVehicle && (
-            <div className="mb-6 rounded-xl border border-blue-200 bg-white p-5 shadow-md dark:border-blue-900 dark:bg-slate-900">
+            <div className="mb-6 rounded-xl border border-blue-200 bg-white dark:bg-slate-900 p-5 shadow-md dark:border-blue-900 dark:bg-slate-900">
               <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div>
                   <div className="flex items-start justify-between gap-4">
@@ -511,7 +511,7 @@ export default function VehiclePage() {
                     </div>
                     <button
                       onClick={() => setSelectedVehicle(null)}
-                      className="rounded-full p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 lg:hidden"
+                      className="rounded-full p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 lg:hidden"
                     >
                       <X className="size-5" />
                     </button>
@@ -551,7 +551,7 @@ export default function VehiclePage() {
                     </button>
                     <button
                       onClick={() => setSelectedVehicle(null)}
-                      className="hidden rounded-lg border border-slate-200 px-4 py-3 text-sm font-black text-slate-600 hover:bg-slate-50 dark:border-slate-800 dark:text-slate-300 dark:hover:bg-slate-800 lg:inline-flex"
+                      className="hidden rounded-lg border border-slate-200 px-4 py-3 text-sm font-black text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:border-slate-800 dark:text-slate-300 dark:hover:bg-slate-800 lg:inline-flex"
                     >
                       <X className="size-4" />
                     </button>
@@ -568,7 +568,7 @@ export default function VehiclePage() {
                   Hiển thị <span className="font-black text-slate-900 dark:text-white">{filteredVehicles.length}</span> xe phù hợp
                 </p>
                 <div className="flex items-center gap-3 text-sm">
-                  <span className="text-slate-500">Sắp xếp:</span>
+                  <span className="text-slate-500 dark:text-slate-400">Sắp xếp:</span>
                   <button
                     onClick={() => setSortMode(sortMode === 'price' ? 'seats' : sortMode === 'seats' ? 'name' : 'price')}
                     className="inline-flex items-center gap-2 rounded-lg px-3 py-2 font-black text-blue-700 hover:bg-blue-50 dark:text-blue-300 dark:hover:bg-blue-950/40"
@@ -583,14 +583,14 @@ export default function VehiclePage() {
 
               <div className="space-y-6">
                 {filteredVehicles.length === 0 ? (
-                  <div className="rounded-xl bg-white p-10 text-center font-black text-slate-500 shadow-sm dark:bg-slate-900 dark:text-slate-300">
+                  <div className="rounded-xl bg-white dark:bg-slate-900 p-10 text-center font-black text-slate-500 dark:text-slate-400 shadow-sm dark:bg-slate-900 dark:text-slate-300">
                     Không có xe phù hợp với bộ lọc hiện tại.
                   </div>
                 ) : (
                   filteredVehicles.map((vehicle) => (
                     <article
                       key={vehicle.id}
-                      className={`rounded-xl border bg-white p-6 shadow-sm transition-shadow hover:shadow-md dark:bg-slate-900 ${
+                      className={`rounded-xl border bg-white dark:bg-slate-900 p-6 shadow-sm transition-shadow hover:shadow-md dark:bg-slate-900 ${
                         selectedVehicle?.id === vehicle.id
                           ? 'border-blue-500 ring-2 ring-blue-100 dark:border-blue-400 dark:ring-blue-950'
                           : 'border-slate-200 dark:border-slate-800'
@@ -614,9 +614,9 @@ export default function VehiclePage() {
                                 <h3 className="font-black text-slate-900 dark:text-white text-xl sm:text-2xl">{vehicle.provider}</h3>
                               </div>
                               <div className="flex flex-wrap items-center gap-2 mt-2">
-                                <span className="text-[11px] font-bold text-slate-600 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-md">{vehicle.type}</span>
-                                <span className="text-[11px] font-bold text-slate-600 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-md">{vehicle.seats} chỗ</span>
-                                <span className="text-[11px] font-bold text-slate-600 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-md">{vehicle.transmission}</span>
+                                <span className="text-[11px] font-bold text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-md">{vehicle.type}</span>
+                                <span className="text-[11px] font-bold text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-md">{vehicle.seats} chỗ</span>
+                                <span className="text-[11px] font-bold text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-md">{vehicle.transmission}</span>
                                 <span className={`text-[11px] font-bold px-2 py-1 rounded-md ${vehicle.fuel === 'Điện' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300'}`}>
                                   {vehicle.fuel}
                                 </span>
@@ -625,7 +625,7 @@ export default function VehiclePage() {
                           </div>
 
                           {/* Stats row */}
-                          <div className="flex items-center gap-4 mb-5 text-xs font-bold text-slate-500">
+                          <div className="flex items-center gap-4 mb-5 text-xs font-bold text-slate-500 dark:text-slate-400">
                             <span>⭐ {vehicle.rating}</span>
                             <span>🚗 {vehicle.trips} chuyến</span>
                             <span>📍 {vehicle.from}</span>
@@ -671,7 +671,7 @@ export default function VehiclePage() {
                             {selectedVehicle?.id === vehicle.id ? 'Đã chọn' : 'Đặt xe'}
                           </button>
 
-                          <span className="mt-4 rounded-full bg-blue-100 px-3 py-1 text-xs font-black text-slate-700 dark:bg-blue-950 dark:text-blue-200">
+                          <span className="mt-4 rounded-full bg-blue-100 px-3 py-1 text-xs font-black text-slate-700 dark:text-slate-300 dark:bg-blue-950 dark:text-blue-200">
                             {vehicle.tag}
                           </span>
                         </div>
@@ -689,7 +689,7 @@ export default function VehiclePage() {
                     </p>
                     <button
                       onClick={() => setNotice('Bạn đã đăng ký nhận thông tin thẻ Drive Elite.')}
-                      className="mt-5 rounded-lg bg-white px-5 py-2.5 text-sm font-black text-blue-900"
+                      className="mt-5 rounded-lg bg-white dark:bg-slate-900 px-5 py-2.5 text-sm font-black text-blue-900"
                     >
                       Nhận ưu đãi
                     </button>

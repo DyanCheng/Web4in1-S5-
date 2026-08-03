@@ -2,6 +2,8 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Backend.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+
 
 namespace Backend.Controllers;
 
@@ -204,7 +206,23 @@ public class PaymentsController : ControllerBase
         }
     }
 
+    [HttpPost("{code}/approve")]
+    [Authorize(Roles = "admin")]
+    public async Task<IActionResult> ApprovePayment(string code)
+    {
+        try
+        {
+            var result = await _paymentDb.ApprovePaymentAdminAsync(code);
+            return Ok(result);
+        }
+        catch (PaymentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
     [HttpGet("admin/summary")]
+    [Authorize(Roles = "admin")]
     public async Task<IActionResult> GetAdminSummary()
     {
         try
@@ -219,6 +237,7 @@ public class PaymentsController : ControllerBase
     }
 
     [HttpGet("admin/transactions")]
+    [Authorize(Roles = "admin")]
     public async Task<IActionResult> GetAdminTransactions()
     {
         try

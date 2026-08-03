@@ -16,17 +16,20 @@ public class CheckoutService
     private readonly IBusService _busService;
     private readonly PaymentDbService _paymentDb;
     private readonly SePayService _sePay;
+    private readonly HotelDbService _hotelDb;
 
     public CheckoutService(
         TourDbService tourDb,
         IBusService busService,
         PaymentDbService paymentDb,
-        SePayService sePay)
+        SePayService sePay,
+        HotelDbService hotelDb)
     {
         _tourDb = tourDb;
         _busService = busService;
         _paymentDb = paymentDb;
         _sePay = sePay;
+        _hotelDb = hotelDb;
     }
 
     public async Task<CheckoutResult> CheckoutAsync(CheckoutRequest request)
@@ -95,6 +98,12 @@ public class CheckoutService
                 continue;
             }
 
+            if (bookingRef.StartsWith("HTL-", StringComparison.OrdinalIgnoreCase))
+            {
+                await _hotelDb.ConfirmBookingAsync(bookingRef);
+                continue;
+            }
+
             if (bookingRef.StartsWith("BB-", StringComparison.OrdinalIgnoreCase))
             {
                 _busService.ConfirmBooking(bookingRef);
@@ -109,9 +118,61 @@ public class CheckoutService
     {
         return serviceType switch
         {
+            "hotel" => await CreateHotelBookingAsync(request, item),
             "bus" => CreateBusBooking(request, item),
             "flight" or "insurance" or "vehicle" => CreateServiceBooking(request, item, serviceType),
             _ => await CreateTourBookingAsync(request, item),
+        };
+    }
+
+    private async Task<PendingBookingResult> CreateHotelBookingAsync(
+        CheckoutRequest request,
+        CheckoutItemRequest item)
+    {
+        var bookingRef = $"HTL-{Guid.NewGuid().ToString("N")[..8].ToUpperInvariant()}";
+        
+        var checkInDate = item.Date;
+        var checkOutDate = item.Metadata?.CheckOutDate ?? item.Date;
+        var totalNights = item.Metadata?.TotalNights ?? 1;
+        var children = item.Metadata?.Children ?? 0;
+        
+        var booking = await _hotelDb.CreateBookingAsync(
+            hotelId: item.Metadata?.HotelId ?? item.ReferenceId,
+            hotelName: item.Metadata?.HotelName ?? item.Title,
+            hotelImage: item.Image,
+            roomId: item.Metadata?.RoomId ?? item.ReferenceId,
+            roomName: item.Metadata?.RoomName ?? item.Title,
+            userId: request.UserId,
+            userEmail: request.UserEmail,
+            checkInDate: checkInDate,
+            checkOutDate: checkOutDate,
+            roomQuantity: item.Quantity,
+            adults: item.Guests,
+            children: children,
+            totalAmount: item.Price * item.Quantity * totalNights,
+            totalNights: totalNights,
+            roomPrice: item.Price,
+            overrideBookingCode: bookingRef
+        );
+
+        if (booking == null)
+            throw new CheckoutException($"Không thể đặt phòng khách sạn: {item.Title}");
+
+        var lineTotal = item.Price * item.Quantity * totalNights;
+        
+        return new PendingBookingResult
+        {
+            BookingRef = bookingRef,
+            LineTotal = lineTotal,
+            OrderItem = BuildOrderItem("hotel", item, bookingRef, lineTotal, new {
+                hotelId = item.Metadata?.HotelId,
+                roomId = item.Metadata?.RoomId,
+                checkInDate,
+                checkOutDate,
+                totalNights,
+                adults = item.Guests,
+                children
+            }),
         };
     }
 
@@ -138,7 +199,7 @@ public class CheckoutService
         {
             BookingRef = booking.Id,
             LineTotal = booking.Total,
-            OrderItem = BuildOrderItem("tour", item, booking.Id, booking.Total),
+            OrderItem = BuildOrderItem("tour", item, booking.Id, booking.Total, new { departureAddress = item.Metadata?.DepartureAddress }),
         };
     }
 
@@ -218,6 +279,7 @@ public class CheckoutService
     {
         return serviceType switch
         {
+            "hotel" => item.Price * item.Quantity * (item.Metadata?.TotalNights ?? 1),
             "flight" or "insurance" or "vehicle" or "bus" => item.Price * item.Quantity,
             _ => item.Price * item.Quantity * Math.Max(item.Guests, 1),
         };
@@ -277,6 +339,14 @@ public class CheckoutItemMetadata
 {
     public string? SeatNumber { get; set; }
     public string? Route { get; set; }
+    public string? HotelId { get; set; }
+    public string? HotelName { get; set; }
+    public string? RoomId { get; set; }
+    public string? RoomName { get; set; }
+    public string? CheckOutDate { get; set; }
+    public int? Children { get; set; }
+    public int? TotalNights { get; set; }
+    public string? DepartureAddress { get; set; }
 }
 
 public class CheckoutResult

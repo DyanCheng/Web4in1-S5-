@@ -21,6 +21,11 @@ namespace Backend.Models
         public List<string> Highlights { get; set; } = new();
         public List<string> Included { get; set; } = new();
         public List<string> Excluded { get; set; } = new();
+        [JsonPropertyName("category_id")]
+        public int? CategoryId { get; set; }
+        
+        [JsonPropertyName("category_name")]
+        public string CategoryName { get; set; } = string.Empty;
 
         [JsonPropertyName("is_domestic")]
         public bool IsDomestic { get; set; } = true;
