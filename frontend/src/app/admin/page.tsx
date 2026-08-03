@@ -138,15 +138,17 @@ export default function AdminDashboard() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [toursResponse, bookingsResponse, roomsResponse, summaryResponse, transactionsResponse] = await Promise.all([
+      const [toursResponse, bookingsResponse, hotelBookingsResponse, roomsResponse, summaryResponse, transactionsResponse] = await Promise.all([
         fetch(apiUrl('/api/tours')),
         fetch(apiUrl('/api/bookings')),
+        fetch(apiUrl('/api/hotelbookings/all')),
         fetch(apiUrl('/api/rooms')),
         fetch(apiUrl('/api/payments/admin/summary')),
         fetch(apiUrl('/api/payments/admin/transactions')),
       ]);
       const toursData = toursResponse.ok ? await toursResponse.json() : [];
       const bookingsData = bookingsResponse.ok ? await bookingsResponse.json() : [];
+      const hotelBookingsData = hotelBookingsResponse.ok ? await hotelBookingsResponse.json() : [];
       const roomsData = roomsResponse.ok ? await roomsResponse.json() : [];
 
       if (summaryResponse.ok) {
@@ -165,7 +167,28 @@ export default function AdminDashboard() {
         { id: '6', title: 'Nha Trang - Vịnh xanh', location: 'Khánh Hòa', price: 3900000, duration: '3 ngày 2 đêm', image: '#', rating: 4.8, reviews: 967 },
       ]);
 
-      setBookings(bookingsData.length ? bookingsData : [
+      const combinedBookings = [
+        ...bookingsData,
+        ...hotelBookingsData.map((hb: any) => {
+          const detail = hb.details?.[0] || {};
+          const isPending = hb.payment_status !== 'paid' && hb.booking_status !== 'confirmed';
+          return {
+            id: hb.booking_code || hb.hotel_booking_id || 'UNKNOWN',
+            tourId: detail.hotel?.id || hb.hotelId || '',
+            tourTitle: detail.hotel?.name || hb.hotelName || 'Khách sạn',
+            tourImage: detail.hotel?.image || hb.hotelImage || 'https://images.unsplash.com/photo-1566073771259-6a8506099945',
+            userId: hb.user_id || '',
+            userEmail: hb.user_email || hb.userEmail || '',
+            date: `${(hb.check_in_date || hb.checkInDate || '').split('T')[0]}`,
+            guests: detail.quantity || hb.quantity || hb.room_quantity || 1,
+            total: hb.total_price || hb.totalPrice || hb.total_amount || 0,
+            status: isPending ? 'pending' : 'confirmed',
+            isHotel: true
+          };
+        })
+      ];
+
+      setBookings(combinedBookings.length ? combinedBookings : [
         { id: 'ORD-1715234567890', tourId: '1', tourTitle: 'Du ngoạn Vịnh Hạ Long', tourImage: 'https://images.unsplash.com/photo-1643029891412-92f9a81a8c16', userId: '3', userEmail: 'user@travelhub.com', date: '2026-07-15', guests: 2, total: 7000000, status: 'confirmed' },
         { id: 'ORD-1714123456789', tourId: '2', tourTitle: 'Thiên đường Phú Quốc', tourImage: 'https://images.unsplash.com/photo-1732243395944-cb3ff9311091', userId: '3', userEmail: 'user@travelhub.com', date: '2026-08-20', guests: 3, total: 15600000, status: 'pending' },
       ]);
@@ -256,8 +279,42 @@ export default function AdminDashboard() {
     );
   };
 
-  const handleConfirmBooking = (id: string) => {
-    setBookings((prev) => prev.map((booking) => (booking.id === id ? { ...booking, status: 'confirmed' } : booking)));
+  const handleConfirmBooking = async (id: string) => {
+    try {
+      const isHotel = id.startsWith('HTL-') || id.startsWith('hotel_');
+      const endpoint = isHotel ? `/api/hotelbookings/${id}/confirm` : `/api/bookings/${id}/confirm`;
+      
+      const response = await fetch(apiUrl(endpoint), {
+        method: 'POST',
+        headers: adminHeaders()
+      });
+      
+      if (!response.ok) {
+        throw new Error('Lỗi khi duyệt đơn');
+      }
+      
+      setBookings((prev) => prev.map((booking) => (booking.id === id ? { ...booking, status: 'confirmed' } : booking)));
+      alert('Đã duyệt đơn thành công');
+    } catch (err: any) {
+      alert(err.message || 'Lỗi khi duyệt');
+    }
+  };
+
+  const handleApprovePayment = async (paymentCode: string) => {
+    if (!confirm('Duyệt thanh toán này? Khách hàng sẽ thấy mã QR để thanh toán.')) return;
+    try {
+      const response = await fetch(apiUrl(`/api/payments/${paymentCode}/approve`), {
+        method: 'POST',
+        headers: adminHeaders()
+      });
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.message || 'Lỗi khi duyệt');
+      }
+      await fetchData();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Lỗi khi duyệt');
+    }
   };
 
   const handleDeleteBooking = (id: string) => {
@@ -529,9 +586,11 @@ export default function AdminDashboard() {
                               <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
                                 tx.payment_status === 'paid'
                                   ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300'
-                                  : 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300'
+                                  : tx.payment_status === 'pending_approval'
+                                    ? 'bg-purple-50 text-purple-700 dark:bg-purple-950/40 dark:text-purple-300'
+                                    : 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300'
                               }`}>
-                                {tx.payment_status === 'paid' ? 'Đã thanh toán' : 'Chờ thanh toán'}
+                                {tx.payment_status === 'paid' ? 'Đã thanh toán' : tx.payment_status === 'pending_approval' ? 'Chờ duyệt' : 'Chờ thanh toán'}
                               </span>
                             </td>
                           </tr>
@@ -786,6 +845,7 @@ export default function AdminDashboard() {
                         <th className="px-6 py-4 text-left">Trạng thái</th>
                         <th className="px-6 py-4 text-left">SePay ID</th>
                         <th className="px-6 py-4 text-left">Thời gian</th>
+                        <th className="px-6 py-4 text-left">Thao tác</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-200/70 dark:divide-slate-800">
@@ -815,9 +875,11 @@ export default function AdminDashboard() {
                             <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
                               tx.payment_status === 'paid'
                                 ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300'
-                                : 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300'
+                                : tx.payment_status === 'pending_approval'
+                                  ? 'bg-purple-50 text-purple-700 dark:bg-purple-950/40 dark:text-purple-300'
+                                  : 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300'
                             }`}>
-                              {tx.payment_status === 'paid' ? 'Đã thanh toán' : 'Chờ thanh toán'}
+                              {tx.payment_status === 'paid' ? 'Đã thanh toán' : tx.payment_status === 'pending_approval' ? 'Chờ duyệt' : 'Chờ thanh toán'}
                             </span>
                           </td>
                           <td className="px-6 py-4 text-xs text-slate-500">{tx.sepay_transaction_id || '—'}</td>
@@ -825,11 +887,21 @@ export default function AdminDashboard() {
                             <p>Tạo: {new Date(tx.created_at).toLocaleString('vi-VN')}</p>
                             {tx.paid_at && <p className="text-emerald-600">TT: {new Date(tx.paid_at).toLocaleString('vi-VN')}</p>}
                           </td>
+                          <td className="px-6 py-4">
+                            {tx.payment_status === 'pending_approval' && (
+                              <button 
+                                onClick={() => handleApprovePayment(tx.payment_code)}
+                                className="rounded-xl bg-blue-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-blue-700 transition-colors"
+                              >
+                                Duyệt
+                              </button>
+                            )}
+                          </td>
                         </tr>
                       ))}
                       {filteredPayments.length === 0 && (
                         <tr>
-                          <td colSpan={7} className="px-6 py-12 text-center text-slate-500 dark:text-slate-400">Chưa có giao dịch thanh toán</td>
+                          <td colSpan={8} className="px-6 py-12 text-center text-slate-500 dark:text-slate-400">Chưa có giao dịch thanh toán</td>
                         </tr>
                       )}
                     </tbody>

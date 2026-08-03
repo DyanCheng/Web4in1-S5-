@@ -15,19 +15,31 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme] = useState<Theme>('light');
+  const [theme, setTheme] = useState<Theme>('light');
   const [mounted, setMounted] = useState(false);
   const [paywallOpen, setPaywallOpen] = useState(false);
 
   useEffect(() => {
-    // Dark mode is a premium feature — always force light
-    localStorage.setItem('theme', 'light');
-    window.document.documentElement.classList.remove('dark');
+    const savedTheme = localStorage.getItem('theme') as Theme | null;
+    if (savedTheme === 'dark') {
+      setTheme('dark');
+      window.document.documentElement.classList.add('dark');
+    } else {
+      setTheme('light');
+      window.document.documentElement.classList.remove('dark');
+    }
     setMounted(true);
   }, []);
 
   const toggleTheme = () => {
-    setPaywallOpen(true);
+    const newTheme = theme === 'light' ? 'dark' : 'light';
+    setTheme(newTheme);
+    localStorage.setItem('theme', newTheme);
+    if (newTheme === 'dark') {
+      window.document.documentElement.classList.add('dark');
+    } else {
+      window.document.documentElement.classList.remove('dark');
+    }
   };
 
   const closePaywall = () => setPaywallOpen(false);

@@ -34,7 +34,7 @@ const domesticPlans = [
     color: 'from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900',
     textColor: 'text-slate-900 dark:text-white',
     badge: '',
-    buttonStyle: 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-200',
+    buttonStyle: 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-50 hover:bg-slate-800 dark:hover:bg-slate-200',
     features: [
       { label: 'Tai nạn cá nhân', value: '200 triệu VNĐ', included: true },
       { label: 'Chi phí y tế', value: '50 triệu VNĐ', included: true },
@@ -52,7 +52,7 @@ const domesticPlans = [
     color: 'from-blue-600 to-indigo-800',
     textColor: 'text-white',
     badge: 'Được ưa chuộng nhất',
-    buttonStyle: 'bg-white text-blue-700 hover:bg-blue-50',
+    buttonStyle: 'bg-white dark:bg-slate-900 text-blue-700 hover:bg-blue-50',
     features: [
       { label: 'Tai nạn cá nhân', value: '500 triệu VNĐ', included: true },
       { label: 'Chi phí y tế', value: '150 triệu VNĐ', included: true },
@@ -68,7 +68,7 @@ const domesticPlans = [
     price: 750000,
     duration: 'Tối đa 30 ngày',
     color: 'from-amber-300 via-amber-500 to-amber-700',
-    textColor: 'text-slate-900',
+    textColor: 'text-slate-900 dark:text-slate-50',
     badge: 'Bảo vệ toàn diện',
     buttonStyle: 'bg-slate-900 text-amber-400 hover:bg-slate-800',
     features: [
@@ -91,7 +91,7 @@ const internationalPlans = [
     color: 'from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900',
     textColor: 'text-slate-900 dark:text-white',
     badge: '',
-    buttonStyle: 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-200',
+    buttonStyle: 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-50 hover:bg-slate-800 dark:hover:bg-slate-200',
     features: [
       { label: 'Tai nạn cá nhân', value: '1 tỷ VNĐ', included: true },
       { label: 'Chi phí y tế', value: '500 triệu VNĐ', included: true },
@@ -109,7 +109,7 @@ const internationalPlans = [
     color: 'from-blue-600 to-indigo-800',
     textColor: 'text-white',
     badge: 'Được ưa chuộng nhất',
-    buttonStyle: 'bg-white text-blue-700 hover:bg-blue-50',
+    buttonStyle: 'bg-white dark:bg-slate-900 text-blue-700 hover:bg-blue-50',
     features: [
       { label: 'Tai nạn cá nhân', value: '2 tỷ VNĐ', included: true },
       { label: 'Chi phí y tế', value: '1.5 tỷ VNĐ', included: true },
@@ -125,7 +125,7 @@ const internationalPlans = [
     price: 1500000,
     duration: 'Tối đa 45 ngày',
     color: 'from-amber-300 via-amber-500 to-amber-700',
-    textColor: 'text-slate-900',
+    textColor: 'text-slate-900 dark:text-slate-50',
     badge: 'Bảo vệ toàn cầu',
     buttonStyle: 'bg-slate-900 text-amber-400 hover:bg-slate-800',
     features: [
@@ -158,7 +158,7 @@ export default function InsurancePage() {
   const selectedPlan = currentPlans.find(p => p.id === selected);
 
   return (
-    <div className={`min-h-screen font-sans transition-colors duration-300 flex flex-col ${theme === 'dark' ? 'dark bg-slate-950 text-slate-50' : 'bg-slate-50 text-slate-900'}`}>
+    <div className={`min-h-screen font-sans transition-colors duration-300 flex flex-col ${theme === 'dark' ? 'dark bg-slate-950 text-slate-50' : 'bg-slate-50 text-slate-900 dark:text-slate-50'}`}>
       <Header />
 
       {/* ── Premium Hero Section ── */}
@@ -234,7 +234,7 @@ export default function InsurancePage() {
                 className={`px-8 py-3 rounded-full text-sm font-bold transition-all duration-300 ${
                   tripType === t
                     ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-md'
-                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-300 dark:hover:text-slate-200'
                 }`}
               >
                 {t === 'domestic' ? 'Nội địa' : 'Quốc tế'}
@@ -348,7 +348,7 @@ export default function InsurancePage() {
                 Đội ngũ cố vấn tinh hoa của chúng tôi luôn sẵn sàng lắng nghe và xây dựng kế hoạch bảo vệ độc quyền cho hành trình của bạn.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
-                <button className="flex items-center justify-center gap-2 px-8 py-4 bg-white text-slate-900 rounded-2xl font-black hover:bg-slate-100 transition-colors shadow-xl">
+                <button className="flex items-center justify-center gap-2 px-8 py-4 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-50 rounded-2xl font-black hover:bg-slate-100 transition-colors shadow-xl">
                   <Phone className="size-4" />
                   1800-PREMIUM
                 </button>

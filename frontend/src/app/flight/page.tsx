@@ -367,7 +367,7 @@ function LocationField({ label, icon: Icon, value, onChange, excludeCode, contai
   const handleSelect = (loc: AirportLocation) => { onChange(loc); onClose(); setQuery(''); };
 
   return (
-    <div ref={containerRef} className={`relative flex flex-col gap-1 rounded-2xl border-2 px-4 py-3 transition-all cursor-pointer ${isOpen ? 'border-blue-500 bg-white shadow-lg shadow-blue-100 dark:shadow-blue-950/30' : 'border-transparent bg-slate-50 dark:bg-slate-800/60 hover:bg-white hover:border-slate-200 dark:hover:bg-slate-800'}`}>
+    <div ref={containerRef} className={`relative flex flex-col gap-1 rounded-2xl border-2 px-4 py-3 transition-all cursor-pointer ${isOpen ? 'border-blue-500 bg-white dark:bg-slate-900 shadow-lg shadow-blue-100 dark:shadow-blue-950/30' : 'border-transparent bg-slate-50 dark:bg-slate-800/60 hover:bg-white dark:bg-slate-900 hover:border-slate-200 dark:hover:bg-slate-800'}`}>
       <span className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-slate-400">
         <Icon className="size-3" />{label}
       </span>
@@ -375,7 +375,7 @@ function LocationField({ label, icon: Icon, value, onChange, excludeCode, contai
         <input ref={inputRef} value={query} onChange={e => setQuery(e.target.value)}
           onKeyDown={e => { if (e.key === 'Escape') onClose(); if (e.key === 'Enter' && suggestions[0]) handleSelect(suggestions[0]); }}
           placeholder="Thành phố hoặc mã sân bay…"
-          className="bg-transparent text-base font-black text-slate-900 outline-none placeholder:text-slate-300 dark:text-white w-full" />
+          className="bg-transparent text-base font-black text-slate-900 dark:text-slate-50 outline-none placeholder:text-slate-300 dark:text-white w-full" />
       ) : (
         <button type="button" onClick={onOpen} className="text-left">
           <span className="block text-base font-black text-slate-900 dark:text-white leading-tight">
@@ -385,7 +385,7 @@ function LocationField({ label, icon: Icon, value, onChange, excludeCode, contai
         </button>
       )}
       {isOpen && (
-        <div className="absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900">
+        <div className="absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-2xl border border-slate-100 bg-white dark:bg-slate-900 shadow-2xl dark:border-slate-700 dark:bg-slate-900">
           {suggestions.length === 0
             ? <p className="px-4 py-4 text-sm text-slate-400">Không tìm thấy địa điểm.</p>
             : suggestions.map(loc => (
@@ -426,7 +426,7 @@ function FlightCard({ flight, selected, activeTab, onSelect, onTabChange }: {
   ];
 
   return (
-    <article className={`overflow-hidden rounded-2xl bg-white transition-all duration-200 dark:bg-slate-900 ${selected ? 'ring-2 ring-blue-500 shadow-xl shadow-blue-100/50 dark:shadow-blue-950/30' : 'shadow-md hover:shadow-xl border border-slate-100 dark:border-slate-800'}`}>
+    <article className={`overflow-hidden rounded-2xl bg-white dark:bg-slate-900 transition-all duration-200 dark:bg-slate-900 ${selected ? 'ring-2 ring-blue-500 shadow-xl shadow-blue-100/50 dark:shadow-blue-950/30' : 'shadow-md hover:shadow-xl border border-slate-100 dark:border-slate-800'}`}>
       <div className="p-5">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-center">
 
@@ -537,7 +537,7 @@ function FlightCard({ flight, selected, activeTab, onSelect, onTabChange }: {
           const isActive = activeTab === tab.id;
           return (
             <button key={tab.id} type="button" onClick={() => onTabChange(tab.id)}
-              className={`inline-flex shrink-0 items-center gap-2 border-b-2 px-5 py-3 text-xs font-black transition-colors ${isActive ? 'border-blue-600 text-blue-700 dark:border-blue-400 dark:text-blue-300' : 'border-transparent text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'}`}>
+              className={`inline-flex shrink-0 items-center gap-2 border-b-2 px-5 py-3 text-xs font-black transition-colors ${isActive ? 'border-blue-600 text-blue-700 dark:border-blue-400 dark:text-blue-300' : 'border-transparent text-slate-400 hover:text-slate-600 dark:text-slate-400 dark:hover:text-slate-200'}`}>
               <TIcon className="size-3.5" />{tab.label}
             </button>
           );
@@ -650,7 +650,7 @@ function CouponCard({ coupon }: { coupon: typeof coupons[number] }) {
         </div>
         <p className="text-[10px] text-slate-400 mb-3">Đơn tối thiểu: <strong className="text-slate-600 dark:text-slate-300">{coupon.minSpend}</strong></p>
         <button type="button" onClick={copy}
-          className={`w-full flex items-center justify-center gap-2 rounded-xl py-2.5 text-xs font-black transition-all ${copied ? 'bg-emerald-500 text-white' : 'border-2 border-dashed text-slate-500 hover:text-white hover:border-transparent'}`}
+          className={`w-full flex items-center justify-center gap-2 rounded-xl py-2.5 text-xs font-black transition-all ${copied ? 'bg-emerald-500 text-white' : 'border-2 border-dashed text-slate-500 dark:text-slate-400 hover:text-white hover:border-transparent'}`}
           style={copied ? {} : { borderColor: coupon.from + '80' }}
           onMouseEnter={e => { if (!copied) { (e.currentTarget as HTMLButtonElement).style.background = `linear-gradient(135deg, ${coupon.from}, ${coupon.to})`; } }}
           onMouseLeave={e => { if (!copied) { (e.currentTarget as HTMLButtonElement).style.background = ''; (e.currentTarget as HTMLButtonElement).style.color = ''; } }}>
@@ -765,7 +765,7 @@ export default function FlightPage() {
         <div className="flex items-center gap-1 rounded-2xl bg-slate-100 dark:bg-slate-800 p-1">
           {[{ id: 'one-way' as const, label: 'Một chiều' }, { id: 'round-trip' as const, label: 'Khứ hồi' }].map(opt => (
             <button key={opt.id} onClick={() => setTripType(opt.id)}
-              className={`rounded-xl px-5 py-2 text-xs font-black transition-all ${tripType === opt.id ? 'bg-white dark:bg-slate-700 text-blue-700 dark:text-blue-300 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-200'}`}>
+              className={`rounded-xl px-5 py-2 text-xs font-black transition-all ${tripType === opt.id ? 'bg-white dark:bg-slate-700 text-blue-700 dark:text-blue-300 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-300 dark:hover:text-slate-200'}`}>
               {opt.label}
             </button>
           ))}
@@ -850,7 +850,7 @@ export default function FlightPage() {
 
         {/* Swap button */}
         <button type="button" onClick={() => { setFromLocation(toLocation); setToLocation(fromLocation); setActiveLocationField(null); }}
-          className="mx-auto flex size-12 items-center justify-center self-center rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-500 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-all">
+          className="mx-auto flex size-12 items-center justify-center self-center rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-all">
           <ArrowLeftRight className="size-4" />
         </button>
 
@@ -862,7 +862,7 @@ export default function FlightPage() {
 
         {/* Departure date */}
         <button type="button" onClick={() => departureDateRef.current?.showPicker?.()}
-          className="flex flex-col gap-1 rounded-2xl border-2 border-transparent bg-slate-50 dark:bg-slate-800/60 px-4 py-3 text-left hover:bg-white hover:border-slate-200 dark:hover:bg-slate-800 dark:hover:border-slate-600 transition-all">
+          className="flex flex-col gap-1 rounded-2xl border-2 border-transparent bg-slate-50 dark:bg-slate-800/60 px-4 py-3 text-left hover:bg-white dark:bg-slate-900 hover:border-slate-200 dark:hover:bg-slate-800 dark:hover:border-slate-600 transition-all">
           <span className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-slate-400">
             <CalendarDays className="size-3" /> Khởi hành
           </span>
@@ -873,7 +873,7 @@ export default function FlightPage() {
         {/* Return date */}
         {tripType === 'round-trip' ? (
           <button type="button" onClick={() => returnDateRef.current?.showPicker?.()}
-            className="flex flex-col gap-1 rounded-2xl border-2 border-transparent bg-slate-50 dark:bg-slate-800/60 px-4 py-3 text-left hover:bg-white hover:border-slate-200 dark:hover:bg-slate-800 dark:hover:border-slate-600 transition-all">
+            className="flex flex-col gap-1 rounded-2xl border-2 border-transparent bg-slate-50 dark:bg-slate-800/60 px-4 py-3 text-left hover:bg-white dark:bg-slate-900 hover:border-slate-200 dark:hover:bg-slate-800 dark:hover:border-slate-600 transition-all">
             <span className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-slate-400">
               <CalendarDays className="size-3" /> Khứ hồi
             </span>
@@ -881,7 +881,7 @@ export default function FlightPage() {
               <span className="text-base font-black text-slate-900 dark:text-white leading-tight flex-1">{formatDateVi(returnDate) || 'Chọn ngày'}</span>
               {returnDate && (
                 <span role="button" tabIndex={0} onClick={e => { e.stopPropagation(); setReturnDate(''); }}
-                  className="rounded-full p-0.5 text-slate-400 hover:text-slate-600">
+                  className="rounded-full p-0.5 text-slate-400 hover:text-slate-600 dark:text-slate-400">
                   <X className="size-3.5" />
                 </span>
               )}
@@ -1042,13 +1042,13 @@ export default function FlightPage() {
                   <div className="flex items-center rounded-xl bg-slate-100 dark:bg-slate-800 p-1">
                     <button
                       onClick={() => { setActiveDealTab('domestic'); setShowAllDeals(false); }}
-                      className={`rounded-lg px-4 py-1.5 text-xs font-black transition-all ${activeDealTab === 'domestic' ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+                      className={`rounded-lg px-4 py-1.5 text-xs font-black transition-all ${activeDealTab === 'domestic' ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-300 dark:hover:text-slate-300'}`}
                     >
                       Nội địa
                     </button>
                     <button
                       onClick={() => { setActiveDealTab('international'); setShowAllDeals(false); }}
-                      className={`rounded-lg px-4 py-1.5 text-xs font-black transition-all ${activeDealTab === 'international' ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+                      className={`rounded-lg px-4 py-1.5 text-xs font-black transition-all ${activeDealTab === 'international' ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-300 dark:hover:text-slate-300'}`}
                     >
                       Nước ngoài
                     </button>
@@ -1187,7 +1187,7 @@ export default function FlightPage() {
                 </div>
 
                 <button type="button" onClick={handleBack}
-                  className="flex items-center gap-2 rounded-xl bg-white text-blue-700 px-4 py-2 text-xs font-black hover:bg-blue-50 transition-colors flex-shrink-0">
+                  className="flex items-center gap-2 rounded-xl bg-white dark:bg-slate-900 text-blue-700 px-4 py-2 text-xs font-black hover:bg-blue-50 transition-colors flex-shrink-0">
                   Sửa tìm kiếm
                 </button>
               </div>
@@ -1203,7 +1203,7 @@ export default function FlightPage() {
                       : 'Không có chuyến bay phù hợp'
                     }
                   </h2>
-                  <p className="text-sm text-slate-500 mt-0.5">{formatDateVi(date)} · {totalPassengers} hành khách · {cabinClass}</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{formatDateVi(date)} · {totalPassengers} hành khách · {cabinClass}</p>
                 </div>
 
                 {/* Sort tabs */}
@@ -1214,7 +1214,7 @@ export default function FlightPage() {
                     { id: 'departure' as SortMode, label: 'Sớm nhất' },
                   ].map(s => (
                     <button key={s.id} type="button" onClick={() => setSortMode(s.id)}
-                      className={`rounded-xl px-4 py-2 text-xs font-black transition-all ${sortMode === s.id ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-200'}`}>
+                      className={`rounded-xl px-4 py-2 text-xs font-black transition-all ${sortMode === s.id ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-300 dark:hover:text-slate-200'}`}>
                       {s.label}
                     </button>
                   ))}
@@ -1272,7 +1272,7 @@ export default function FlightPage() {
                     <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800 sticky top-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md z-10">
                       <h2 className="text-xl font-black text-slate-900 dark:text-white">Chọn loại vé</h2>
                       <button onClick={() => setSelectedFlight(null)} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-                        <X className="size-5 text-slate-500" />
+                        <X className="size-5 text-slate-500 dark:text-slate-400" />
                       </button>
                     </div>
                     
@@ -1285,7 +1285,7 @@ export default function FlightPage() {
                         <div className="flex-1 w-full sm:w-auto">
                           <div className="flex items-center gap-2 mb-1">
                             <span className="text-sm font-black text-slate-900 dark:text-white">{selectedFlight.airline}</span>
-                            <span className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-[10px] font-bold text-slate-500">Phổ thông</span>
+                            <span className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-[10px] font-bold text-slate-500 dark:text-slate-400">Phổ thông</span>
                           </div>
                           <div className="flex flex-wrap items-center gap-3 text-sm text-slate-600 dark:text-slate-400 w-full">
                             <span className="font-bold">{selectedFlight.departure}</span>
@@ -1303,8 +1303,8 @@ export default function FlightPage() {
                     {/* Ticket Types */}
                     <div className="p-6 flex-1 bg-white dark:bg-slate-900">
                       <div className="flex overflow-x-auto items-center gap-6 mb-6 border-b border-slate-100 dark:border-slate-800">
-                        <button onClick={() => setTicketTab('economy')} className={`pb-3 border-b-2 text-sm font-black shrink-0 ${ticketTab === 'economy' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>Phổ thông</button>
-                        <button onClick={() => setTicketTab('premium')} className={`pb-3 border-b-2 text-sm font-bold shrink-0 ${ticketTab === 'premium' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>
+                        <button onClick={() => setTicketTab('economy')} className={`pb-3 border-b-2 text-sm font-black shrink-0 ${ticketTab === 'economy' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-400 hover:text-slate-600 dark:text-slate-400'}`}>Phổ thông</button>
+                        <button onClick={() => setTicketTab('premium')} className={`pb-3 border-b-2 text-sm font-bold shrink-0 ${ticketTab === 'premium' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-400 hover:text-slate-600 dark:text-slate-400'}`}>
                           Phổ thông đặc biệt <span className="text-xs font-normal opacity-70">(Từ {formatVnd(selectedFlight.price + 500000)})</span>
                         </button>
                       </div>
@@ -1359,17 +1359,17 @@ export default function FlightPage() {
                         ]).map(ticket => (
                           <div key={ticket.name} className="flex flex-col border border-slate-200 dark:border-slate-700 rounded-2xl overflow-hidden hover:border-blue-400 transition-colors bg-white dark:bg-slate-800">
                             <div className="p-5 border-b border-slate-100 dark:border-slate-700">
-                              <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">{ticket.name}</p>
+                              <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">{ticket.name}</p>
                               <div className="flex items-baseline gap-1">
                                 <span className="text-xl font-black text-slate-900 dark:text-white">{formatVnd(ticket.price)}</span>
-                                <span className="text-xs text-slate-500">/khách</span>
+                                <span className="text-xs text-slate-500 dark:text-slate-400">/khách</span>
                               </div>
                             </div>
                             <div className="p-5 flex-1 flex flex-col gap-3">
                               {ticket.perks.map((p, idx) => (
                                 <div key={idx} className="flex items-start gap-2">
                                   {p.i ? <CheckCircle2 className="size-4 shrink-0 text-emerald-500 mt-0.5" /> : <X className="size-4 shrink-0 text-slate-300 mt-0.5" />}
-                                  <span className={`text-xs leading-relaxed ${p.i ? 'text-slate-700 dark:text-slate-300 font-medium' : 'text-slate-400 dark:text-slate-500'}`}>{p.t}</span>
+                                  <span className={`text-xs leading-relaxed ${p.i ? 'text-slate-700 dark:text-slate-300 font-medium' : 'text-slate-400 dark:text-slate-400'}`}>{p.t}</span>
                                 </div>
                               ))}
                             </div>

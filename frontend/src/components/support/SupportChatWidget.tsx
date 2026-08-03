@@ -124,11 +124,11 @@ export function SupportChatWidget() {
   return (
     <div className="pointer-events-none fixed bottom-5 right-5 z-[60] flex flex-col items-end gap-3">
       {open ? (
-        <div className="pointer-events-auto flex h-[min(34rem,calc(100vh-6.5rem))] w-[min(24rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-900/15 dark:border-slate-700 dark:bg-slate-900">
+        <div className="pointer-events-auto flex h-[min(34rem,calc(100vh-6.5rem))] w-[min(24rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white dark:bg-slate-900 shadow-2xl shadow-slate-900/15 dark:border-slate-700 dark:bg-slate-900">
           <header className="flex items-center justify-between gap-3 border-b border-slate-200 bg-blue-700 px-4 py-3 text-white dark:bg-blue-800">
             <div className="flex min-w-0 items-center gap-3">
               <Avatar className="size-9 border border-white/30">
-                <AvatarImage src="/logo.svg" alt="CMC Travel" />
+                <AvatarImage src="/logo.png" alt="CMC Travel" />
                 <AvatarFallback className="bg-blue-500 text-xs font-bold">
                   CT
                 </AvatarFallback>
@@ -174,12 +174,12 @@ export function SupportChatWidget() {
 
           <div ref={containerRef} className="flex-1 space-y-1 overflow-y-auto bg-slate-50 p-3 dark:bg-slate-950">
             {sessionLoading || isLoadingHistory ? (
-              <div className="flex h-full items-center justify-center gap-2 text-sm text-slate-500">
+              <div className="flex h-full items-center justify-center gap-2 text-sm text-slate-500 dark:text-slate-400">
                 <Loader2 className="size-4 animate-spin" />
                 Đang tải hội thoại...
               </div>
             ) : messages.length === 0 ? (
-              <div className="flex h-full items-center justify-center px-4 text-center text-sm text-slate-500">
+              <div className="flex h-full items-center justify-center px-4 text-center text-sm text-slate-500 dark:text-slate-400">
                 Gửi tin nhắn để được nhân viên hỗ trợ.
               </div>
             ) : (
@@ -200,7 +200,7 @@ export function SupportChatWidget() {
 
           <form
             onSubmit={handleSend}
-            className="flex items-center gap-2 border-t border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900"
+            className="flex items-center gap-2 border-t border-slate-200 bg-white dark:bg-slate-900 p-3 dark:border-slate-700 dark:bg-slate-900"
           >
             <Input
               value={draft}

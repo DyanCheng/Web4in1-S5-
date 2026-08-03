@@ -1,6 +1,6 @@
 import { apiUrl } from '@/lib/backendUrl';
 
-export type ServiceType = 'tour' | 'bus' | 'flight' | 'insurance' | 'vehicle';
+export type ServiceType = 'tour' | 'bus' | 'flight' | 'insurance' | 'vehicle' | 'hotel';
 
 export interface CheckoutItemPayload {
   serviceType: ServiceType;
@@ -14,6 +14,14 @@ export interface CheckoutItemPayload {
   metadata?: {
     seatNumber?: string;
     route?: string;
+    hotelId?: string;
+    hotelName?: string;
+    roomId?: string;
+    roomName?: string;
+    checkOutDate?: string;
+    children?: number;
+    totalNights?: number;
+    departureAddress?: string;
   };
 }
 
@@ -45,7 +53,7 @@ export function getCartLineTotal(item: {
 }): number {
   const serviceType = item.serviceType ?? 'tour';
 
-  if (serviceType === 'flight' || serviceType === 'insurance' || serviceType === 'vehicle' || serviceType === 'bus') {
+  if (serviceType === 'flight' || serviceType === 'insurance' || serviceType === 'vehicle' || serviceType === 'bus' || serviceType === 'hotel') {
     return item.price * item.quantity;
   }
 

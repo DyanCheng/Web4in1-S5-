@@ -78,6 +78,16 @@ public class PaymentDbService
         return response ?? throw new PaymentException("Xác nhận thanh toán thất bại");
     }
 
+    public async Task<JsonElement> ApprovePaymentAdminAsync(string paymentCode)
+    {
+        var response = await PostRpcAsync("approve_order_payment", new
+        {
+            p_payment_code = paymentCode
+        });
+
+        return response ?? throw new PaymentException("Duyệt thanh toán thất bại");
+    }
+
     public async Task<JsonElement> ListOrderPaymentsAdminAsync()
     {
         var response = await PostRpcAsync("list_order_payments_admin", new { });

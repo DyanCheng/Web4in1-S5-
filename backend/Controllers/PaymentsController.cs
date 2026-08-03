@@ -2,6 +2,8 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Backend.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+
 
 namespace Backend.Controllers;
 
@@ -208,8 +210,27 @@ public class PaymentsController : ControllerBase
         }
     }
 
+<<<<<<< HEAD
     //GetAdminSummary trả về thống kê thanh toán tổng quan cho quản trị viên, bao gồm tổng số đơn thanh toán, tổng số đã thanh toán, tổng số chưa thanh toán và tổng số tiền đã thanh toán. Nếu cơ sở dữ liệu không khả dụng, trả về lỗi 503.
+=======
+    [HttpPost("{code}/approve")]
+    [Authorize(Roles = "admin")]
+    public async Task<IActionResult> ApprovePayment(string code)
+    {
+        try
+        {
+            var result = await _paymentDb.ApprovePaymentAdminAsync(code);
+            return Ok(result);
+        }
+        catch (PaymentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+>>>>>>> df4d10b49d35ff9fe7728104bb285846f65c0818
     [HttpGet("admin/summary")]
+    [Authorize(Roles = "admin")]
     public async Task<IActionResult> GetAdminSummary()
     {
         try
@@ -225,6 +246,7 @@ public class PaymentsController : ControllerBase
 
     //GetAdminTransactions trả về danh sách tất cả các đơn thanh toán cho quản trị viên, bao gồm mã thanh toán, số tiền, trạng thái, ngày thanh toán, chi tiết đơn hàng và tham chiếu đặt phòng. Nếu cơ sở dữ liệu không khả dụng, trả về lỗi 503.
     [HttpGet("admin/transactions")]
+    [Authorize(Roles = "admin")]
     public async Task<IActionResult> GetAdminTransactions()
     {
         try

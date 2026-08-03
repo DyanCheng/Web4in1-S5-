@@ -32,7 +32,7 @@ declare global {
 }
 
 const loadingButtonClass =
-  'w-full py-2.5 sm:py-3 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm font-bold text-slate-500';
+  'w-full py-2.5 sm:py-3 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm font-bold text-slate-500 dark:text-slate-400';
 
 let gsiInitializedForClientId: string | null = null;
 

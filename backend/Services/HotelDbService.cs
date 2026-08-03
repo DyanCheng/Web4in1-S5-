@@ -86,30 +86,35 @@ namespace Backend.Services
         }
 
         public async Task<JsonElement?> CreateBookingAsync(
-            long hotelId, string hotelName, string hotelImage,
-            long roomId, string roomName,
+            string hotelId, string hotelName, string hotelImage,
+            string roomId, string roomName,
             string userId, string userEmail,
             string checkInDate, string checkOutDate,
             int roomQuantity, int adults, int children,
-            decimal totalAmount, int totalNights, decimal roomPrice)
+            decimal totalAmount, int totalNights, decimal roomPrice,
+            string? overrideBookingCode = null)
         {
-            var bookingCode = "HOTEL-" + DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            var bookingCode = overrideBookingCode ?? "HOTEL-" + DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
             var payload = new {
-                p_booking_code = bookingCode,
-                p_auth_user_id = userId,
+                p_booking_id = bookingCode,
                 p_hotel_id = hotelId,
+                p_hotel_name = hotelName,
+                p_hotel_image = hotelImage,
                 p_room_id = roomId,
+                p_room_name = roomName,
+                p_user_id = userId,
+                p_user_email = userEmail,
                 p_check_in_date = checkInDate,
                 p_check_out_date = checkOutDate,
-                p_total_nights = totalNights,
-                p_total_price = totalAmount,
-                p_quantity = roomQuantity,
-                p_room_price = roomPrice,
-                p_payment_status = "unpaid"
+                p_room_quantity = roomQuantity,
+                p_adults = adults,
+                p_children = children,
+                p_total_amount = totalAmount,
+                p_status = "pending"
             };
 
-            var response = await PostRpcAsync("create_real_hotel_booking", payload);
+            var response = await PostRpcAsync("create_hotel_booking", payload);
             if (response == null) throw new Exception("Failed to create hotel booking in Supabase");
 
             return response;
@@ -127,6 +132,34 @@ namespace Backend.Services
             catch (Exception ex)
             {
                 Console.WriteLine($"Error in GetUserBookingsAsync: {ex.Message}");
+                return null;
+            }
+        }
+
+        public async Task<JsonElement?> ConfirmBookingAsync(string bookingCode)
+        {
+            try
+            {
+                var response = await PostRpcAsync("confirm_real_hotel_booking", new { p_booking_code = bookingCode });
+                return response;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in ConfirmBookingAsync: {ex.Message}");
+                return null;
+            }
+        }
+
+        public async Task<JsonElement?> GetAllBookingsAsync()
+        {
+            try
+            {
+                var response = await PostRpcAsync("get_all_hotel_bookings", new { });
+                return response;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in GetAllBookingsAsync: {ex.Message}");
                 return null;
             }
         }

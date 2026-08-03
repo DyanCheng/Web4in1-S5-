@@ -44,8 +44,8 @@ services:
       - AI_SERVICE_URL=http://ai_service:8000
 
   # Placeholder AI — backend chưa gọi AI_SERVICE_URL
-  ai_service:
-    build:
-      context: ./ai_service
-    ports:
-      - "8000:8000"
+  # ai_service:
+  #   build:
+  #     context: ./ai_service
+  #   ports:
+  #     - "8000:8000"

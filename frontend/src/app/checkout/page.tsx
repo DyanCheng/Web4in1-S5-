@@ -26,7 +26,6 @@ export default function CheckoutPage() {
     email: user?.email || '',
     phone: '',
     address: '',
-    city: '',
     cardNumber: '',
     cardName: '',
     expiryDate: '',
@@ -34,6 +33,8 @@ export default function CheckoutPage() {
   });
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const hasTour = items.some(item => item.serviceType === 'tour' || !item.serviceType);
 
   const handleApplyDiscount = () => {
     const success = applyDiscount(discountInput);
@@ -71,7 +72,10 @@ export default function CheckoutPage() {
           quantity: item.quantity,
           guests: item.guests,
           date: item.date,
-          metadata: item.metadata,
+          metadata: {
+            ...item.metadata,
+            ...(item.serviceType === 'tour' ? { departureAddress: formData.address } : {}),
+          },
         })),
       });
       sessionStorage.setItem(`payment_qr_${paymentData.paymentCode}`, paymentData.qrUrl);
@@ -85,7 +89,7 @@ export default function CheckoutPage() {
   };
 
   return (
-    <div className={`min-h-screen bg-slate-50/50 dark:bg-slate-955 font-sans transition-colors duration-300 flex flex-col ${theme === 'dark' ? 'dark text-white' : 'text-slate-900'
+    <div className={`min-h-screen bg-slate-50/50 dark:bg-slate-955 font-sans transition-colors duration-300 flex flex-col ${theme === 'dark' ? 'dark text-white' : 'text-slate-900 dark:text-slate-50'
       }`}>
       <Header />
 
@@ -129,19 +133,38 @@ export default function CheckoutPage() {
                       required
                     />
                   </div>
-                  <div>
+                  <div className={hasTour ? "" : "md:col-span-2"}>
                     <label className="block text-xs font-black uppercase text-slate-400 dark:text-slate-555 mb-2">Số điện thoại</label>
                     <input
                       type="tel"
                       value={formData.phone}
                       onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+<<<<<<< HEAD
                       minLength={10}
                       maxLength={15}
                       pattern="^[0-9]{10,15}$"
+=======
+>>>>>>> df4d10b49d35ff9fe7728104bb285846f65c0818
                       className="w-full px-4 py-3 border border-slate-150 dark:border-slate-800 bg-transparent rounded-2xl outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 text-slate-855 dark:text-slate-100 font-bold text-sm transition-all"
                       required
                     />
                   </div>
+<<<<<<< HEAD
+=======
+                  {hasTour && (
+                    <div>
+                      <label className="block text-xs font-black uppercase text-slate-400 dark:text-slate-555 mb-2">Địa chỉ xuất phát</label>
+                      <input
+                        type="text"
+                        value={formData.address}
+                        onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                        placeholder="Nhập địa chỉ đón khách cụ thể..."
+                        className="w-full px-4 py-3 border border-slate-150 dark:border-slate-800 bg-transparent rounded-2xl outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 text-slate-855 dark:text-slate-100 font-bold text-sm transition-all"
+                        required={hasTour}
+                      />
+                    </div>
+                  )}
+>>>>>>> df4d10b49d35ff9fe7728104bb285846f65c0818
                 </div>
               </div>
 
@@ -160,7 +183,7 @@ export default function CheckoutPage() {
                   >
                     <QrCode className="size-6 text-blue-600 dark:text-blue-400" />
                     <span className="text-sm font-bold text-slate-800 dark:text-slate-200">Quét mã QR SePay</span>
-                    <span className="text-xs text-slate-500">Chuyển khoản ngân hàng tự động xác nhận</span>
+                    <span className="text-xs text-slate-500 dark:text-slate-400">Chuyển khoản ngân hàng tự động xác nhận</span>
                   </button>
                 </div>
               </div>
@@ -201,7 +224,7 @@ export default function CheckoutPage() {
                     </div>
                     <div className="flex-1">
                       <h4 className="text-sm font-extrabold text-slate-900 dark:text-white mb-1 line-clamp-1">{item.title}</h4>
-                      <p className="text-xs text-slate-400 dark:text-slate-500 font-bold mb-1">x{item.quantity} Tour</p>
+                      <p className="text-xs text-slate-400 dark:text-slate-400 font-bold mb-1">x{item.quantity} Tour</p>
                       <p className="text-sm text-blue-900 dark:text-blue-400 font-black">{getCartLineTotal(item).toLocaleString('vi-VN')}đ</p>
                     </div>
                   </div>
@@ -210,7 +233,7 @@ export default function CheckoutPage() {
 
               {/* Discount Code */}
               <div className="mb-6">
-                <label className="block text-xs font-black uppercase text-slate-400 dark:text-slate-500 tracking-wider mb-2">Mã giảm giá</label>
+                <label className="block text-xs font-black uppercase text-slate-400 dark:text-slate-400 tracking-wider mb-2">Mã giảm giá</label>
                 <div className="flex gap-2">
                   <input
                     type="text"
@@ -232,7 +255,7 @@ export default function CheckoutPage() {
                     {discountMessage}
                   </p>
                 )}
-                <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-2 font-bold uppercase tracking-wide">
+                <p className="text-[10px] text-slate-400 dark:text-slate-400 mt-2 font-bold uppercase tracking-wide">
                   Ưu đãi: SUMMER2026, WELCOME10, VIP20
                 </p>
               </div>
@@ -259,7 +282,7 @@ export default function CheckoutPage() {
                 <span className="text-blue-900 dark:text-blue-400 font-black">{(total - discountAmount).toLocaleString('vi-VN')}đ</span>
               </div>
 
-              <div className="text-[10px] text-slate-400 dark:text-slate-500 space-y-1.5 font-bold uppercase tracking-wide">
+              <div className="text-[10px] text-slate-400 dark:text-slate-400 space-y-1.5 font-bold uppercase tracking-wide">
                 <p>✓ Bảo mật thanh toán SSL nâng cao</p>
                 <p>✓ Hủy tour miễn phí linh hoạt</p>
                 <p>✓ Tư vấn viên hỗ trợ 24/7</p>

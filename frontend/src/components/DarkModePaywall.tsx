@@ -60,15 +60,15 @@ export function DarkModePaywall({ open, onClose }: DarkModePaywallProps) {
             <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-1">
               Phí mở khóa một lần
             </p>
-            <p className="text-4xl font-black text-slate-900 tracking-tight">
+            <p className="text-4xl font-black text-slate-900 dark:text-slate-50 tracking-tight">
               $499.99
             </p>
-            <p className="mt-1 text-xs text-slate-500 font-semibold">
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 font-semibold">
               ≈ 12.750.000₫ · không hoàn tiền · không đàm phán
             </p>
           </div>
 
-          <ul className="space-y-2 text-sm text-slate-600">
+          <ul className="space-y-2 text-sm text-slate-600 dark:text-slate-400">
             <li className="flex items-start gap-2">
               <Lock className="size-4 mt-0.5 shrink-0 text-slate-400" />
               <span>Chế độ tối độc quyền, chỉ dành cho khách VIP thật sự VIP</span>
@@ -92,7 +92,7 @@ export function DarkModePaywall({ open, onClose }: DarkModePaywallProps) {
           )}
         </div>
 
-        <DialogFooter className="border-t-0 bg-white sm:flex-col gap-2 p-4 sm:justify-stretch">
+        <DialogFooter className="border-t-0 bg-white dark:bg-slate-900 sm:flex-col gap-2 p-4 sm:justify-stretch">
           <Button
             className="w-full h-11 font-bold bg-slate-900 hover:bg-slate-800 text-white"
             onClick={handlePay}
@@ -102,7 +102,7 @@ export function DarkModePaywall({ open, onClose }: DarkModePaywallProps) {
           </Button>
           <Button
             variant="ghost"
-            className="w-full h-10 font-semibold text-slate-500"
+            className="w-full h-10 font-semibold text-slate-500 dark:text-slate-400"
             onClick={() => handleOpenChange(false)}
             disabled={paying}
           >

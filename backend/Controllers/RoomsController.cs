@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Backend.Services;
 using Backend.Models;
 using System.Linq;
@@ -23,6 +24,7 @@ namespace Backend.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "admin")]
         public IActionResult Create([FromBody] RoomRequest request)
         {
             var newRoom = new Room
@@ -41,6 +43,7 @@ namespace Backend.Controllers
         }
 
         [HttpPut("{id}")]
+        [Authorize(Roles = "admin")]
         public IActionResult Update(int id, [FromBody] RoomRequest request)
         {
             var room = _dataStore.Rooms.FirstOrDefault(r => r.Id == id);
@@ -64,6 +67,7 @@ namespace Backend.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = "admin")]
         public IActionResult Delete(int id)
         {
             var room = _dataStore.Rooms.FirstOrDefault(r => r.Id == id);

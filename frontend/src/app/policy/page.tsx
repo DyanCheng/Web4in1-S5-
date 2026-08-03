@@ -98,7 +98,7 @@ export default function PolicyPage() {
   return (
     <div
       className={`min-h-screen bg-slate-50/50 dark:bg-slate-950 font-sans transition-colors duration-300 flex flex-col ${
-        theme === 'dark' ? 'dark text-white' : 'text-slate-900'
+        theme === 'dark' ? 'dark text-white' : 'text-slate-900 dark:text-slate-50'
       }`}
     >
       <Header />
