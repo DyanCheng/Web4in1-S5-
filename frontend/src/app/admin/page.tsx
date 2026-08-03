@@ -99,7 +99,7 @@ const sidebarItems = [
 
 export default function AdminDashboard() {
   const router = useRouter();
-  const { user, logout } = useAuth();
+  const { user, logout, apiToken } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [activeTab, setActiveTab] = useState<AdminTab>('overview');
 
@@ -131,20 +131,28 @@ export default function AdminDashboard() {
   const [editingRoom, setEditingRoom] = useState<Room | null>(null);
   const [roomActionLoading, setRoomActionLoading] = useState(false);
 
-  const adminHeaders = () => ({
-    'Content-Type': 'application/json',
-    'X-User-Role': user?.role ?? '',
-  });
+  const adminHeaders = (): HeadersInit => {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'X-User-Role': user?.role ?? '',
+    };
+    if (apiToken) {
+      headers.Authorization = `Bearer ${apiToken}`;
+    }
+    return headers;
+  };
+
   const fetchData = async () => {
     try {
       setLoading(true);
+      const authHeaders = adminHeaders();
       const [toursResponse, bookingsResponse, hotelBookingsResponse, roomsResponse, summaryResponse, transactionsResponse] = await Promise.all([
         fetch(apiUrl('/api/tours')),
         fetch(apiUrl('/api/bookings')),
         fetch(apiUrl('/api/hotelbookings/all')),
         fetch(apiUrl('/api/rooms')),
-        fetch(apiUrl('/api/payments/admin/summary')),
-        fetch(apiUrl('/api/payments/admin/transactions')),
+        fetch(apiUrl('/api/payments/admin/summary'), { headers: authHeaders }),
+        fetch(apiUrl('/api/payments/admin/transactions'), { headers: authHeaders }),
       ]);
       const toursData = toursResponse.ok ? await toursResponse.json() : [];
       const bookingsData = bookingsResponse.ok ? await bookingsResponse.json() : [];
@@ -205,7 +213,8 @@ export default function AdminDashboard() {
       return;
     }
     fetchData();
-  }, [user, router]);
+    // apiToken needed for payment admin endpoints ([Authorize])
+  }, [user, apiToken, router]);
 
   const filteredTours = useMemo(
     () =>
