@@ -61,6 +61,18 @@ namespace Backend.Controllers
 
             return Ok(new { message = "Đã hủy đơn đặt tour thành công" });
         }
+
+        [HttpPost("{id}/confirm")]
+        public async Task<IActionResult> Confirm(string id)
+        {
+            var success = await _tourDb.ConfirmBookingAsync(id);
+            if (!success)
+            {
+                return NotFound(new { message = "Không tìm thấy đơn hàng này" });
+            }
+
+            return Ok(new { message = "Đã duyệt đơn đặt tour thành công" });
+        }
     }
 
     public class BookingRequest

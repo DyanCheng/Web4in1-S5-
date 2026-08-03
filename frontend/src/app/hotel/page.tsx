@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { format, startOfToday } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -8,6 +8,8 @@ import type { DateRange } from 'react-day-picker';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { ImageWithFallback } from '@/components/figma/ImageWithFallback';
+import ReviewModal from '@/components/hotel/ReviewModal';
+import { createClient } from '@/lib/supabase/client';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
@@ -61,7 +63,8 @@ import {
 } from 'lucide-react';
 import RoomTypeModal from '@/components/RoomTypeModal';
 import { getHotelFavorites, toggleHotelFavorite } from '@/lib/hotelStorage';
-import { useEffect } from 'react';
+import { submitUnifiedCheckout } from '@/lib/checkoutApi';
+
 
 type SortMode = 'recommended' | 'price' | 'rating';
 type BookingMode = 'hourly' | 'overnight' | 'daily';
@@ -103,7 +106,7 @@ const otherServices = [
 // TODO: dữ liệu mock — backend HotelsController/HotelDbService đã sẵn sàng, cần wire fetch API
 const hotels = [
   {
-    id: 'ocean-view',
+    id: '1',
     name: 'Resort Sun Peninsula',
     location: 'Bãi Bắc, Bán đảo Sơn Trà, Đà Nẵng',
     area: 'Đà Nẵng',
@@ -117,7 +120,7 @@ const hotels = [
     features: ['WiFi miễn phí', 'Hồ bơi', 'Nhà hàng', 'Spa'],
   },
   {
-    id: 'duong-dong',
+    id: '2',
     name: 'Dương Đông Boutique Hotel',
     location: 'Dương Đông, Phú Quốc',
     area: 'Phú Quốc',
@@ -130,7 +133,7 @@ const hotels = [
     features: ['WiFi miễn phí', 'Gần bãi biển', 'Đưa đón sân bay'],
   },
   {
-    id: 'imperial-garden',
+    id: '3',
     name: 'Imperial Garden & Spa',
     location: 'Trần Hưng Đạo, Phú Quốc',
     area: 'Phú Quốc',
@@ -144,7 +147,7 @@ const hotels = [
     features: ['Nhà hàng', 'Spa', 'Hồ bơi', 'Phòng gym'],
   },
   {
-    id: 'nha-trang-bay',
+    id: '4',
     name: 'Nha Trang Bay Resort',
     location: 'Đường Trần Phú, Nha Trang',
     area: 'Nha Trang',
@@ -158,7 +161,7 @@ const hotels = [
     features: ['WiFi miễn phí', 'Hồ bơi', 'Nhà hàng', 'Gần bãi biển'],
   },
   {
-    id: 'da-nang-ocean',
+    id: '5',
     name: 'Đà Nẵng Ocean Hotel',
     location: 'Mỹ Khê, Đà Nẵng',
     area: 'Đà Nẵng',
@@ -171,7 +174,7 @@ const hotels = [
     features: ['WiFi miễn phí', 'Gần bãi biển', 'Bữa sáng miễn phí'],
   },
   {
-    id: 'hoi-an-lantern',
+    id: '6',
     name: 'Hội An Lantern Villa',
     location: 'Phố cổ Hội An, Quảng Nam',
     area: 'Hội An',
@@ -184,7 +187,7 @@ const hotels = [
     features: ['WiFi miễn phí', 'Bữa sáng miễn phí', 'Đưa đón sân bay'],
   },
   {
-    id: 'sapa-mountain',
+    id: '7',
     name: 'Sa Pa Mountain Lodge',
     location: 'Trung tâm Sa Pa, Lào Cai',
     area: 'Sa Pa',
@@ -197,7 +200,7 @@ const hotels = [
     features: ['WiFi miễn phí', 'Bữa sáng miễn phí', 'Nhà hàng'],
   },
   {
-    id: 'ha-long-pearl',
+    id: '8',
     name: 'Hạ Long Pearl Hotel',
     location: 'Bãi Cháy, Hạ Long',
     area: 'Hạ Long',
@@ -210,7 +213,7 @@ const hotels = [
     features: ['WiFi miễn phí', 'Hồ bơi', 'Nhà hàng'],
   },
   {
-    id: 'da-lat-pine',
+    id: '9',
     name: 'Đà Lạt Pine Garden',
     location: 'Hồ Tuyền Lâm, Đà Lạt',
     area: 'Đà Lạt',
@@ -223,7 +226,7 @@ const hotels = [
     features: ['WiFi miễn phí', 'Bữa sáng miễn phí', 'Nhà hàng'],
   },
   {
-    id: 'hanoi-heritage',
+    id: '10',
     name: 'Hà Nội Heritage Hotel',
     location: 'Hoàn Kiếm, Hà Nội',
     area: 'Hà Nội',
@@ -236,7 +239,7 @@ const hotels = [
     features: ['WiFi miễn phí', 'Nhà hàng', 'Đưa đón sân bay'],
   },
   {
-    id: 'saigon-sky',
+    id: '11',
     name: 'Sài Gòn Sky Suites',
     location: 'Quận 1, TP. Hồ Chí Minh',
     area: 'TP. Hồ Chí Minh',
@@ -250,7 +253,7 @@ const hotels = [
     features: ['WiFi miễn phí', 'Hồ bơi', 'Spa', 'Phòng gym'],
   },
   {
-    id: 'hue-riverside',
+    id: '12',
     name: 'Huế Riverside Hotel',
     location: 'Bờ sông Hương, Huế',
     area: 'Huế',
@@ -340,6 +343,33 @@ export default function HotelPage() {
   const [sortMode, setSortMode] = useState<SortMode>('recommended');
   const [currentPage, setCurrentPage] = useState(1);
   const [favorites, setFavorites] = useState<string[]>([]);
+  const [reviewModalHotel, setReviewModalHotel] = useState<any | null>(null);
+  const [reviewStats, setReviewStats] = useState<Record<string, { rating: number, count: number }>>({});
+
+  useEffect(() => {
+    async function fetchStats() {
+      const supabase = createClient();
+      const { data } = await supabase.from('hotel_reviews').select('hotel_id, rating');
+      if (data) {
+        const stats: Record<string, { totalRating: number, count: number }> = {};
+        data.forEach((r: any) => {
+          if (!stats[r.hotel_id]) stats[r.hotel_id] = { totalRating: 0, count: 0 };
+          stats[r.hotel_id].totalRating += r.rating;
+          stats[r.hotel_id].count += 1;
+        });
+        
+        const finalStats: Record<string, { rating: number, count: number }> = {};
+        Object.keys(stats).forEach(id => {
+          finalStats[id] = {
+            rating: stats[id].totalRating / stats[id].count,
+            count: stats[id].count
+          };
+        });
+        setReviewStats(finalStats);
+      }
+    }
+    fetchStats();
+  }, []);
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setFavorites(getHotelFavorites().map((h) => h.id));
@@ -351,6 +381,8 @@ export default function HotelPage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [selectedRooms, setSelectedRooms] = useState<Record<string, { room: any; quantity: number }>>({});
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [checkoutError, setCheckoutError] = useState('');
   const [adults, setAdults] = useState<number>(2);
   const [children, setChildren] = useState<number>(1);
   const [svcSlide, setSvcSlide] = useState<number>(0);
@@ -360,7 +392,7 @@ export default function HotelPage() {
     if (!selectedHotel) return [];
     return [
       {
-        id: 'standard',
+        id: '371',
         name: 'Phòng Standard (Tiêu chuẩn)',
         badge: 'Bán chạy nhất',
         badgeColor: 'bg-orange-50 dark:bg-orange-950/30 text-orange-600 dark:text-orange-400 border border-orange-200 dark:border-orange-900',
@@ -373,7 +405,7 @@ export default function HotelPage() {
         image: 'https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&w=600&q=80',
       },
       {
-        id: 'deluxe',
+        id: '372',
         name: 'Phòng Deluxe View Biển',
         badge: 'Lựa chọn phổ biến',
         badgeColor: 'bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-900',
@@ -386,7 +418,7 @@ export default function HotelPage() {
         image: 'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=600&q=80',
       },
       {
-        id: 'vip',
+        id: '373',
         name: 'VIP Club Peninsula Suite',
         badge: 'Đẳng cấp VIP',
         badgeColor: 'bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-900',
@@ -399,7 +431,7 @@ export default function HotelPage() {
         image: 'https://images.unsplash.com/photo-1578683010236-d716f9a3f461?auto=format&fit=crop&w=600&q=80',
       },
       {
-        id: 'family',
+        id: '374',
         name: 'Phòng Family (2 Giường lớn)',
         badge: 'Dành cho gia đình',
         badgeColor: 'bg-purple-50 dark:bg-purple-950/30 text-purple-600 dark:text-purple-400 border border-purple-200 dark:border-purple-900',
@@ -442,7 +474,24 @@ export default function HotelPage() {
   };
 
   const filteredHotels = useMemo(() => {
-    return hotels
+    const hotelsWithRealStats = hotels.map(h => {
+      const real = reviewStats[h.id];
+      if (!real) {
+        return {
+          ...h,
+          rating: 0,
+          reviews: 0
+        };
+      }
+      
+      return {
+        ...h,
+        rating: Number(real.rating.toFixed(1)),
+        reviews: real.count
+      };
+    });
+
+    return hotelsWithRealStats
       .filter((hotel) => {
         const matchesDestination = !searchDestination || hotel.area === searchDestination;
         const matchesStars = selectedStars.length === 0 || selectedStars.includes(hotel.stars);
@@ -459,7 +508,7 @@ export default function HotelPage() {
         if (sortMode === 'rating') return second.rating - first.rating;
         return second.reviews - first.reviews;
       });
-  }, [searchDestination, maxPrice, selectedArea, selectedFacilities, selectedStars, sortMode]);
+  }, [searchDestination, maxPrice, selectedArea, selectedFacilities, selectedStars, sortMode, reviewStats]);
 
   const dateSummary = useMemo(() => {
     if (bookingMode === 'hourly') {
@@ -561,7 +610,7 @@ export default function HotelPage() {
               <div className="mb-6">
                 <button
                   onClick={closeRoomModal}
-                  className="inline-flex items-center gap-1.5 text-xs font-black text-[#0b5cd5] hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 mb-3 transition-colors cursor-pointer"
+                  className="inline-flex items-center gap-1.5 text-xs font-black text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 mb-3 transition-colors cursor-pointer"
                 >
                   <ArrowLeft className="size-3.5" />
                   Quay lại danh sách khách sạn
@@ -660,7 +709,7 @@ export default function HotelPage() {
                                   {room.bed}
                                 </span>
                                 <span className="flex items-center gap-1">
-                                  {room.id === 'vip' ? <Waves className="size-3" /> : <Users className="size-3" />}
+                                  {room.id === '373' ? <Waves className="size-3" /> : <Users className="size-3" />}
                                   {room.guests}
                                 </span>
                               </div>
@@ -680,7 +729,7 @@ export default function HotelPage() {
                             <div className="mt-4 flex flex-row items-center justify-between gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
                               <div>
                                 <p className="text-[10px] font-bold text-slate-400">Giá mỗi đêm từ</p>
-                                <p className="text-lg font-black text-[#0b5cd5] dark:text-blue-400 leading-none mt-1">
+                                <p className="text-lg font-black text-blue-600 dark:text-blue-400 leading-none mt-1">
                                   {room.price.toLocaleString('vi-VN')} <span className="underline underline-offset-1 decoration-[1.5px]">đ</span>
                                 </p>
                                 <p className="text-[9px] font-medium text-slate-400 mt-1">
@@ -691,7 +740,7 @@ export default function HotelPage() {
                               {quantity === 0 ? (
                                 <button
                                   onClick={() => setSelectedRooms(prev => ({ ...prev, [room.id]: { room, quantity: 1 } }))}
-                                  className="rounded-lg px-4 py-2 text-xs font-black transition-all cursor-pointer bg-[#0b5cd5] text-white hover:bg-blue-700"
+                                  className="rounded-lg px-4 py-2 text-xs font-black transition-all cursor-pointer bg-blue-600 text-white hover:bg-blue-700"
                                 >
                                   Chọn phòng
                                 </button>
@@ -711,7 +760,7 @@ export default function HotelPage() {
                                   <span className="text-sm font-black w-4 text-center dark:text-white">{quantity}</span>
                                   <button
                                     onClick={() => setSelectedRooms(prev => ({ ...prev, [room.id]: { room, quantity: quantity + 1 } }))}
-                                    className="size-8 rounded bg-[#0b5cd5] font-bold flex items-center justify-center text-white transition-colors hover:bg-blue-700"
+                                    className="size-8 rounded bg-blue-600 font-bold flex items-center justify-center text-white transition-colors hover:bg-blue-700"
                                   >
                                     +
                                   </button>
@@ -729,7 +778,7 @@ export default function HotelPage() {
                 <div className="space-y-4 lg:sticky lg:top-4">
                   {/* Booking Summary Box */}
                   <div className="bg-white dark:bg-slate-900 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-md">
-                    <div className="bg-[#0b5cd5] text-center py-3 text-white">
+                    <div className="bg-blue-600 text-center py-3 text-white">
                       <h3 className="text-sm font-black tracking-wide text-white uppercase">Tóm tắt đặt phòng</h3>
                     </div>
 
@@ -830,11 +879,11 @@ export default function HotelPage() {
                       </div>
 
                       {/* Selected Room Details */}
-                      <div className="p-3 bg-[#eef2ff] dark:bg-blue-950/20 rounded-lg">
+                      <div className="p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
                         <p className="text-[9px] font-black text-slate-400 uppercase">Phòng đã chọn:</p>
                         {hasSelectedRooms ? (
                           Object.values(selectedRooms).map(({ room, quantity }) => (
-                            <div key={room.id} className="flex justify-between mt-1 text-xs font-black text-[#0b5cd5] dark:text-blue-400">
+                            <div key={room.id} className="flex justify-between mt-1 text-xs font-black text-blue-600 dark:text-blue-400">
                               <span>{quantity}x {room.name}</span>
                             </div>
                           ))
@@ -848,7 +897,7 @@ export default function HotelPage() {
                         <div className="flex justify-between items-baseline mb-3">
                           <span className="text-xs font-black text-slate-800 dark:text-slate-200">Tổng cộng</span>
                           <div className="text-right">
-                            <span className="text-lg font-black text-[#0b5cd5] dark:text-blue-400 leading-none">
+                            <span className="text-lg font-black text-blue-600 dark:text-blue-400 leading-none">
                               {totalPrice.toLocaleString('vi-VN')} <span className="underline underline-offset-1 decoration-[1.5px]">đ</span>
                             </span>
                             <p className="text-[9px] font-medium text-slate-400 mt-0.5">Đã bao gồm tất cả thuế phí</p>
@@ -865,7 +914,7 @@ export default function HotelPage() {
                             setShowConfirmModal(true);
                           }}
                           className={`w-full py-2.5 rounded-lg text-xs font-black shadow-md transition-all cursor-pointer ${hasSelectedRooms
-                              ? 'bg-[#0b5cd5] text-white hover:bg-blue-700'
+                              ? 'bg-blue-600 text-white hover:bg-blue-700'
                               : 'bg-[#85a8e6] text-white cursor-not-allowed opacity-100'
                             }`}
                         >
@@ -896,21 +945,67 @@ export default function HotelPage() {
                                   </div>
                                 ))}
                               </div>
-                              <p className="mt-2 text-[#0b5cd5] font-black text-base">Tổng cộng: {Object.values(selectedRooms).reduce((acc, curr) => acc + ((curr.room.price + curr.room.taxAndFee) * computedNights * curr.quantity), 0).toLocaleString('vi-VN')} đ</p>
+                              <p className="mt-2 text-blue-600 font-black text-base">Tổng cộng: {Object.values(selectedRooms).reduce((acc, curr) => acc + ((curr.room.price + curr.room.taxAndFee) * computedNights * curr.quantity), 0).toLocaleString('vi-VN')} đ</p>
                             </div>
                         </AlertDialogDescription>
                       </AlertDialogHeader>
+                      {checkoutError && (
+                        <div className="mx-6 mb-2 p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900 rounded-xl text-xs font-semibold text-red-600">
+                          {checkoutError}
+                        </div>
+                      )}
                       <AlertDialogFooter>
                         <AlertDialogCancel>Hủy</AlertDialogCancel>
                         <AlertDialogAction
-                          onClick={() => {
-                            setNotice(`Đặt phòng thành công! CMC Travel đang chuẩn bị đơn hàng cho ${Object.values(selectedRooms).reduce((acc, curr) => acc + curr.quantity, 0)} phòng tại ${selectedHotel?.name}.`);
-                            setSelectedRooms({});
-                            setShowConfirmModal(false);
+                          disabled={checkoutLoading}
+                          onClick={async (e) => {
+                            e.preventDefault();
+                            if (!user) { router.push('/login'); return; }
+                            setCheckoutLoading(true);
+                            setCheckoutError('');
+                            try {
+                              const rooms = Object.values(selectedRooms);
+                              const checkInStr = format(displayFromDate, 'yyyy-MM-dd');
+                              const checkOutStr = format(displayToDate, 'yyyy-MM-dd');
+                              const items = rooms.map(({ room, quantity }) => ({
+                                serviceType: 'hotel' as const,
+                                referenceId: String(room.id),
+                                title: `${room.name} - ${selectedHotel?.name}`,
+                                image: selectedHotel?.image || '',
+                                price: (room.price + (room.taxAndFee || 0)) * computedNights,
+                                quantity,
+                                guests: adults,
+                                date: checkInStr,
+                                metadata: {
+                                  hotelId: selectedHotel?.id,
+                                  hotelName: selectedHotel?.name,
+                                  roomId: String(room.id),
+                                  roomName: room.name,
+                                  checkOutDate: checkOutStr,
+                                  children,
+                                  totalNights: computedNights,
+                                },
+                              }));
+                              const result = await submitUnifiedCheckout({
+                                userId: user.id,
+                                userEmail: user.email,
+                                userName: user.name,
+                                phone: '',
+                                items,
+                              });
+                              sessionStorage.setItem(`payment_qr_${result.paymentCode}`, result.qrUrl);
+                              setSelectedRooms({});
+                              setShowConfirmModal(false);
+                              router.push(`/payment/${result.paymentCode}`);
+                            } catch (err) {
+                              setCheckoutError(err instanceof Error ? err.message : 'Lỗi thanh toán');
+                            } finally {
+                              setCheckoutLoading(false);
+                            }
                           }}
-                          className="bg-[#0b5cd5] text-white hover:bg-blue-700"
+                          className="bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60"
                         >
-                          Xác nhận đặt
+                          {checkoutLoading ? 'Đang xử lý...' : 'Xác nhận đặt'}
                         </AlertDialogAction>
                       </AlertDialogFooter>
                     </AlertDialogContent>
@@ -918,7 +1013,7 @@ export default function HotelPage() {
 
                   {/* Support Line */}
                   <div className="flex items-center gap-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 shadow-sm text-left">
-                    <div className="size-9 rounded-full border border-[#0b5cd5]/20 flex items-center justify-center text-[#0b5cd5] shrink-0 bg-blue-50 dark:bg-blue-950">
+                    <div className="size-9 rounded-full border border-blue-600/20 flex items-center justify-center text-blue-600 shrink-0 bg-blue-50 dark:bg-blue-950">
                       <Headphones className="size-4.5 text-blue-600" />
                     </div>
                     <div>
@@ -1339,13 +1434,18 @@ export default function HotelPage() {
                                 </div>
                               </div>
 
-                              <div className="shrink-0 text-center">
+                              <div 
+                                className="shrink-0 text-center cursor-pointer hover:opacity-80 transition-opacity" 
+                                onClick={() => setReviewModalHotel(hotel)}
+                                title="Nhấn để xem và viết đánh giá"
+                              >
                                 <div className="inline-flex min-w-[40px] items-center justify-center rounded-md bg-blue-700 px-2 py-1 text-sm font-black leading-none text-white">
                                   {hotel.rating.toFixed(1)}
                                 </div>
                                 <p className="mt-1 text-[11px] font-black text-blue-700 dark:text-blue-300">{getScoreLabel(hotel.rating)}</p>
-                                <p className="text-[9px] font-semibold leading-tight text-slate-400">
-                                  {hotel.reviews.toLocaleString('vi-VN')} người đánh giá
+                                <p className="text-[9px] font-semibold leading-tight text-slate-400 flex flex-col items-center">
+                                  <span>{hotel.reviews.toLocaleString('vi-VN')} người đánh giá</span>
+                                  <span className="text-blue-500 mt-0.5 underline">Xem đánh giá</span>
                                 </p>
                               </div>
                             </div>
@@ -1466,6 +1566,24 @@ export default function HotelPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <ReviewModal 
+        isOpen={!!reviewModalHotel} 
+        onClose={() => setReviewModalHotel(null)} 
+        hotel={reviewModalHotel} 
+        onReviewAdded={(newReview: any) => {
+          setReviewStats(prev => {
+            const hId = newReview.hotel_id;
+            const existing = prev[hId] || { rating: 0, count: 0 };
+            const newCount = existing.count + 1;
+            const newTotal = (existing.rating * existing.count) + newReview.rating;
+            return {
+              ...prev,
+              [hId]: { rating: newTotal / newCount, count: newCount }
+            };
+          });
+        }}
+      />
     </div>
   );
 }

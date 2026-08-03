@@ -247,7 +247,7 @@ export default function BusPage() {
   return (
     <div
       className={`min-h-screen bg-slate-100 dark:bg-slate-950 font-sans transition-colors duration-300 flex flex-col ${
-        theme === 'dark' ? 'dark text-white' : 'text-slate-900'
+        theme === 'dark' ? 'dark text-white' : 'text-slate-900 dark:text-slate-50'
       }`}
     >
       <Header />
@@ -306,7 +306,7 @@ export default function BusPage() {
                 <label className="text-xs font-bold text-slate-500 dark:text-slate-400">
                   Điểm khởi hành
                   <span className="mt-2 flex items-center gap-2 rounded-lg border border-slate-200 dark:border-slate-800 px-3 py-3">
-                    <MapPin className="size-5 text-slate-500" />
+                    <MapPin className="size-5 text-slate-500 dark:text-slate-400" />
                     <input
                       value={from}
                       onChange={(e) => setFrom(e.target.value)}
@@ -319,7 +319,7 @@ export default function BusPage() {
                 <label className="text-xs font-bold text-slate-500 dark:text-slate-400">
                   Điểm đến
                   <span className="mt-2 flex items-center gap-2 rounded-lg border border-slate-200 dark:border-slate-800 px-3 py-3">
-                    <Bus className="size-5 text-slate-500" />
+                    <Bus className="size-5 text-slate-500 dark:text-slate-400" />
                     <input
                       value={to}
                       onChange={(e) => setTo(e.target.value)}
@@ -332,7 +332,7 @@ export default function BusPage() {
                 <label className="text-xs font-bold text-slate-500 dark:text-slate-400">
                   Ngày đi
                   <span className="mt-2 flex items-center gap-2 rounded-lg border border-slate-200 dark:border-slate-800 px-3 py-3">
-                    <CalendarDays className="size-5 text-slate-500" />
+                    <CalendarDays className="size-5 text-slate-500 dark:text-slate-400" />
                     <input
                       type="date"
                       min={new Date().toISOString().split('T')[0]}
@@ -362,7 +362,7 @@ export default function BusPage() {
                 <label className="text-xs font-bold text-slate-500 dark:text-slate-400">
                   Hành khách
                   <span className="mt-2 flex items-center gap-2 rounded-lg border border-slate-200 dark:border-slate-800 px-3 py-3">
-                    <Users className="size-5 text-slate-500" />
+                    <Users className="size-5 text-slate-500 dark:text-slate-400" />
                     <input
                       value={passengers}
                       onChange={(e) => setPassengers(e.target.value)}
@@ -393,7 +393,7 @@ export default function BusPage() {
 
           {/* Selected flight panel */}
           {selectedBus && (
-            <div className="mb-6 rounded-xl border border-blue-200 bg-white p-5 shadow-md dark:border-blue-900 dark:bg-slate-900">
+            <div className="mb-6 rounded-xl border border-blue-200 bg-white dark:bg-slate-900 p-5 shadow-md dark:border-blue-900 dark:bg-slate-900">
               <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div>
                   <div className="flex items-start justify-between gap-4">
@@ -405,7 +405,7 @@ export default function BusPage() {
                     </div>
                     <button
                       onClick={() => setSelectedBus(null)}
-                      className="rounded-full p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 lg:hidden"
+                      className="rounded-full p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 lg:hidden"
                     >
                       <X className="size-5" />
                     </button>
@@ -445,7 +445,7 @@ export default function BusPage() {
                     </button>
                     <button
                       onClick={() => setSelectedBus(null)}
-                      className="hidden rounded-lg border border-slate-200 px-4 py-3 text-sm font-black text-slate-600 hover:bg-slate-50 dark:border-slate-800 dark:text-slate-300 dark:hover:bg-slate-800 lg:inline-flex"
+                      className="hidden rounded-lg border border-slate-200 px-4 py-3 text-sm font-black text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:border-slate-800 dark:text-slate-300 dark:hover:bg-slate-800 lg:inline-flex"
                     >
                       <X className="size-4" />
                     </button>
@@ -495,7 +495,7 @@ export default function BusPage() {
                     onChange={(e) => setMaxPrice(Number(e.target.value))}
                     className="w-full accent-blue-600"
                   />
-                  <div className="mt-3 flex justify-between text-xs font-bold text-slate-500">
+                  <div className="mt-3 flex justify-between text-xs font-bold text-slate-500 dark:text-slate-400">
                     <span>100.000đ</span>
                     <span>{formatVnd(maxPrice)}</span>
                   </div>
@@ -510,7 +510,7 @@ export default function BusPage() {
                       className={`rounded-xl border px-3 py-3 text-sm font-bold transition-colors ${
                         selectedSlot === ''
                           ? 'border-blue-600 bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-400'
-                          : 'border-slate-200 bg-white text-slate-700 hover:border-blue-200 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300'
+                          : 'border-slate-200 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:border-blue-200 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300'
                       }`}
                     >
                       <span className="block">Tất cả</span>
@@ -523,7 +523,7 @@ export default function BusPage() {
                         className={`rounded-xl border px-3 py-3 text-sm font-bold transition-colors ${
                           selectedSlot === slot.label
                             ? 'border-blue-600 bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-400'
-                            : 'border-slate-200 bg-white text-slate-700 hover:border-blue-200 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300'
+                            : 'border-slate-200 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:border-blue-200 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300'
                         }`}
                       >
                         <span className="block">{slot.label}</span>
@@ -535,7 +535,7 @@ export default function BusPage() {
 
                 <button
                   onClick={resetFilters}
-                  className="w-full rounded-lg border border-blue-200 bg-white px-4 py-3 text-sm font-black text-blue-600 hover:bg-blue-50 dark:border-blue-900 dark:bg-slate-900 dark:text-blue-400"
+                  className="w-full rounded-lg border border-blue-200 bg-white dark:bg-slate-900 px-4 py-3 text-sm font-black text-blue-600 hover:bg-blue-50 dark:border-blue-900 dark:bg-slate-900 dark:text-blue-400"
                 >
                   Xóa bộ lọc
                 </button>
@@ -549,7 +549,7 @@ export default function BusPage() {
                   Hiển thị <span className="font-black text-slate-900 dark:text-white">{filteredBuses.length}</span> chuyến xe
                 </p>
                 <div className="flex items-center gap-3 text-sm">
-                  <span className="text-slate-500">Sắp xếp:</span>
+                  <span className="text-slate-500 dark:text-slate-400">Sắp xếp:</span>
                   <button
                     onClick={() => setSortMode(sortMode === 'price' ? 'duration' : sortMode === 'duration' ? 'departure' : 'price')}
                     className="inline-flex items-center gap-2 rounded-lg px-3 py-2 font-black text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-950/40"
@@ -564,14 +564,14 @@ export default function BusPage() {
 
               <div className="space-y-6">
                 {filteredBuses.length === 0 ? (
-                  <div className="rounded-xl bg-white p-10 text-center font-black text-slate-500 shadow-sm dark:bg-slate-900 dark:text-slate-300">
+                  <div className="rounded-xl bg-white dark:bg-slate-900 p-10 text-center font-black text-slate-500 dark:text-slate-400 shadow-sm dark:bg-slate-900 dark:text-slate-300">
                     Không tìm thấy chuyến xe phù hợp với bộ lọc hiện tại.
                   </div>
                 ) : (
                   filteredBuses.map((bus) => (
                     <article
                       key={bus.id}
-                      className={`rounded-xl border bg-white p-6 shadow-sm transition-shadow hover:shadow-md dark:bg-slate-900 ${
+                      className={`rounded-xl border bg-white dark:bg-slate-900 p-6 shadow-sm transition-shadow hover:shadow-md dark:bg-slate-900 ${
                         selectedBus?.id === bus.id
                           ? 'border-blue-500 ring-2 ring-blue-100 dark:border-blue-400 dark:ring-blue-950'
                           : 'border-slate-200 dark:border-slate-800'
@@ -587,7 +587,7 @@ export default function BusPage() {
                               </div>
                               <div>
                                 <h3 className="font-black text-slate-900 dark:text-white">{bus.company}</h3>
-                                <p className="text-xs font-bold text-slate-500">{bus.busClass}</p>
+                                <p className="text-xs font-bold text-slate-500 dark:text-slate-400">{bus.busClass}</p>
                                 <div className="flex items-center gap-1 mt-0.5">
                                   <Star className="size-3 fill-blue-400 text-blue-400" />
                                   <span className="text-xs font-bold text-slate-600 dark:text-slate-300">{bus.rating}</span>
@@ -600,7 +600,7 @@ export default function BusPage() {
                             <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4">
                               <div>
                                 <p className="text-2xl font-black text-slate-950 dark:text-white">{bus.departure}</p>
-                                <p className="text-xs font-bold text-slate-500">{bus.fromCode}</p>
+                                <p className="text-xs font-bold text-slate-500 dark:text-slate-400">{bus.fromCode}</p>
                               </div>
                               <div className="min-w-32 text-center">
                                 <p className="text-xs font-bold text-slate-400">{formatDuration(bus.duration)}</p>
@@ -611,11 +611,11 @@ export default function BusPage() {
                                   <span className="h-px flex-1 bg-slate-300" />
                                   <span className="size-1.5 rounded-full bg-blue-500" />
                                 </div>
-                                <p className="text-xs font-bold text-slate-500">{bus.stop}</p>
+                                <p className="text-xs font-bold text-slate-500 dark:text-slate-400">{bus.stop}</p>
                               </div>
                               <div className="text-right">
                                 <p className="text-2xl font-black text-slate-950 dark:text-white">{bus.arrival}</p>
-                                <p className="text-xs font-bold text-slate-500">{bus.toCode}</p>
+                                <p className="text-xs font-bold text-slate-500 dark:text-slate-400">{bus.toCode}</p>
                               </div>
                             </div>
                           </div>
@@ -680,7 +680,7 @@ export default function BusPage() {
                     </p>
                     <button
                       onClick={() => setNotice('Đã áp dụng mã khuyến mãi 20% cho chuyến đi.')}
-                      className="mt-5 rounded-lg bg-white px-5 py-2.5 text-sm font-black text-blue-900"
+                      className="mt-5 rounded-lg bg-white dark:bg-slate-900 px-5 py-2.5 text-sm font-black text-blue-900"
                     >
                       Nhận ưu đãi
                     </button>

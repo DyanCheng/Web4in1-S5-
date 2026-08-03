@@ -48,6 +48,9 @@ interface Tour {
   description: string;
   badge?: string;
   isDomestic?: boolean;
+  category_id?: number;
+  category_name?: string;
+  city_id?: string;
 }
 
 const destinationImages: Record<string, string> = {
@@ -148,6 +151,11 @@ export default function HomePage() {
   }, []);
 
   const handleSearch = () => {
+    if (searchQuery.destination.trim() !== '' || durationFilter !== '' || priceRange[0] > 0 || priceRange[1] < 100000000) {
+      setSelectedLocation('Kết quả tìm kiếm');
+    } else {
+      setSelectedLocation(null);
+    }
     const toursSection = document.getElementById('tours');
     if (toursSection) {
       const y = toursSection.getBoundingClientRect().top + window.scrollY - 100;
@@ -156,7 +164,18 @@ export default function HomePage() {
   };
 
   const handleQuickTagClick = (tag: string) => {
-    setSearchQuery(prev => ({ ...prev, destination: tag }));
+    let startLoc = searchQuery.startLocation;
+    let dest = tag;
+    if (tag.includes('-')) {
+      const parts = tag.split('-');
+      startLoc = parts[0].trim();
+      dest = parts.slice(1).join('-').trim();
+    } else {
+      startLoc = 'Hà Nội';
+      dest = tag.trim();
+    }
+    setSearchQuery(prev => ({ ...prev, destination: dest, startLocation: startLoc }));
+    setSelectedLocation('Kết quả tìm kiếm');
     setIsFilterExpanded(true);
   };
 
@@ -183,15 +202,51 @@ export default function HomePage() {
     return () => clearInterval(interval);
   }, [heroTours]);
 
-  // Group tours by location
+  // Group tours by location or show search results
   const groupedTours = useMemo(() => {
     const groups: Record<string, Tour[]> = {};
+    if (selectedLocation === 'Kết quả tìm kiếm') {
+      groups['Kết quả tìm kiếm'] = filteredTours;
+      return groups;
+    }
     filteredTours.forEach(tour => {
       const loc = tour.location || 'Khác';
       if (!groups[loc]) groups[loc] = [];
       groups[loc].push(tour);
     });
     return groups;
+  }, [filteredTours, selectedLocation]);
+
+  const tourSections = useMemo(() => {
+    const domestic: Tour[] = [];
+    const international: Tour[] = [];
+    const beach: Tour[] = [];
+    const culture: Tour[] = [];
+    const resort: Tour[] = [];
+    const adventure: Tour[] = [];
+
+    filteredTours.forEach(tour => {
+      const cityId = parseInt(tour.city_id || '0');
+      if (cityId >= 1 && cityId <= 34) {
+        domestic.push(tour);
+      } else if (cityId > 34) {
+        international.push(tour);
+      }
+
+      if (tour.category_id === 1) beach.push(tour);
+      else if (tour.category_id === 2) culture.push(tour);
+      else if (tour.category_id === 3) resort.push(tour);
+      else if (tour.category_id === 4) adventure.push(tour);
+    });
+
+    return [
+      { id: 'domestic', title: 'Tour Trong Nước', icon: '📍', tours: domestic },
+      { id: 'international', title: 'Tour Nước Ngoài', icon: '✈️', tours: international },
+      { id: 'beach', title: 'Tour Biển Đảo', icon: '🏖️', tours: beach },
+      { id: 'culture', title: 'Tour Văn Hóa - Lịch Sử', icon: '🏛️', tours: culture },
+      { id: 'resort', title: 'Tour Nghỉ Dưỡng Cao Cấp', icon: '🌴', tours: resort },
+      { id: 'adventure', title: 'Tour Phượt & Khám Phá', icon: '🧗‍♂️', tours: adventure }
+    ];
   }, [filteredTours]);
 
   const handleToggleFavorite = (e: React.MouseEvent, tour: Tour) => {
@@ -201,7 +256,7 @@ export default function HomePage() {
   };
 
   return (
-    <div className={`min-h-screen bg-white font-sans transition-colors duration-300 ${theme === 'dark' ? 'dark bg-slate-950 text-white' : 'text-slate-900'}`}>
+    <div className={`min-h-screen bg-white dark:bg-slate-900 font-sans transition-colors duration-300 ${theme === 'dark' ? 'dark bg-slate-950 text-white' : 'text-slate-900 dark:text-slate-50'}`}>
       <Header />
 
       {/* Hero Section with Search Panel */}
@@ -220,9 +275,9 @@ export default function HomePage() {
 
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
           <div className="text-left max-w-3xl mb-10">
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-white leading-tight drop-shadow-md font-serif">
-              Khám Phá Thế Giới <br />
-              Với Trải Nghiệm Thượng Lưu
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-white leading-tight drop-shadow-md tracking-tight">
+              Khám Phá Thế Giới, <br />
+              <span className="bg-gradient-to-r from-blue-300 via-indigo-300 to-purple-300 text-transparent bg-clip-text">Trải Nghiệm Thượng Lưu</span>
             </h1>
             <p className="mt-6 text-lg sm:text-xl text-white/95 max-w-2xl font-medium leading-relaxed drop-shadow-sm">
               Hành trình cá nhân hóa, dịch vụ đẳng cấp 5 sao và những điểm đến ngoạn mục đang chờ đón bạn.
@@ -239,45 +294,22 @@ export default function HomePage() {
               <div className="relative flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 rounded-2xl group focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-100 transition-all">
                 <MapPin className="size-5.5 text-blue-600 shrink-0" />
                 <div className="flex-1 text-left">
-                  <label className="text-[10px] uppercase tracking-wider text-slate-400 dark:text-slate-500 block font-bold">Điểm khởi hành</label>
+                  <label className="text-[10px] uppercase tracking-wider text-slate-400 dark:text-slate-400 block font-bold">Điểm khởi hành</label>
                   <input
                     type="text"
                     value={searchQuery.startLocation}
-                    onChange={(e) => setSearchQuery(prev => ({ ...prev, startLocation: e.target.value }))}
-                    onFocus={() => setShowStartSuggestions(true)}
-                    onBlur={() => setTimeout(() => setShowStartSuggestions(false), 200)}
-                    className="w-full outline-none text-sm text-slate-800 dark:text-slate-100 font-bold bg-transparent placeholder-slate-400"
-                    placeholder="Điểm đi"
+                    readOnly
+                    className="w-full outline-none text-sm text-slate-800 dark:text-slate-100 font-bold bg-transparent placeholder-slate-400 cursor-not-allowed opacity-80"
+                    placeholder="Điểm đi (Tự động)"
                   />
                 </div>
-                {showStartSuggestions && searchQuery.startLocation.trim() && startLocationSuggestions.length > 0 && (
-                  <div className="absolute left-0 right-0 top-full mt-2 z-20 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl dark:border-slate-800 dark:bg-slate-900">
-                    {startLocationSuggestions.map((tour) => (
-                      <button
-                        key={`start-${tour.id}`}
-                        onMouseDown={(e) => {
-                          e.preventDefault();
-                          setSearchQuery(prev => ({ ...prev, startLocation: tour.location }));
-                          setShowStartSuggestions(false);
-                        }}
-                        className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-slate-50 dark:hover:bg-slate-800/60"
-                      >
-                        <img src={tour.image} alt={tour.title} className="size-11 rounded-xl object-cover" />
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-bold text-slate-900 dark:text-white">{tour.title}</p>
-                          <p className="truncate text-xs text-slate-500 dark:text-slate-400">{tour.location}</p>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
               </div>
 
               {/* End Point */}
               <div className="relative flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 rounded-2xl group focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-100 transition-all">
                 <MapPin className="size-5.5 text-blue-600 shrink-0" />
                 <div className="flex-1 text-left">
-                  <label className="text-[10px] uppercase tracking-wider text-slate-400 dark:text-slate-500 block font-bold">Đến</label>
+                  <label className="text-[10px] uppercase tracking-wider text-slate-400 dark:text-slate-400 block font-bold">Đến</label>
                   <input
                     type="text"
                     value={searchQuery.destination}
@@ -289,14 +321,31 @@ export default function HomePage() {
                   />
                 </div>
                 {showDestinationSuggestions && searchQuery.destination.trim() && destinationSuggestions.length > 0 && (
-                  <div className="absolute left-0 right-0 top-full mt-2 z-20 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl dark:border-slate-800 dark:bg-slate-900">
+                  <div className="absolute left-0 right-0 top-full mt-2 z-20 overflow-hidden rounded-2xl border border-slate-200 bg-white dark:bg-slate-900 shadow-xl dark:border-slate-800 dark:bg-slate-900">
                     {destinationSuggestions.map((tour) => (
                       <button
                         key={tour.id}
                         onMouseDown={(e) => {
                           e.preventDefault();
-                          setSearchQuery(prev => ({ ...prev, destination: tour.location }));
+                          let newStartLocation = searchQuery.startLocation;
+                          let newDestination = tour.title;
+
+                          if (tour.title.includes('-')) {
+                            const parts = tour.title.split('-');
+                            newStartLocation = parts[0].trim();
+                            newDestination = parts.slice(1).join('-').trim();
+                          } else {
+                            newStartLocation = 'Hà Nội';
+                            newDestination = tour.title.trim();
+                          }
+
+                          setSearchQuery(prev => ({ 
+                            ...prev, 
+                            destination: newDestination,
+                            startLocation: newStartLocation 
+                          }));
                           setShowDestinationSuggestions(false);
+                          setSelectedLocation('Kết quả tìm kiếm');
                         }}
                         className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-slate-50 dark:hover:bg-slate-800/60"
                       >
@@ -312,10 +361,10 @@ export default function HomePage() {
               </div>
 
               {/* Calendar Date */}
-              <div className="relative flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-850/50 border border-slate-105 dark:border-slate-800 rounded-2xl group focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-100 transition-all">
+              <div className="relative flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 rounded-2xl group focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-100 transition-all">
                 <Calendar className="size-5.5 text-blue-600 shrink-0" />
                 <div className="flex-1 text-left">
-                  <label className="text-[10px] uppercase tracking-wider text-slate-400 dark:text-slate-500 block font-bold">Ngày đi</label>
+                  <label className="text-[10px] uppercase tracking-wider text-slate-400 dark:text-slate-400 block font-bold">Ngày đi</label>
                   <input
                     placeholder="Chọn ngày"
                     type="date"
@@ -357,7 +406,7 @@ export default function HomePage() {
             <div className="mt-5 pt-4 border-t border-slate-100 dark:border-slate-800">
               <button
                 onClick={() => setIsFilterExpanded(!isFilterExpanded)}
-                className="flex items-center gap-2 text-xs font-extrabold text-slate-500 hover:text-blue-900 dark:hover:text-blue-400 transition-colors uppercase tracking-wider cursor-pointer"
+                className="flex items-center gap-2 text-xs font-extrabold text-slate-500 dark:text-slate-400 hover:text-blue-900 dark:hover:text-blue-400 transition-colors uppercase tracking-wider cursor-pointer"
               >
                 <SlidersHorizontal className="size-4" />
                 Bộ lọc nâng cao
@@ -405,7 +454,7 @@ export default function HomePage() {
                           className={`rounded-full px-4 py-2 text-xs font-bold transition-colors ${
                             durationFilter === option
                               ? 'bg-blue-900 text-white dark:bg-blue-600'
-                              : 'bg-white text-slate-700 dark:bg-slate-900 dark:text-slate-300 border border-slate-200 dark:border-slate-800'
+                              : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 dark:bg-slate-900 dark:text-slate-300 border border-slate-200 dark:border-slate-800'
                           }`}
                         >
                           {option}
@@ -440,7 +489,7 @@ export default function HomePage() {
                     <ImageWithFallback src={tour.image} alt={tour.title} className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent" />
                     <div className="absolute top-8 right-8 md:top-12 md:right-12 z-20">
-                      <button onClick={(e) => handleToggleFavorite(e, tour)} className="bg-white/90 p-2.5 rounded-full hover:bg-white text-slate-400 shadow-lg transition-colors">
+                      <button onClick={(e) => handleToggleFavorite(e, tour)} className="bg-white/90 p-2.5 rounded-full hover:bg-white dark:bg-slate-900 text-slate-400 shadow-lg transition-colors">
                         <Heart className={`size-6 ${favoriteIds.includes(tour.id) ? 'fill-red-500 text-red-500' : ''}`} />
                       </button>
                     </div>
@@ -448,7 +497,7 @@ export default function HomePage() {
                       <span className="inline-block px-3 py-1 bg-[#fef08a] text-amber-900 text-xs font-black uppercase tracking-wider rounded-full self-start mb-4">
                         Bán chạy nhất
                       </span>
-                      <h2 className="text-3xl md:text-5xl font-black text-white leading-tight font-serif mb-4 drop-shadow-lg">
+                      <h2 className="text-3xl md:text-5xl font-black text-white leading-tight mb-4 drop-shadow-lg tracking-tight">
                         {tour.title}
                       </h2>
                       <p className="text-white/90 text-sm md:text-base font-medium mb-8 leading-relaxed">
@@ -476,40 +525,65 @@ export default function HomePage() {
               </section>
             )}
 
-            {/* Location Grid Cards / Details Selection */}
+            {/* Tour Sections (Domestic, International, Categories) */}
             {selectedLocation === null ? (
-              <div className="space-y-6">
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4">
-                  {Object.entries(groupedTours).map(([location, locTours]) => {
-                    const repImage = destinationImages[location] || locTours[0]?.image || "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80";
-                    return (
-                      <div
-                        key={location}
-                        onClick={() => {
-                          setSelectedLocation(location);
-                          const toursSection = document.getElementById('tours');
-                          if (toursSection) {
-                            const y = toursSection.getBoundingClientRect().top + window.scrollY - 100;
-                            window.scrollTo({ top: y, behavior: 'smooth' });
-                          }
-                        }}
-                        className="relative h-[160px] rounded-xl overflow-hidden cursor-pointer group"
-                      >
-                        <ImageWithFallback
-                          src={repImage}
-                          alt={location}
-                          className="w-full h-full object-cover"
-                        />
-                        <div className="absolute inset-0 bg-black/30"></div>
-                        <div className="absolute top-4 left-4 text-left z-10">
-                          <h4 className="text-white text-[15px] font-bold">
-                            Tour ở {location}
-                          </h4>
+              <div className="space-y-4">
+                {tourSections.map((section) => {
+                  if (section.tours.length === 0) return null;
+                  return (
+                    <div key={section.id} className="mb-4 relative group text-left pt-6">
+                      <h3 className="text-2xl md:text-3xl font-extrabold text-slate-900 dark:text-white mb-6 tracking-tight flex items-center gap-3">
+                        <span className="text-3xl md:text-4xl">{section.icon}</span> {section.title}
+                      </h3>
+                      <div className="relative">
+                        <div 
+                          id={`carousel-${section.id}`}
+                          className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-4 [&::-webkit-scrollbar]:hidden"
+                          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                        >
+                          {section.tours.map((tour) => (
+                            <div 
+                              key={tour.id} 
+                              className="flex-none w-[260px] md:w-[280px] snap-start bg-white dark:bg-slate-900 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer group flex flex-col border border-slate-100 dark:border-slate-800"
+                              onClick={() => navigate(`/tour/${tour.id}`)}
+                            >
+                              <div className="relative h-[180px] md:h-[200px] overflow-hidden">
+                                <ImageWithFallback src={tour.image} alt={tour.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                                {tour.badge && <span className="absolute bottom-2 left-2 bg-white dark:bg-slate-900 text-blue-700 text-[10px] font-bold px-2 py-0.5 rounded">{tour.badge}</span>}
+                                <div className="absolute top-2 right-2 z-10">
+                                  <button onClick={(e) => handleToggleFavorite(e, tour)} className="bg-white/90 p-1.5 rounded-full hover:bg-white dark:bg-slate-900 text-slate-400 shadow-sm transition-colors">
+                                    <Heart className={`size-4 ${favoriteIds.includes(tour.id) ? 'fill-red-500 text-red-500' : ''}`} />
+                                  </button>
+                                </div>
+                              </div>
+                              <div className="p-4 flex flex-col flex-1 bg-white dark:bg-slate-900">
+                                <h4 className="font-bold text-slate-900 dark:text-white text-[15px] leading-snug mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors">{tour.title}</h4>
+                                <div className="flex items-center gap-1.5 mb-4">
+                                  <Star className="size-4 fill-amber-400 text-amber-400" />
+                                  <span className="text-sm font-extrabold text-slate-700 dark:text-slate-300">{tour.rating}</span>
+                                  <span className="text-xs font-medium text-slate-400">({tour.reviews})</span>
+                                </div>
+                                <div className="mt-auto flex justify-between items-end border-t border-slate-50 dark:border-slate-800 pt-3">
+                                  <span className="text-blue-600 dark:text-blue-400 font-extrabold text-lg md:text-xl tracking-tight">{tour.price.toLocaleString('vi-VN')} ₫</span>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
                         </div>
+                        <button 
+                          className="absolute top-[120px] md:top-[140px] -right-5 -translate-y-1/2 bg-white/90 backdrop-blur-md dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 shadow-xl p-3 rounded-full hidden md:group-hover:flex hover:bg-slate-50 hover:scale-110 transition-all z-10 cursor-pointer text-blue-600"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            const container = document.getElementById(`carousel-${section.id}`);
+                            if (container) container.scrollBy({ left: 300, behavior: 'smooth' });
+                          }}
+                        >
+                          <ArrowRight className="size-5 md:size-6" />
+                        </button>
                       </div>
-                    );
-                  })}
-                </div>
+                    </div>
+                  );
+                })}
               </div>
             ) : (
               <div className="space-y-8">
@@ -523,8 +597,8 @@ export default function HomePage() {
                       <ArrowLeft className="size-4" />
                       <span>Quay lại chọn địa điểm</span>
                     </button>
-                    <h3 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white font-serif">
-                      Tour tại {selectedLocation}
+                    <h3 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
+                      {selectedLocation === 'Kết quả tìm kiếm' ? 'Kết quả tìm kiếm' : `Tour tại ${selectedLocation}`}
                     </h3>
                   </div>
                   <div>
@@ -559,7 +633,7 @@ export default function HomePage() {
                                   {locTours[0].badge}
                                 </span>
                               )}
-                              <button onClick={(e) => handleToggleFavorite(e, locTours[0])} className="bg-white/90 p-1.5 rounded-full hover:bg-white text-slate-400">
+                              <button onClick={(e) => handleToggleFavorite(e, locTours[0])} className="bg-white/90 p-1.5 rounded-full hover:bg-white dark:bg-slate-900 text-slate-400">
                                 <Heart className={`size-4 ${favoriteIds.includes(locTours[0].id) ? 'fill-red-500 text-red-500' : ''}`} />
                               </button>
                             </div>
@@ -568,16 +642,16 @@ export default function HomePage() {
                               <Clock className="size-3" /> {locTours[0].duration}
                             </div>
 
-                            <div className="absolute bottom-0 left-0 w-full p-6 bg-white transform translate-y-2 group-hover:translate-y-0 transition-transform text-left">
+                            <div className="absolute bottom-0 left-0 w-full p-6 bg-white dark:bg-slate-900 transform translate-y-2 group-hover:translate-y-0 transition-transform text-left">
                               <div className="flex items-center gap-1 mb-2">
                                 <Star className="size-4 fill-amber-400 text-amber-400" />
-                                <span className="font-bold text-sm text-slate-800">{locTours[0].rating}</span>
+                                <span className="font-bold text-sm text-slate-800 dark:text-slate-200">{locTours[0].rating}</span>
                                 <span className="text-slate-400 text-xs">({locTours[0].reviews} đánh giá)</span>
                               </div>
-                              <h4 className="text-lg font-bold text-slate-900 line-clamp-1">{locTours[0].title}</h4>
+                              <h4 className="text-lg font-bold text-slate-900 dark:text-slate-50 line-clamp-1">{locTours[0].title}</h4>
                               <div className="flex justify-between items-end mt-4">
                                 <div>
-                                  <p className="text-xs text-slate-500">Giá từ</p>
+                                  <p className="text-xs text-slate-500 dark:text-slate-400">Giá từ</p>
                                   <p className="text-xl font-black text-blue-700">{locTours[0].price.toLocaleString('vi-VN')}đ</p>
                                 </div>
                                 <button className="bg-blue-100 text-blue-700 p-2 rounded-lg group-hover:bg-blue-600 group-hover:text-white transition-colors">
@@ -597,7 +671,7 @@ export default function HomePage() {
                                 <ImageWithFallback src={tour.image} alt={tour.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
                                 <div className="absolute top-3 right-3 z-10">
-                                  <button onClick={(e) => handleToggleFavorite(e, tour)} className="bg-white/90 p-1.5 rounded-full hover:bg-white text-slate-400 shadow-sm transition-colors">
+                                  <button onClick={(e) => handleToggleFavorite(e, tour)} className="bg-white/90 p-1.5 rounded-full hover:bg-white dark:bg-slate-900 text-slate-400 shadow-sm transition-colors">
                                     <Heart className={`size-4 ${favoriteIds.includes(tour.id) ? 'fill-red-500 text-red-500' : ''}`} />
                                   </button>
                                 </div>
@@ -631,9 +705,9 @@ export default function HomePage() {
                               <div key={tour.id} onClick={() => navigate(`/tour/${tour.id}`)} className="bg-white dark:bg-slate-900 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-shadow cursor-pointer group flex flex-col">
                                 <div className="relative h-48 overflow-hidden">
                                   <ImageWithFallback src={tour.image} alt={tour.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
-                                  {tour.badge && <span className="absolute bottom-2 left-2 bg-white text-blue-700 text-[10px] font-bold px-2 py-0.5 rounded">{tour.badge}</span>}
+                                  {tour.badge && <span className="absolute bottom-2 left-2 bg-white dark:bg-slate-900 text-blue-700 text-[10px] font-bold px-2 py-0.5 rounded">{tour.badge}</span>}
                                   <div className="absolute top-2 right-2 z-10">
-                                    <button onClick={(e) => handleToggleFavorite(e, tour)} className="bg-white/90 p-1.5 rounded-full hover:bg-white text-slate-400 shadow-sm transition-colors">
+                                    <button onClick={(e) => handleToggleFavorite(e, tour)} className="bg-white/90 p-1.5 rounded-full hover:bg-white dark:bg-slate-900 text-slate-400 shadow-sm transition-colors">
                                       <Heart className={`size-3.5 ${favoriteIds.includes(tour.id) ? 'fill-red-500 text-red-500' : ''}`} />
                                     </button>
                                   </div>
@@ -675,7 +749,7 @@ export default function HomePage() {
                               <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
 
                               <div className="absolute top-4 right-4 z-10">
-                                <button onClick={(e) => handleToggleFavorite(e, locTours[0])} className="bg-white/90 p-2 rounded-full hover:bg-white text-slate-400 shadow-sm transition-colors">
+                                <button onClick={(e) => handleToggleFavorite(e, locTours[0])} className="bg-white/90 p-2 rounded-full hover:bg-white dark:bg-slate-900 text-slate-400 shadow-sm transition-colors">
                                   <Heart className={`size-5 ${favoriteIds.includes(locTours[0].id) ? 'fill-red-500 text-red-500' : ''}`} />
                                 </button>
                               </div>
@@ -706,7 +780,7 @@ export default function HomePage() {
                                     <div className="h-32 rounded-xl overflow-hidden mb-3 relative">
                                       <ImageWithFallback src={tour.image} alt={tour.title} className="w-full h-full object-cover" />
                                       <div className="absolute top-2 right-2 z-10">
-                                        <button onClick={(e) => handleToggleFavorite(e, tour)} className="bg-white/90 p-1.5 rounded-full hover:bg-white text-slate-400 shadow-sm transition-colors">
+                                        <button onClick={(e) => handleToggleFavorite(e, tour)} className="bg-white/90 p-1.5 rounded-full hover:bg-white dark:bg-slate-900 text-slate-400 shadow-sm transition-colors">
                                           <Heart className={`size-3.5 ${favoriteIds.includes(tour.id) ? 'fill-red-500 text-red-500' : ''}`} />
                                         </button>
                                       </div>

@@ -15,6 +15,31 @@ import { fetchTourById } from '@/lib/tourApi';
 
 type Review = { id: number; name: string; rating: number; date: string; comment: string; avatar: string };
 
+/** Tạo phân bổ số lượt đánh giá theo từng sao dựa trên điểm trung bình thực tế.
+ *  Thuật toán: dựa vào avg để phân phối trọng số thực tế (nhiều 5★ và 4★, ít 1★).
+ */
+function buildRatingDistribution(avgRating: number, totalReviews: number): Record<number, number> {
+  const avg = Math.min(5, Math.max(1, avgRating));
+  // Trọng số tương đối theo từng sao
+  const weights = [
+    Math.max(0, (avg - 4) * 5),           // 5★
+    Math.max(0, 4 - Math.abs(avg - 4)),    // 4★
+    Math.max(0, 3 - Math.abs(avg - 3)),    // 3★
+    Math.max(0, 2 - Math.abs(avg - 2.5)),  // 2★
+    Math.max(0, 5 - avg),                  // 1★
+  ];
+  const totalWeight = weights.reduce((a, b) => a + b, 0) || 1;
+  const dist: Record<number, number> = {};
+  let assigned = 0;
+  for (let star = 5; star >= 2; star--) {
+    const count = Math.round((weights[5 - star] / totalWeight) * totalReviews);
+    dist[star] = count;
+    assigned += count;
+  }
+  dist[1] = Math.max(0, totalReviews - assigned);
+  return dist;
+}
+
 export default function TourDetailPage() {
   const params = useParams();
   const id = params?.id as string;
@@ -34,11 +59,19 @@ export default function TourDetailPage() {
   const [myComment, setMyComment] = useState('');
   const [hasReviewed, setHasReviewed] = useState(false);
   const [showBookingModal, setShowBookingModal] = useState(false);
+
+  // Reviews mẫu đa dạng — phản ánh phân bổ thực tế (không phải toàn 5★)
   const [reviews, setReviews] = useState<Review[]>([
-    { id: 1, name: 'Nguyễn Văn A', rating: 5, date: '2026-04-15', comment: 'Tour tuyệt vời! Mọi thứ đều hoàn hảo từ A-Z. Hướng dẫn viên rất nhiệt tình.', avatar: '👨' },
-    { id: 2, name: 'Trần Thị B', rating: 5, date: '2026-04-10', comment: 'Trải nghiệm đáng nhớ! Cảnh đẹp, dịch vụ tốt, giá hợp lý.', avatar: '👩' },
-    { id: 3, name: 'Lê Văn C', rating: 4, date: '2026-04-05', comment: 'Rất tốt, chỉ có điều thời tiết không thuận lợi lắm.', avatar: '👨‍💼' },
-    { id: 4, name: 'Phạm Thị D', rating: 5, date: '2026-03-28', comment: 'Gia đình tôi rất hài lòng. Sẽ quay lại lần sau!', avatar: '👩‍🦰' },
+    { id: 1, name: 'Nguyễn Văn An', rating: 5, date: '2026-06-20', comment: 'Tour tuyệt vời! Hướng dẫn viên nhiệt tình, lịch trình hợp lý. Chắc chắn sẽ quay lại.', avatar: '👨' },
+    { id: 2, name: 'Trần Thị Bích', rating: 5, date: '2026-06-15', comment: 'Trải nghiệm đáng nhớ, cảnh đẹp ngoài mong đợi. Dịch vụ rất chuyên nghiệp!', avatar: '👩' },
+    { id: 3, name: 'Lê Minh Châu', rating: 4, date: '2026-06-10', comment: 'Tour tốt nhưng thời gian di chuyển hơi dài. Tổng thể vẫn hài lòng.', avatar: '👨‍💼' },
+    { id: 4, name: 'Phạm Thu Hà', rating: 5, date: '2026-06-05', comment: 'Gia đình tôi rất thích! Đồ ăn ngon, phòng sạch, HDV thân thiện.', avatar: '👩‍🦰' },
+    { id: 5, name: 'Hoàng Đức Mạnh', rating: 4, date: '2026-05-28', comment: 'Khá tốt, chỉ tiếc thời tiết hôm đó không đẹp. Sẽ thử lại vào mùa khác.', avatar: '👦' },
+    { id: 6, name: 'Võ Thị Lan', rating: 3, date: '2026-05-20', comment: 'Bình thường, không có gì nổi bật so với quảng cáo. Cần cải thiện khâu ăn trưa.', avatar: '👩‍🍳' },
+    { id: 7, name: 'Đặng Quốc Tuấn', rating: 5, date: '2026-05-12', comment: 'Xuất sắc! Đây là lần thứ 3 tôi đặt tour ở đây và lần nào cũng hài lòng.', avatar: '🧑‍💻' },
+    { id: 8, name: 'Bùi Thị Ngọc', rating: 4, date: '2026-05-08', comment: 'Chất lượng tốt, giá cả hợp lý. Hướng dẫn viên có kiến thức sâu về địa điểm.', avatar: '👩‍🎨' },
+    { id: 9, name: 'Ngô Văn Hùng', rating: 2, date: '2026-04-30', comment: 'Tour bị thay đổi lịch trình mà không thông báo trước. Cần cải thiện khâu tổ chức.', avatar: '😤' },
+    { id: 10, name: 'Phan Thị Mai', rating: 5, date: '2026-04-22', comment: 'Hoàn toàn xứng đáng với số tiền bỏ ra. Nhất định sẽ giới thiệu cho bạn bè!', avatar: '🥰' },
   ]);
 
   useEffect(() => {
@@ -53,12 +86,34 @@ export default function TourDetailPage() {
     loadTour();
   }, [id]);
 
-  const reviewCount = useMemo(() => reviews.length, [reviews]);
-  const averageRating = useMemo(() => {
-    if (reviews.length === 0) return (tour?.rating || 5).toFixed(1);
-    const sum = reviews.reduce((acc, rev) => acc + rev.rating, 0);
-    return (sum / reviews.length).toFixed(1);
+  // Điểm trung bình: ưu tiên dữ liệu thực từ DB (tour.rating + tour.reviews).
+  // Chỉ gộp thêm review local khi user vừa gửi mới.
+  const { averageRating, reviewCount } = useMemo(() => {
+    const dbRating: number = tour?.rating ?? 0;
+    const dbCount: number = tour?.reviews ?? 0;
+
+    const localNewReviews = reviews.filter(r => r.id > 1_000_000_000); // Date.now() > 1e9
+    if (localNewReviews.length === 0 || dbCount === 0) {
+      return {
+        averageRating: dbCount > 0
+          ? dbRating.toFixed(1)
+          : (reviews.reduce((a, r) => a + r.rating, 0) / reviews.length).toFixed(1),
+        reviewCount: dbCount > 0 ? dbCount : reviews.length,
+      };
+    }
+    const newSum = localNewReviews.reduce((a, r) => a + r.rating, 0);
+    const combined = (dbRating * dbCount + newSum) / (dbCount + localNewReviews.length);
+    return {
+      averageRating: combined.toFixed(1),
+      reviewCount: dbCount + localNewReviews.length,
+    };
   }, [reviews, tour]);
+
+  // Phân bổ số lượt theo từng sao — tính từ rating & tổng review thực tế
+  const ratingDist = useMemo(
+    () => buildRatingDistribution(parseFloat(averageRating), reviewCount),
+    [averageRating, reviewCount]
+  );
 
   const handleBooking = () => {
     if (!selectedDate) {
@@ -87,7 +142,7 @@ export default function TourDetailPage() {
       duration: tour.duration,
       image: tour.image,
       rating: Number(averageRating),
-      reviews: tour.reviews,
+      reviews: reviewCount,
     });
     setSaved(next.some((item) => item.id === tour.id));
   };
@@ -141,7 +196,7 @@ export default function TourDetailPage() {
   }
 
   return (
-    <div className={`min-h-screen bg-slate-50/50 dark:bg-slate-950 font-sans transition-colors duration-300 flex flex-col ${theme === 'dark' ? 'dark text-white' : 'text-slate-900'}`}>
+    <div className={`min-h-screen bg-slate-50/50 dark:bg-slate-950 font-sans transition-colors duration-300 flex flex-col ${theme === 'dark' ? 'dark text-white' : 'text-slate-900 dark:text-slate-50'}`}>
       <Header />
 
       <div className="relative h-[420px] w-full">
@@ -158,7 +213,7 @@ export default function TourDetailPage() {
             <div className="flex flex-wrap items-center gap-6 text-sm font-bold text-slate-100">
               <div className="flex items-center gap-1.5">
                 <Star className="size-4.5 fill-amber-400 text-amber-400" />
-                <span>{averageRating} ({reviewCount} đánh giá)</span>
+                <span>{averageRating} ({reviewCount.toLocaleString('vi-VN')} đánh giá)</span>
               </div>
               <span>•</span>
               <div className="flex items-center gap-1.5">
@@ -170,10 +225,10 @@ export default function TourDetailPage() {
         </div>
 
         <div className="absolute top-6 right-6 flex gap-3">
-          <button onClick={handleFavoriteToggle} className="size-11 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white dark:hover:bg-slate-800 transition-colors shadow-md cursor-pointer border border-white/20">
+          <button onClick={handleFavoriteToggle} className="size-11 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white dark:bg-slate-900 dark:hover:bg-slate-800 transition-colors shadow-md cursor-pointer border border-white/20">
             <Heart className={`size-5.5 ${saved ? 'fill-red-500 text-red-500' : 'text-slate-700 dark:text-slate-300'}`} />
           </button>
-          <button className="size-11 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white dark:hover:bg-slate-800 transition-colors shadow-md cursor-pointer border border-white/20">
+          <button className="size-11 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white dark:bg-slate-900 dark:hover:bg-slate-800 transition-colors shadow-md cursor-pointer border border-white/20">
             <Share2 className="size-5.5 text-slate-700 dark:text-slate-300" />
           </button>
         </div>
@@ -234,6 +289,7 @@ export default function TourDetailPage() {
               </div>
             )}
 
+            {/* ===== KHU VỰC ĐÁNH GIÁ ===== */}
             <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 border border-slate-100/40 dark:border-slate-800/40 shadow-sm text-left">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
                 <h2 className="text-2xl font-black text-slate-900 dark:text-white font-serif leading-tight">Đánh giá từ khách hàng</h2>
@@ -243,33 +299,87 @@ export default function TourDetailPage() {
                   </button>
                 )}
               </div>
+
+              {/* ===== TỔNG QUAN ĐIỂM + BIỂU ĐỒ PHÂN BỔ SAO ===== */}
+              <div className="flex flex-col sm:flex-row gap-6 mb-8 p-5 rounded-2xl bg-amber-50/60 dark:bg-slate-800/60 border border-amber-100 dark:border-slate-700">
+                {/* Điểm số tổng */}
+                <div className="flex flex-col items-center justify-center min-w-[110px] gap-1">
+                  <span className="text-5xl font-black text-slate-900 dark:text-white leading-none">{averageRating}</span>
+                  <div className="flex gap-0.5 mt-1">
+                    {[1, 2, 3, 4, 5].map((s) => {
+                      const avg = parseFloat(averageRating);
+                      return (
+                        <Star
+                          key={s}
+                          className={`size-4 ${avg >= s ? 'fill-amber-400 text-amber-400' : avg >= s - 0.5 ? 'fill-amber-200 text-amber-300' : 'text-slate-300 dark:text-slate-400'}`}
+                        />
+                      );
+                    })}
+                  </div>
+                  <span className="text-xs text-slate-500 dark:text-slate-400 font-semibold mt-0.5 text-center">
+                    {reviewCount.toLocaleString('vi-VN')} đánh giá
+                  </span>
+                </div>
+
+                {/* Thanh phân bổ từng sao */}
+                <div className="flex-1 flex flex-col gap-2 justify-center">
+                  {[5, 4, 3, 2, 1].map((star) => {
+                    const count = ratingDist[star] ?? 0;
+                    const pct = reviewCount > 0 ? Math.round((count / reviewCount) * 100) : 0;
+                    return (
+                      <div key={star} className="flex items-center gap-3">
+                        <div className="flex items-center gap-1 w-8 shrink-0">
+                          <Star className="size-3.5 fill-amber-400 text-amber-400" />
+                          <span className="text-xs font-bold text-slate-600 dark:text-slate-300">{star}</span>
+                        </div>
+                        <div className="flex-1 h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                          <div
+                            className="h-full rounded-full bg-amber-400 transition-all duration-700"
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                        <span className="text-xs font-bold text-slate-500 dark:text-slate-400 w-9 text-right shrink-0">{pct}%</span>
+                        <span className="text-xs text-slate-400 dark:text-slate-400 w-14 text-right shrink-0 hidden sm:inline">({count.toLocaleString('vi-VN')})</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
               {reviewNotice && (
                 <div className="mb-5 rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-700 dark:border-blue-900 dark:bg-blue-950/30 dark:text-blue-300">
                   {reviewNotice}
                 </div>
               )}
+
+              {/* Danh sách review */}
               <div className="space-y-6">
                 {reviews.map((review) => (
                   <div key={review.id} className="border-b border-slate-100 dark:border-slate-800 pb-6 last:border-0 last:pb-0">
                     <div className="flex items-start gap-4">
-                      <div className="text-3xl size-11 rounded-full bg-slate-50 dark:bg-slate-800/60 flex items-center justify-center shadow-inner">{review.avatar}</div>
+                      <div className="text-3xl size-11 rounded-full bg-slate-50 dark:bg-slate-800/60 flex items-center justify-center shadow-inner shrink-0">{review.avatar}</div>
                       <div className="flex-1">
                         <div className="flex items-center justify-between mb-1">
                           <h4 className="text-slate-900 dark:text-white font-bold text-sm">{review.name}</h4>
-                          <span className="text-xs text-slate-400 dark:text-slate-500 font-bold">{review.date}</span>
+                          <span className="text-xs text-slate-400 dark:text-slate-400 font-bold">{review.date}</span>
                         </div>
-                        <div className="flex gap-0.5 mb-3">
-                          {[...Array(review.rating)].map((_, i) => (
-                            <Star key={i} className="size-3.5 fill-amber-400 text-amber-400" />
+                        <div className="flex items-center gap-0.5 mb-2">
+                          {[1, 2, 3, 4, 5].map((s) => (
+                            <Star
+                              key={s}
+                              className={`size-3.5 ${s <= review.rating ? 'fill-amber-400 text-amber-400' : 'text-slate-300 dark:text-slate-400'}`}
+                            />
                           ))}
+                          <span className="ml-1.5 text-xs font-bold text-slate-500 dark:text-slate-400">{review.rating}/5</span>
                         </div>
-                        <p className="text-slate-600 dark:text-slate-300 text-sm font-semibold italic">“{review.comment}”</p>
+                        <p className="text-slate-600 dark:text-slate-300 text-sm font-semibold italic">"{review.comment}"</p>
                       </div>
                     </div>
                   </div>
                 ))}
               </div>
 
+              {/* Form gửi đánh giá */}
               <form onSubmit={handleSubmitReview} className="mt-8 rounded-3xl border border-slate-100 dark:border-slate-800 p-6">
                 <h3 className="text-lg font-extrabold text-slate-900 dark:text-white mb-4 font-serif">Viết đánh giá của bạn</h3>
                 
@@ -291,13 +401,14 @@ export default function TourDetailPage() {
                   </p>
                 )}
                 <div className="mb-4">
-                  <label className="block text-xs font-black uppercase text-slate-400 dark:text-slate-500 mb-2">Mức độ hài lòng</label>
-                  <div className="flex gap-1.5">
+                  <label className="block text-xs font-black uppercase text-slate-400 dark:text-slate-400 mb-2">Mức độ hài lòng</label>
+                  <div className="flex items-center gap-1.5">
                     {[1, 2, 3, 4, 5].map((star) => (
                       <button key={star} type="button" onClick={() => setMyRating(star)} className="hover:scale-110 transition-transform">
-                        <Star className={`size-7 ${star <= myRating ? 'fill-amber-400 text-amber-400' : 'text-slate-300 dark:text-slate-600'}`} />
+                        <Star className={`size-7 ${star <= myRating ? 'fill-amber-400 text-amber-400' : 'text-slate-300 dark:text-slate-400'}`} />
                       </button>
                     ))}
+                    <span className="ml-2 text-sm font-bold text-slate-600 dark:text-slate-300">{myRating}/5</span>
                   </div>
                 </div>
                 <textarea
@@ -313,7 +424,7 @@ export default function TourDetailPage() {
                   disabled={!user || !experienced || hasReviewed}
                   className="mt-4 rounded-2xl bg-blue-900 px-6 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:bg-slate-400 dark:bg-blue-600 dark:disabled:bg-slate-700"
                 >
-                  Gửi comment
+                  Gửi đánh giá
                 </button>
               </form>
             </div>
@@ -324,14 +435,14 @@ export default function TourDetailPage() {
               <div className="mb-6">
                 <div className="flex items-baseline gap-1.5 mb-2">
                   <span className="text-3xl font-black text-blue-900 dark:text-blue-400">{tour.price.toLocaleString('vi-VN')}đ</span>
-                  <span className="text-slate-400 dark:text-slate-500 text-xs font-bold uppercase tracking-wider">/ người</span>
+                  <span className="text-slate-400 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">/ người</span>
                 </div>
-                <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Trọn gói: {tour.duration}</p>
+                <p className="text-xs font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wide">Trọn gói: {tour.duration}</p>
               </div>
 
               <div className="space-y-4 mb-6">
                 <div>
-                  <label className="block text-xs font-black uppercase text-slate-400 dark:text-slate-500 tracking-wider mb-2">Ngày khởi hành</label>
+                  <label className="block text-xs font-black uppercase text-slate-400 dark:text-slate-400 tracking-wider mb-2">Ngày khởi hành</label>
                   <div className="relative">
                     <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 size-4.5 text-blue-600 dark:text-blue-400" />
                     <input
@@ -344,7 +455,7 @@ export default function TourDetailPage() {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs font-black uppercase text-slate-400 dark:text-slate-500 tracking-wider mb-2">Số lượng khách</label>
+                  <label className="block text-xs font-black uppercase text-slate-400 dark:text-slate-400 tracking-wider mb-2">Số lượng khách</label>
                   <div className="relative">
                     <Users className="absolute left-4 top-1/2 -translate-y-1/2 size-4.5 text-blue-600 dark:text-blue-400" />
                     <input
@@ -372,7 +483,7 @@ export default function TourDetailPage() {
               <button onClick={handleBooking} className="w-full py-3.5 bg-blue-900 hover:bg-blue-950 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-2xl transition-all mb-3 font-bold text-sm shadow-md cursor-pointer text-center">
                 Thanh Toán Ngay
               </button>
-              <p className="text-[10px] text-center text-slate-400 dark:text-slate-500 font-bold tracking-wide uppercase">
+              <p className="text-[10px] text-center text-slate-400 dark:text-slate-400 font-bold tracking-wide uppercase">
                 Hỗ trợ hủy miễn phí trước 7 ngày
               </p>
             </div>

@@ -95,11 +95,11 @@ export default function Header() {
         <div className="flex justify-between items-center">
           
           {/* Logo */}
-          <div className="flex items-center gap-2 cursor-pointer group" onClick={() => navigate('/')}>
+          <div className="flex items-center gap-2 cursor-pointer group py-1" onClick={() => navigate('/')}>
             <img 
-              src="/logo.svg" 
+              src="/logo.png" 
               alt="CMC Travel" 
-              className="h-10 sm:h-12 w-auto group-hover:scale-105 transition-transform"
+              className="h-16 sm:h-20 w-auto group-hover:scale-105 transition-transform"
             />
           </div>
           
