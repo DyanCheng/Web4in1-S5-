@@ -195,24 +195,23 @@ export default function TourDetailPage() {
     <div className={`min-h-screen bg-slate-50/50 dark:bg-slate-950 font-sans transition-colors duration-300 flex flex-col ${theme === 'dark' ? 'dark text-white' : 'text-slate-900 dark:text-slate-50'}`}>
       <Header />
 
-      <div className="relative h-[420px] w-full">
-        <ImageWithFallback src={tour.image} alt={tour.title} className="w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/40 to-black/20" />
-        <div className="absolute bottom-0 left-0 right-0 p-8 sm:p-12 text-white">
+      <div className="relative h-[52vh] min-h-[380px] max-h-[560px] w-full overflow-hidden">
+        <ImageWithFallback src={tour.image} alt={tour.title} className="w-full h-full object-cover scale-105" />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/50 to-black/25" />
+        <div className="absolute bottom-0 left-0 right-0 p-8 sm:p-12 text-white animate-page-in">
           <div className="max-w-7xl mx-auto text-left">
             <span className="inline-block px-3.5 py-1.5 rounded-full text-[10px] font-black tracking-widest uppercase bg-blue-600 text-white mb-4 shadow">Hành trình di sản</span>
             <div className="flex items-center gap-1.5 text-slate-200 mb-3 font-bold text-sm">
               <MapPin className="size-4 text-blue-400" />
               <span>{tour.location}</span>
             </div>
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black font-serif leading-tight tracking-wide drop-shadow mb-6">{tour.title}</h1>
-            <div className="flex flex-wrap items-center gap-6 text-sm font-bold text-slate-100">
-              <div className="flex items-center gap-1.5">
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black font-serif leading-tight tracking-tight drop-shadow mb-6">{tour.title}</h1>
+            <div className="flex flex-wrap items-center gap-4 sm:gap-6 text-sm font-bold text-slate-100">
+              <div className="flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 backdrop-blur-sm">
                 <Star className="size-4.5 fill-amber-400 text-amber-400" />
                 <span>{averageRating} ({reviewCount.toLocaleString('vi-VN')} đánh giá)</span>
               </div>
-              <span>•</span>
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 backdrop-blur-sm">
                 <Clock className="size-4.5" />
                 <span>{tour.duration}</span>
               </div>
@@ -221,10 +220,10 @@ export default function TourDetailPage() {
         </div>
 
         <div className="absolute top-6 right-6 flex gap-3">
-          <button onClick={handleFavoriteToggle} className="size-11 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white dark:bg-slate-900 dark:hover:bg-slate-800 transition-colors shadow-md cursor-pointer border border-white/20">
+          <button type="button" onClick={handleFavoriteToggle} className="interactive-press size-11 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white dark:hover:bg-slate-800 transition-colors shadow-md cursor-pointer border border-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50">
             <Heart className={`size-5.5 ${saved ? 'fill-red-500 text-red-500' : 'text-slate-700 dark:text-slate-300'}`} />
           </button>
-          <button className="size-11 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white dark:bg-slate-900 dark:hover:bg-slate-800 transition-colors shadow-md cursor-pointer border border-white/20">
+          <button type="button" className="interactive-press size-11 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white dark:hover:bg-slate-800 transition-colors shadow-md cursor-pointer border border-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50">
             <Share2 className="size-5.5 text-slate-700 dark:text-slate-300" />
           </button>
         </div>
@@ -427,7 +426,7 @@ export default function TourDetailPage() {
           </div>
 
           <div className="lg:col-span-1">
-            <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 sticky top-24 border border-slate-100/40 dark:border-slate-800/40 shadow-lg text-left">
+            <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 sticky top-24 border border-slate-200/70 dark:border-slate-800 shadow-xl text-left ring-1 ring-blue-500/5">
               <div className="mb-6">
                 <div className="flex items-baseline gap-1.5 mb-2">
                   <span className="text-3xl font-black text-blue-900 dark:text-blue-400">{tour.price.toLocaleString('vi-VN')}đ</span>
@@ -476,7 +475,7 @@ export default function TourDetailPage() {
                 </div>
               </div>
 
-              <button onClick={handleBooking} className="w-full py-3.5 bg-blue-900 hover:bg-blue-950 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-2xl transition-all mb-3 font-bold text-sm shadow-md cursor-pointer text-center">
+              <button onClick={handleBooking} className="interactive-press w-full py-3.5 bg-blue-900 hover:bg-blue-950 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-2xl transition-all mb-3 font-bold text-sm shadow-md cursor-pointer text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40">
                 Thanh Toán Ngay
               </button>
               <p className="text-[10px] text-center text-slate-400 dark:text-slate-400 font-bold tracking-wide uppercase">
@@ -488,8 +487,8 @@ export default function TourDetailPage() {
       </div>
 
       {showBookingModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 max-w-sm w-full border border-slate-100/40 dark:border-slate-800/40 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+        <div className="modal-overlay-enter fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
+          <div className="modal-panel-enter bg-white dark:bg-slate-900 rounded-3xl p-8 max-w-sm w-full border border-slate-100/40 dark:border-slate-800/40 shadow-2xl">
             <div className="text-center">
               <div className="inline-flex items-center justify-center w-16 h-16 bg-emerald-50 dark:bg-emerald-950/40 rounded-full mb-4">
                 <CheckCircle className="size-8 text-emerald-500" />
@@ -497,10 +496,10 @@ export default function TourDetailPage() {
               <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-2 font-serif">Thành công!</h2>
               <p className="text-slate-500 dark:text-slate-400 mb-6 text-sm font-semibold">Hành trình của bạn đã được đặt thành công</p>
               <div className="flex gap-3">
-                <button onClick={() => setShowBookingModal(false)} className="flex-1 px-4 py-2.5 border border-slate-200 dark:border-slate-800 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors font-bold text-sm text-slate-700 dark:text-slate-300 cursor-pointer">
+                <button onClick={() => setShowBookingModal(false)} className="interactive-press flex-1 px-4 py-2.5 border border-slate-200 dark:border-slate-800 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors font-bold text-sm text-slate-700 dark:text-slate-300 cursor-pointer">
                   Quay lại
                 </button>
-                <button onClick={() => navigate('/checkout')} className="flex-1 px-4 py-2.5 bg-blue-900 dark:bg-blue-600 text-white rounded-2xl hover:bg-blue-950 dark:hover:bg-blue-700 transition-colors font-bold text-sm cursor-pointer shadow">
+                <button onClick={() => navigate('/checkout')} className="interactive-press flex-1 px-4 py-2.5 bg-blue-900 dark:bg-blue-600 text-white rounded-2xl hover:bg-blue-950 dark:hover:bg-blue-700 transition-colors font-bold text-sm cursor-pointer shadow">
                   Thanh toán
                 </button>
               </div>

@@ -4,23 +4,20 @@ import {
   Search, 
   MapPin, 
   Calendar, 
-  Users, 
   Star, 
-  Plane, 
-  Mountain, 
-  Ship, 
-  Building2, 
-  Award, 
-  Shield, 
-  Headphones, 
-  TrendingUp, 
   ArrowRight, 
-  ChevronDown, 
-  Sparkles, 
+  ArrowLeft,
+  ChevronDown,
+  ChevronLeft,
   SlidersHorizontal,
   Heart,
   Clock,
-  ArrowLeft
+  Globe2,
+  Waves,
+  Landmark,
+  Trees,
+  Compass,
+  type LucideIcon,
 } from 'lucide-react';
 import { ImageWithFallback } from '@/components/figma/ImageWithFallback';
 import { useRouter } from 'next/navigation';
@@ -77,6 +74,81 @@ const destinationImages: Record<string, string> = {
   'Phan Thiết': 'https://images.unsplash.com/photo-1596422846543-75c6fc18a523?auto=format&fit=crop&w=800&q=80',
   'Mũi Né': 'https://images.unsplash.com/photo-1596422846543-75c6fc18a523?auto=format&fit=crop&w=800&q=80',
 };
+
+function TourCard({
+  tour,
+  isFavorite,
+  onToggleFavorite,
+  onOpen,
+}: {
+  tour: Tour;
+  isFavorite: boolean;
+  onToggleFavorite: (e: React.MouseEvent, tour: Tour) => void;
+  onOpen: (id: string) => void;
+}) {
+  return (
+    <article
+      role="button"
+      tabIndex={0}
+      onClick={() => onOpen(tour.id)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onOpen(tour.id);
+        }
+      }}
+      className="interactive-press group flex w-[260px] shrink-0 snap-start cursor-pointer flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm outline-none transition-all duration-300 hover:-translate-y-1 hover:border-blue-200 hover:shadow-xl focus-visible:ring-2 focus-visible:ring-blue-500/40 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-blue-800 md:w-[300px]"
+    >
+      <div className="relative h-[190px] overflow-hidden md:h-[210px]">
+        <ImageWithFallback
+          src={tour.image}
+          alt={tour.title}
+          className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
+        />
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-black/10" />
+        {tour.badge && (
+          <span className="absolute bottom-3 left-3 rounded-full bg-white/95 px-2.5 py-1 text-[10px] font-bold tracking-wide text-blue-700 shadow-sm dark:bg-slate-900/95 dark:text-blue-300">
+            {tour.badge}
+          </span>
+        )}
+        <div className="absolute left-3 top-3 flex items-center gap-1 rounded-full bg-black/35 px-2 py-1 text-[10px] font-bold text-white backdrop-blur-sm">
+          <Clock className="size-3" />
+          {tour.duration}
+        </div>
+        <button
+          type="button"
+          aria-label={isFavorite ? 'Bỏ yêu thích' : 'Thêm yêu thích'}
+          onClick={(e) => onToggleFavorite(e, tour)}
+          className="interactive-press absolute right-3 top-3 z-10 rounded-full bg-white/90 p-2 text-slate-400 shadow-sm transition-colors hover:bg-white hover:text-red-500 dark:bg-slate-900/90"
+        >
+          <Heart className={`size-4 ${isFavorite ? 'fill-red-500 text-red-500' : ''}`} />
+        </button>
+      </div>
+      <div className="flex flex-1 flex-col bg-white p-4 dark:bg-slate-900">
+        <p className="mb-1.5 flex items-center gap-1 text-[11px] font-semibold text-slate-400">
+          <MapPin className="size-3 shrink-0 text-blue-500" />
+          <span className="truncate">{tour.location}</span>
+        </p>
+        <h4 className="mb-3 line-clamp-2 text-[15px] font-bold leading-snug text-slate-900 transition-colors group-hover:text-blue-700 dark:text-white dark:group-hover:text-blue-300">
+          {tour.title}
+        </h4>
+        <div className="mt-auto flex items-end justify-between gap-3 border-t border-slate-100 pt-3 dark:border-slate-800">
+          <div className="flex items-center gap-1.5">
+            <Star className="size-3.5 fill-amber-400 text-amber-400" />
+            <span className="text-sm font-extrabold text-slate-700 dark:text-slate-200">{tour.rating}</span>
+            <span className="text-[11px] font-medium text-slate-400">({tour.reviews})</span>
+          </div>
+          <div className="text-right">
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Từ</p>
+            <p className="text-lg font-extrabold tracking-tight text-blue-700 dark:text-blue-400">
+              {tour.price.toLocaleString('vi-VN')}₫
+            </p>
+          </div>
+        </div>
+      </div>
+    </article>
+  );
+}
 
 export default function HomePage() {
   const router = useRouter();
@@ -240,13 +312,13 @@ export default function HomePage() {
     });
 
     return [
-      { id: 'domestic', title: 'Tour Trong Nước', icon: '📍', tours: domestic },
-      { id: 'international', title: 'Tour Nước Ngoài', icon: '✈️', tours: international },
-      { id: 'beach', title: 'Tour Biển Đảo', icon: '🏖️', tours: beach },
-      { id: 'culture', title: 'Tour Văn Hóa - Lịch Sử', icon: '🏛️', tours: culture },
-      { id: 'resort', title: 'Tour Nghỉ Dưỡng Cao Cấp', icon: '🌴', tours: resort },
-      { id: 'adventure', title: 'Tour Phượt & Khám Phá', icon: '🧗‍♂️', tours: adventure }
-    ];
+      { id: 'domestic', title: 'Tour Trong Nước', icon: MapPin, tours: domestic },
+      { id: 'international', title: 'Tour Nước Ngoài', icon: Globe2, tours: international },
+      { id: 'beach', title: 'Tour Biển Đảo', icon: Waves, tours: beach },
+      { id: 'culture', title: 'Tour Văn Hóa - Lịch Sử', icon: Landmark, tours: culture },
+      { id: 'resort', title: 'Tour Nghỉ Dưỡng Cao Cấp', icon: Trees, tours: resort },
+      { id: 'adventure', title: 'Tour Phượt & Khám Phá', icon: Compass, tours: adventure },
+    ] as { id: string; title: string; icon: LucideIcon; tours: Tour[] }[];
   }, [filteredTours]);
 
   const handleToggleFavorite = (e: React.MouseEvent, tour: Tour) => {
@@ -256,7 +328,7 @@ export default function HomePage() {
   };
 
   return (
-    <div className={`min-h-screen bg-white dark:bg-slate-900 font-sans transition-colors duration-300 ${theme === 'dark' ? 'dark bg-slate-950 text-white' : 'text-slate-900 dark:text-slate-50'}`}>
+    <div className={`min-h-screen bg-slate-50 dark:bg-slate-950 font-sans transition-colors duration-300 ${theme === 'dark' ? 'dark text-white' : 'text-slate-900 dark:text-slate-50'}`}>
       <Header />
 
       {/* Hero Section with Search Panel */}
@@ -275,12 +347,14 @@ export default function HomePage() {
 
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
           <div className="text-left max-w-3xl mb-10">
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-white leading-tight drop-shadow-md tracking-tight">
-              Khám Phá Thế Giới, <br />
-              <span className="bg-gradient-to-r from-blue-300 via-indigo-300 to-purple-300 text-transparent bg-clip-text">Trải Nghiệm Thượng Lưu</span>
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-white leading-tight drop-shadow-md tracking-tight font-serif">
+              CMC Travel
             </h1>
-            <p className="mt-6 text-lg sm:text-xl text-white/95 max-w-2xl font-medium leading-relaxed drop-shadow-sm">
-              Hành trình cá nhân hóa, dịch vụ đẳng cấp 5 sao và những điểm đến ngoạn mục đang chờ đón bạn.
+            <p className="mt-3 text-2xl sm:text-3xl lg:text-4xl font-bold text-white/95 tracking-tight">
+              Khám phá thế giới, trải nghiệm thượng lưu
+            </p>
+            <p className="mt-5 text-base sm:text-lg text-white/90 max-w-2xl font-medium leading-relaxed drop-shadow-sm">
+              Hành trình cá nhân hóa, dịch vụ đẳng cấp và những điểm đến ngoạn mục đang chờ đón bạn.
             </p>
           </div>
 
@@ -470,7 +544,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <main id="tours" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-20">
+      <main id="tours" className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16 space-y-16 md:space-y-20">
         
         {loading ? (
           <PageSkeleton variant="list" hideChrome className="min-h-0 bg-transparent dark:bg-transparent" />
@@ -478,45 +552,82 @@ export default function HomePage() {
           <>
             {/* 1. Hero Slider (Best Sellers) */}
             {heroTours.length > 0 && (
-              <section className="relative w-full h-[400px] md:h-[500px] rounded-3xl overflow-hidden shadow-2xl group">
+              <section className="relative w-full h-[420px] md:h-[520px] rounded-[1.75rem] overflow-hidden shadow-2xl group ring-1 ring-black/5 dark:ring-white/10">
                 {heroTours.map((tour, idx) => (
                   <div 
                     key={tour.id}
-                    className={`absolute inset-0 transition-opacity duration-1000 ${idx === currentSlide ? 'opacity-100 z-10' : 'opacity-0 z-0'}`}
+                    className={`absolute inset-0 transition-all duration-700 ease-out ${idx === currentSlide ? 'opacity-100 z-10 scale-100' : 'opacity-0 z-0 scale-[1.02] pointer-events-none'}`}
+                    aria-hidden={idx !== currentSlide}
                   >
                     <ImageWithFallback src={tour.image} alt={tour.title} className="w-full h-full object-cover" />
-                    <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent" />
-                    <div className="absolute top-8 right-8 md:top-12 md:right-12 z-20">
-                      <button onClick={(e) => handleToggleFavorite(e, tour)} className="bg-white/90 p-2.5 rounded-full hover:bg-white dark:bg-slate-900 text-slate-400 shadow-lg transition-colors">
-                        <Heart className={`size-6 ${favoriteIds.includes(tour.id) ? 'fill-red-500 text-red-500' : ''}`} />
+                    <div className="absolute inset-0 bg-gradient-to-r from-slate-950/85 via-slate-950/45 to-transparent" />
+                    <div className="absolute top-6 right-6 md:top-10 md:right-10 z-20">
+                      <button
+                        type="button"
+                        onClick={(e) => handleToggleFavorite(e, tour)}
+                        className="interactive-press bg-white/90 p-2.5 rounded-full hover:bg-white dark:bg-slate-900 text-slate-400 shadow-lg transition-colors"
+                      >
+                        <Heart className={`size-5 ${favoriteIds.includes(tour.id) ? 'fill-red-500 text-red-500' : ''}`} />
                       </button>
                     </div>
-                    <div className="absolute inset-0 p-8 md:p-16 flex flex-col justify-center max-w-2xl text-left">
-                      <span className="inline-block px-3 py-1 bg-[#fef08a] text-amber-900 text-xs font-black uppercase tracking-wider rounded-full self-start mb-4">
+                    <div className="absolute inset-0 p-8 md:p-14 flex flex-col justify-end md:justify-center max-w-2xl text-left">
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-300 text-amber-950 text-[11px] font-black uppercase tracking-wider rounded-full self-start mb-4 shadow-sm">
+                        <Star className="size-3 fill-current" />
                         Bán chạy nhất
                       </span>
-                      <h2 className="text-3xl md:text-5xl font-black text-white leading-tight mb-4 drop-shadow-lg tracking-tight">
+                      <h2 className="text-3xl md:text-5xl font-black font-serif text-white leading-tight mb-3 drop-shadow-lg tracking-tight">
                         {tour.title}
                       </h2>
-                      <p className="text-white/90 text-sm md:text-base font-medium mb-8 leading-relaxed">
+                      <p className="text-white/85 text-sm md:text-base font-medium mb-6 leading-relaxed line-clamp-2 md:line-clamp-3">
                         {tour.description}
                       </p>
-                      <button 
-                        onClick={() => navigate(`/tour/${tour.id}`)}
-                        className="interactive-press bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-xl self-start transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
-                      >
-                        Đặt ngay
-                      </button>
+                      <div className="flex flex-wrap items-center gap-3">
+                        <button 
+                          type="button"
+                          onClick={() => navigate(`/tour/${tour.id}`)}
+                          className="interactive-press bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-7 rounded-xl self-start transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 shadow-lg shadow-blue-900/30"
+                        >
+                          Đặt ngay
+                        </button>
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-xs font-bold text-white backdrop-blur-sm">
+                          <Clock className="size-3.5" />
+                          {tour.duration}
+                        </span>
+                        <span className="text-lg font-black text-white">
+                          {tour.price.toLocaleString('vi-VN')}₫
+                        </span>
+                      </div>
                     </div>
                   </div>
                 ))}
-                {/* Dots */}
-                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex gap-2">
+
+                <div className="absolute inset-y-0 left-0 right-0 z-20 flex items-center justify-between px-3 md:px-4 pointer-events-none">
+                  <button
+                    type="button"
+                    aria-label="Tour trước"
+                    onClick={() => setCurrentSlide((prev) => (prev - 1 + heroTours.length) % heroTours.length)}
+                    className="interactive-press pointer-events-auto size-10 md:size-11 rounded-full bg-white/90 dark:bg-slate-900/90 border border-white/40 shadow-lg flex items-center justify-center text-slate-700 dark:text-slate-200 opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <ChevronLeft className="size-5" />
+                  </button>
+                  <button
+                    type="button"
+                    aria-label="Tour tiếp"
+                    onClick={() => setCurrentSlide((prev) => (prev + 1) % heroTours.length)}
+                    className="interactive-press pointer-events-auto size-10 md:size-11 rounded-full bg-white/90 dark:bg-slate-900/90 border border-white/40 shadow-lg flex items-center justify-center text-slate-700 dark:text-slate-200 opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <ArrowRight className="size-5" />
+                  </button>
+                </div>
+
+                <div className="absolute bottom-5 left-1/2 -translate-x-1/2 z-20 flex gap-2">
                   {heroTours.map((_, idx) => (
                     <button 
                       key={idx}
+                      type="button"
+                      aria-label={`Chuyển tới slide ${idx + 1}`}
                       onClick={() => setCurrentSlide(idx)}
-                      className={`h-2 rounded-full transition-all ${idx === currentSlide ? 'w-8 bg-blue-500' : 'w-2 bg-white/50'}`}
+                      className={`h-2 rounded-full transition-all duration-300 ${idx === currentSlide ? 'w-8 bg-blue-500' : 'w-2 bg-white/45 hover:bg-white/70'}`}
                     />
                   ))}
                 </div>
@@ -525,58 +636,63 @@ export default function HomePage() {
 
             {/* Tour Sections (Domestic, International, Categories) */}
             {selectedLocation === null ? (
-              <div className="space-y-4">
+              <div className="space-y-14">
                 {tourSections.map((section) => {
                   if (section.tours.length === 0) return null;
+                  const SectionIcon = section.icon;
                   return (
-                    <div key={section.id} className="mb-4 relative group text-left pt-6">
-                      <h3 className="text-2xl md:text-3xl font-extrabold text-slate-900 dark:text-white mb-6 tracking-tight flex items-center gap-3">
-                        <span className="text-3xl md:text-4xl">{section.icon}</span> {section.title}
-                      </h3>
+                    <div key={section.id} className="relative group/section text-left">
+                      <div className="mb-6 flex items-end justify-between gap-4">
+                        <div>
+                          <h3 className="flex items-center gap-3 text-2xl md:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white font-serif">
+                            <span className="inline-flex size-11 items-center justify-center rounded-2xl bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300">
+                              <SectionIcon className="size-5" />
+                            </span>
+                            {section.title}
+                          </h3>
+                          <p className="mt-2 text-sm font-medium text-slate-500 dark:text-slate-400">
+                            {section.tours.length} hành trình đang mở bán
+                          </p>
+                        </div>
+                      </div>
                       <div className="relative">
                         <div 
                           id={`carousel-${section.id}`}
-                          className="flex gap-4 overflow-x-auto scroll-smooth snap-x snap-mandatory pb-4 [&::-webkit-scrollbar]:hidden"
-                          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                          className="flex gap-4 overflow-x-auto scroll-smooth snap-x snap-mandatory pb-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
                         >
                           {section.tours.map((tour) => (
-                            <div 
-                              key={tour.id} 
-                              className="interactive-press flex-none w-[260px] md:w-[280px] snap-start bg-white dark:bg-slate-900 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer group flex flex-col border border-slate-100 dark:border-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
-                              onClick={() => navigate(`/tour/${tour.id}`)}
-                            >
-                              <div className="relative h-[180px] md:h-[200px] overflow-hidden">
-                                <ImageWithFallback src={tour.image} alt={tour.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                                {tour.badge && <span className="absolute bottom-2 left-2 bg-white dark:bg-slate-900 text-blue-700 text-[10px] font-bold px-2 py-0.5 rounded">{tour.badge}</span>}
-                                <div className="absolute top-2 right-2 z-10">
-                                  <button onClick={(e) => handleToggleFavorite(e, tour)} className="bg-white/90 p-1.5 rounded-full hover:bg-white dark:bg-slate-900 text-slate-400 shadow-sm transition-colors">
-                                    <Heart className={`size-4 ${favoriteIds.includes(tour.id) ? 'fill-red-500 text-red-500' : ''}`} />
-                                  </button>
-                                </div>
-                              </div>
-                              <div className="p-4 flex flex-col flex-1 bg-white dark:bg-slate-900">
-                                <h4 className="font-bold text-slate-900 dark:text-white text-[15px] leading-snug mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors">{tour.title}</h4>
-                                <div className="flex items-center gap-1.5 mb-4">
-                                  <Star className="size-4 fill-amber-400 text-amber-400" />
-                                  <span className="text-sm font-extrabold text-slate-700 dark:text-slate-300">{tour.rating}</span>
-                                  <span className="text-xs font-medium text-slate-400">({tour.reviews})</span>
-                                </div>
-                                <div className="mt-auto flex justify-between items-end border-t border-slate-50 dark:border-slate-800 pt-3">
-                                  <span className="text-blue-600 dark:text-blue-400 font-extrabold text-lg md:text-xl tracking-tight">{tour.price.toLocaleString('vi-VN')} ₫</span>
-                                </div>
-                              </div>
-                            </div>
+                            <TourCard
+                              key={tour.id}
+                              tour={tour}
+                              isFavorite={favoriteIds.includes(tour.id)}
+                              onToggleFavorite={handleToggleFavorite}
+                              onOpen={(id) => navigate(`/tour/${id}`)}
+                            />
                           ))}
                         </div>
                         <button 
-                          className="absolute top-[120px] md:top-[140px] -right-5 -translate-y-1/2 bg-white/90 backdrop-blur-md dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 shadow-xl p-3 rounded-full hidden md:group-hover:flex hover:bg-slate-50 hover:scale-110 transition-all z-10 cursor-pointer text-blue-600"
+                          type="button"
+                          aria-label="Cuộn trái"
+                          className="interactive-press absolute top-[105px] md:top-[115px] -left-3 -translate-y-1/2 bg-white/95 backdrop-blur-md dark:bg-slate-800/95 border border-slate-200 dark:border-slate-700 shadow-xl p-2.5 rounded-full hidden md:group-hover/section:flex hover:bg-slate-50 dark:hover:bg-slate-700 z-10 cursor-pointer text-blue-600"
                           onClick={(e) => {
                             e.preventDefault();
                             const container = document.getElementById(`carousel-${section.id}`);
-                            if (container) container.scrollBy({ left: 300, behavior: 'smooth' });
+                            if (container) container.scrollBy({ left: -320, behavior: 'smooth' });
                           }}
                         >
-                          <ArrowRight className="size-5 md:size-6" />
+                          <ChevronLeft className="size-5" />
+                        </button>
+                        <button 
+                          type="button"
+                          aria-label="Cuộn phải"
+                          className="interactive-press absolute top-[105px] md:top-[115px] -right-3 -translate-y-1/2 bg-white/95 backdrop-blur-md dark:bg-slate-800/95 border border-slate-200 dark:border-slate-700 shadow-xl p-2.5 rounded-full hidden md:group-hover/section:flex hover:bg-slate-50 dark:hover:bg-slate-700 z-10 cursor-pointer text-blue-600"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            const container = document.getElementById(`carousel-${section.id}`);
+                            if (container) container.scrollBy({ left: 320, behavior: 'smooth' });
+                          }}
+                        >
+                          <ArrowRight className="size-5" />
                         </button>
                       </div>
                     </div>
@@ -590,7 +706,7 @@ export default function HomePage() {
                   <div>
                     <button
                       onClick={() => setSelectedLocation(null)}
-                      className="inline-flex items-center gap-2 text-sm font-black text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors mb-2 cursor-pointer bg-transparent border-none"
+                      className="interactive-press inline-flex items-center gap-2 text-sm font-black text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors mb-2 cursor-pointer bg-transparent border-none"
                     >
                       <ArrowLeft className="size-4" />
                       <span>Quay lại chọn địa điểm</span>
