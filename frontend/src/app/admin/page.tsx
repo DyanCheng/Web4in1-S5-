@@ -147,7 +147,7 @@ export default function AdminDashboard() {
       setLoading(true);
       const authHeaders = adminHeaders();
       const [toursResponse, bookingsResponse, hotelBookingsResponse, roomsResponse, summaryResponse, transactionsResponse] = await Promise.all([
-        fetch(apiUrl('/api/tours')),
+        fetch(apiUrl('/api/tours/admin'), { headers: adminHeaders() }),
         fetch(apiUrl('/api/bookings')),
         fetch(apiUrl('/api/hotelbookings/all')),
         fetch(apiUrl('/api/rooms')),
@@ -331,21 +331,22 @@ export default function AdminDashboard() {
     setBookings((prev) => prev.filter((booking) => booking.id !== id));
   };
 
-  const handleDeleteTour = async (id: string) => {
-    if (!confirm('Bạn muốn xóa tour này?')) return;
+  const handleToggleTourStatus = async (tour: Tour) => {
+    const actionName = tour.status === false ? 'hiện' : 'ẩn';
+    if (!confirm(`Bạn muốn ${actionName} tour này?`)) return;
     setTourActionLoading(true);
     try {
-      const response = await fetch(`${getBackendUrl()}/api/tours/${id}`, {
-        method: 'DELETE',
+      const response = await fetch(`${getBackendUrl()}/api/tours/${tour.id}/toggle-status`, {
+        method: 'PATCH',
         headers: adminHeaders(),
       });
       if (!response.ok) {
         const err = await response.json();
-        throw new Error(err.message || 'Xóa tour thất bại');
+        throw new Error(err.message || `Cập nhật trạng thái tour thất bại`);
       }
       await fetchData();
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Xóa tour thất bại');
+      alert(err instanceof Error ? err.message : `Cập nhật trạng thái tour thất bại`);
     } finally {
       setTourActionLoading(false);
     }
@@ -454,7 +455,7 @@ export default function AdminDashboard() {
       <aside className="hidden xl:flex h-full w-70 flex-col shrink-0 border-r border-slate-200/70 dark:border-slate-800 bg-slate-100/80 dark:bg-slate-900/80 backdrop-blur-sm">
         <div className="p-8">
           <div className="text-left">
-            <h1 className="text-3xl font-black text-blue-700 dark:text-blue-400 font-serif">CMC Travel</h1>
+            <h1 className="text-3xl font-black text-blue-700 dark:text-blue-400 font-sans">CMC Travel</h1>
             <p className="text-sm text-slate-500 dark:text-slate-400">Bảng quản trị</p>
           </div>
         </div>
@@ -521,7 +522,7 @@ export default function AdminDashboard() {
         <header className="sticky top-0 z-20 border-b border-slate-200/70 dark:border-slate-800 bg-slate-50/90 dark:bg-slate-950/90 backdrop-blur-sm">
           <div className="px-4 sm:px-6 lg:px-8 py-5 flex items-center justify-between gap-4">
             <div className="min-w-0">
-              <h2 className="text-2xl sm:text-3xl font-black font-serif">{tabTitles[activeTab].title}</h2>
+              <h2 className="text-2xl sm:text-3xl font-black font-sans">{tabTitles[activeTab].title}</h2>
               <p className="text-sm text-slate-500 dark:text-slate-400">{tabTitles[activeTab].subtitle}</p>
             </div>
             <div className="flex items-center gap-3">
@@ -572,7 +573,7 @@ export default function AdminDashboard() {
               <section className="mt-8 grid grid-cols-1 xl:grid-cols-[1.7fr_1fr] gap-6">
                 <div className="rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 shadow-sm overflow-hidden">
                   <div className="p-6 border-b border-slate-200/70 dark:border-slate-800">
-                    <h3 className="text-xl font-black font-serif">Giao dịch gần đây</h3>
+                    <h3 className="text-xl font-black font-sans">Giao dịch gần đây</h3>
                     <p className="text-sm text-slate-500 dark:text-slate-400">Các đơn thanh toán SePay mới nhất</p>
                   </div>
                   <div className="overflow-x-auto">
@@ -616,7 +617,7 @@ export default function AdminDashboard() {
 
                 <div className="space-y-6">
                   <div className="rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 shadow-sm p-6">
-                    <h3 className="text-xl font-black font-serif mb-5">Thao tác nhanh</h3>
+                    <h3 className="text-xl font-black font-sans mb-5">Thao tác nhanh</h3>
                     <div className="grid grid-cols-2 gap-4">
                       {[
                         { label: 'Thêm đối tác', icon: Users },
@@ -636,7 +637,7 @@ export default function AdminDashboard() {
                   </div>
 
                   <div className="rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 shadow-sm p-6">
-                    <h3 className="text-xl font-black font-serif mb-5">Hoạt động gần đây</h3>
+                    <h3 className="text-xl font-black font-sans mb-5">Hoạt động gần đây</h3>
                     <div className="space-y-5 text-sm">
                       <div className="flex gap-3">
                         <div className="size-9 rounded-full bg-emerald-100 dark:bg-emerald-950/40 flex items-center justify-center text-emerald-600">✓</div>
@@ -669,7 +670,7 @@ export default function AdminDashboard() {
               <section className={`${activeTab === 'tours' ? 'mt-0' : 'mt-8'} rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 shadow-sm overflow-hidden`}>
                 <div className="p-6 border-b border-slate-200/70 dark:border-slate-800 flex items-center justify-between gap-4 flex-wrap">
                   <div>
-                    <h3 className="text-xl font-black font-serif">Quản lý tour</h3>
+                    <h3 className="text-xl font-black font-sans">Quản lý tour</h3>
                     <p className="text-sm text-slate-500 dark:text-slate-400">Danh sách tour hiện có trong hệ thống</p>
                   </div>
 
@@ -706,6 +707,7 @@ export default function AdminDashboard() {
                         <th className="px-6 py-4 text-left">Ngày đêm</th>
                         <th className="px-6 py-4 text-left">Giá</th>
                         <th className="px-6 py-4 text-left">Đánh giá</th>
+                        <th className="px-6 py-4 text-left">Trạng thái</th>
                         <th className="px-6 py-4 text-left">Hành động</th>
                       </tr>
                     </thead>
@@ -733,14 +735,26 @@ export default function AdminDashboard() {
                           <td className="px-6 py-4 font-black text-blue-700 dark:text-blue-400">{tour.price.toLocaleString('vi-VN')}đ</td>
                           <td className="px-6 py-4 text-amber-600 dark:text-amber-500 font-bold">★ {tour.rating} ({tour.reviews})</td>
                           <td className="px-6 py-4">
+                            <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
+                              tour.status !== false
+                                ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300'
+                                : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
+                            }`}>
+                              {tour.status !== false ? 'Hoạt động' : 'Đã ẩn'}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
-
                               <button aria-label="Edit tour" onClick={() => openEditTour(tour)} disabled={tourActionLoading} className="text-blue-600 hover:text-blue-700 disabled:opacity-50">
                                 <Edit className="size-4" />
                               </button>
-                              <button aria-label="Delete tour" onClick={() => handleDeleteTour(tour.id)} disabled={tourActionLoading} className="text-red-500 hover:text-red-600 disabled:opacity-50">
-
-                                <Trash2 className="size-4" />
+                              <button 
+                                aria-label="Toggle tour status" 
+                                onClick={() => handleToggleTourStatus(tour)} 
+                                disabled={tourActionLoading} 
+                                className={`font-semibold disabled:opacity-50 ${tour.status === false ? 'text-emerald-600 hover:text-emerald-700' : 'text-slate-500 hover:text-slate-700'}`}
+                              >
+                                {tour.status === false ? 'Hiện' : 'Ẩn'}
                               </button>
                             </div>
                           </td>
@@ -766,7 +780,7 @@ export default function AdminDashboard() {
               <section className="mt-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 shadow-sm overflow-hidden">
                 <div className="p-6 border-b border-slate-200/70 dark:border-slate-800 flex items-center justify-between">
                   <div>
-                    <h3 className="text-xl font-black font-serif">Đơn đặt chỗ</h3>
+                    <h3 className="text-xl font-black font-sans">Đơn đặt chỗ</h3>
                     <p className="text-sm text-slate-500 dark:text-slate-400">Phê duyệt hoặc hủy các đơn chờ xử lý</p>
                   </div>
                   <span className="text-sm font-bold text-slate-500 dark:text-slate-400">{bookings.length} đơn</span>
@@ -828,7 +842,7 @@ export default function AdminDashboard() {
               <section className="mt-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 shadow-sm overflow-hidden">
                 <div className="p-6 border-b border-slate-200/70 dark:border-slate-800 flex items-center justify-between gap-4 flex-wrap">
                   <div>
-                    <h3 className="text-xl font-black font-serif">Lịch sử giao dịch SePay</h3>
+                    <h3 className="text-xl font-black font-sans">Lịch sử giao dịch SePay</h3>
                     <p className="text-sm text-slate-500 dark:text-slate-400">{filteredPayments.length} giao dịch · {uniqueCustomers} khách hàng</p>
                   </div>
                   <div className="relative w-full max-w-md">
@@ -925,7 +939,7 @@ export default function AdminDashboard() {
               <section className="mt-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 shadow-sm overflow-hidden">
                 <div className="p-6 border-b border-slate-200/70 dark:border-slate-800 flex items-center justify-between gap-4 flex-wrap">
                   <div>
-                    <h3 className="text-xl font-black font-serif">Quản lý Phòng Khách sạn</h3>
+                    <h3 className="text-xl font-black font-sans">Quản lý Phòng Khách sạn</h3>
                     <p className="text-sm text-slate-500 dark:text-slate-400">Danh sách các phòng hiện có trong hệ thống</p>
                   </div>
                   <button onClick={openCreateRoom} className="inline-flex items-center gap-2 rounded-2xl bg-blue-700 px-4 py-2.5 text-sm font-bold text-white">
@@ -990,7 +1004,7 @@ export default function AdminDashboard() {
 
               {activeTab === 'settings' && (
               <section className="mt-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 shadow-sm p-8">
-                <h3 className="text-xl font-black font-serif mb-2">Cấu hình thanh toán SePay</h3>
+                <h3 className="text-xl font-black font-sans mb-2">Cấu hình thanh toán SePay</h3>
                 <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
                   Thiết lập biến môi trường <code className="text-xs bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">SEPAY_BANK_ACCOUNT</code>, webhook URL và API key trong file <code className="text-xs bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">.env</code>.
                 </p>
