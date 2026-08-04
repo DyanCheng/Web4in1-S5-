@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import TourFormDialog, { type TourRecord } from '@/components/admin/TourFormDialog';
 import RoomFormDialog, { type RoomRecord } from '@/components/admin/RoomFormDialog';
+import AdminUserManagement from '@/components/admin/AdminUserManagement';
 import {
   BarChart3,
   Bell,
@@ -105,11 +106,12 @@ interface Room {
   status: string;
 }
 
-type AdminTab = 'overview' | 'tours' | 'orders' | 'payments' | 'hotels' | 'settings';
-type RevenuePeriod = 'day' | 'today' | 'week' | 'month' | 'custom';
+type AdminTab = 'overview' | 'tours' | 'orders' | 'payments' | 'hotels' | 'settings' | 'users';
+type RevenuePeriod = 'today' | 'week' | 'month' | 'custom';
 
 const sidebarItems = [
   { id: 'overview', label: 'Tổng quan', icon: BarChart3 },
+  { id: 'users', label: 'Quản lý người dùng', icon: Users },
   { id: 'tours', label: 'Quản lý tour', icon: ShoppingBag },
   { id: 'orders', label: 'Đơn đặt chỗ', icon: CheckCircle2 },
   { id: 'payments', label: 'Thanh toán', icon: CreditCard },
@@ -161,15 +163,24 @@ export default function AdminDashboard() {
       return true;
     });
 
-    const headers = ['Mã giao dịch', 'Khách hàng', 'Email', 'Số tiền', 'Trạng thái', 'Thời gian'];
-    const rows = filteredTx.map(tx => [
-      tx.payment_code,
-      tx.user_name || 'Khách vãng lai',
-      tx.user_email,
-      tx.amount,
-      tx.payment_status === 'paid' ? 'Đã thanh toán' : 'Chưa thanh toán',
-      tx.paid_at ? new Date(tx.paid_at).toLocaleString('vi-VN') : '—'
-    ]);
+    const headers = ['Mã giao dịch', 'Khách hàng', 'Email', 'Dịch vụ', 'SL/Khách', 'Mã Đặt Chỗ', 'Số tiền', 'Trạng thái', 'Thời gian', 'Mã Sepay'];
+    const rows = filteredTx.map(tx => {
+      const serviceName = tx.order_items?.map(item => item.title).join(' + ') || 'Không rõ';
+      const totalGuestsOrQty = tx.order_items?.reduce((sum, item) => sum + (item.guests || item.quantity || 0), 0) || 0;
+      
+      return [
+        tx.payment_code,
+        tx.user_name || 'Khách vãng lai',
+        tx.user_email,
+        serviceName,
+        totalGuestsOrQty.toString(),
+        tx.booking_refs?.join(' | ') || 'N/A',
+        tx.amount,
+        tx.payment_status === 'paid' ? 'Đã thanh toán' : 'Chưa thanh toán',
+        tx.paid_at ? new Date(tx.paid_at).toLocaleString('vi-VN') : '—',
+        tx.sepay_transaction_id || 'N/A'
+      ];
+    });
     const csvContent = "data:text/csv;charset=utf-8,\uFEFF" + [headers, ...rows].map(e => e.join(",")).join("\n");
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
@@ -254,10 +265,13 @@ export default function AdminDashboard() {
   );
 
   const monthlyRevenue = useMemo(() => {
-    // Calculate last 6 months (including current month)
+    // Calculate last 6 months (including current month) robustly
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonthIndex = now.getMonth(); // 0-11
     const data = Array.from({ length: 6 }, (_, i) => {
-      const d = new Date();
-      d.setMonth(d.getMonth() - (5 - i));
+      const monthIndex = currentMonthIndex - (5 - i);
+      const d = new Date(currentYear, monthIndex, 1); // Date() will adjust year/month boundaries correctly
       const monthNum = d.getMonth() + 1;
       const year = d.getFullYear();
       const monthName = `Tháng ${monthNum}`;
@@ -299,7 +313,7 @@ export default function AdminDashboard() {
     let endDate: Date;
     const today = new Date();
 
-    if (revenuePeriod === 'day') {
+    if (revenuePeriod === 'today') {
       startDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0);
       endDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59);
     } else if (revenuePeriod === 'week') {
@@ -432,7 +446,6 @@ export default function AdminDashboard() {
   }, [bookings, paymentTransactions]);
 
   const revenuePeriodOptions: Array<{ id: RevenuePeriod; label: string }> = [
-    { id: 'day', label: 'Ngày' },
     { id: 'today', label: 'Hôm nay' },
     { id: 'week', label: 'Tuần' },
     { id: 'month', label: 'Tháng' },
@@ -441,7 +454,7 @@ export default function AdminDashboard() {
 
   const revenuePeriodLabel = revenuePeriod === 'custom'
     ? `Ngày ${selectedDate}`
-    : revenuePeriod === 'day' || revenuePeriod === 'today'
+    : revenuePeriod === 'today'
       ? 'Hôm nay'
       : revenuePeriod === 'week'
         ? '7 ngày qua'
@@ -574,11 +587,12 @@ export default function AdminDashboard() {
     hotels: { title: 'Quản lý khách sạn', subtitle: 'Quản lý phòng và trạng thái phòng.' },
 
     settings: { title: 'Cài đặt hệ thống', subtitle: 'Cấu hình chung cho nền tảng CMC Travel.' },
+    users: { title: 'Quản lý người dùng', subtitle: 'Xem danh sách và thao tác Khóa / Mở khóa tài khoản.' },
   };
 
   return (
     <div className={`min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white flex ${theme === 'dark' ? 'dark' : ''}`}>
-      <aside className="hidden xl:flex w-70 flex-col border-r border-slate-200/70 dark:border-slate-800 bg-slate-100/80 dark:bg-slate-900/80 backdrop-blur-sm">
+      <aside className="hidden xl:flex w-70 flex-col border-r border-slate-200/70 dark:border-slate-800 bg-slate-100/80 dark:bg-slate-900/80 backdrop-blur-sm sticky top-0 h-screen overflow-y-auto">
         <div className="p-8">
           <div className="text-left">
             <h1 className="text-3xl font-black text-blue-700 dark:text-blue-400 font-sans tracking-tight">CMC Travel</h1>
@@ -666,6 +680,7 @@ export default function AdminDashboard() {
             </div>
           ) : (
             <>
+              {activeTab === 'users' && <AdminUserManagement />}
               {(activeTab === 'overview' || activeTab === 'payments') && (
               <section className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
                 {stats.map((stat) => {

@@ -243,10 +243,13 @@ export default function AdminDashboard() {
   );
 
   const monthlyRevenue = useMemo(() => {
-    // Calculate last 6 months (including current month)
+    // Calculate last 6 months (including current month) robustly
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonthIndex = now.getMonth(); // 0-11
     const data = Array.from({ length: 6 }, (_, i) => {
-      const d = new Date();
-      d.setMonth(d.getMonth() - (5 - i));
+      const monthIndex = currentMonthIndex - (5 - i);
+      const d = new Date(currentYear, monthIndex, 1); // Date() will adjust year/month boundaries correctly
       const monthNum = d.getMonth() + 1;
       const year = d.getFullYear();
       const monthName = `Tháng ${monthNum}`;
