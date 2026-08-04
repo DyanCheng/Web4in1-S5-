@@ -10,8 +10,9 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useTheme } from '@/contexts/ThemeContext';
 
-import { isFavorite, toggleFavorite, isTourExperienced, markTourExperienced, hasReviewedTourId, addUserReview } from '@/lib/tourStorage';
+import { isFavorite, toggleFavorite } from '@/lib/tourStorage';
 import { fetchTourById } from '@/lib/tourApi';
+import { apiUrl } from '@/lib/backendUrl';
 import { createClient } from '@/lib/supabase/client';
 
 type Review = { id: number; name: string; rating: number; date: string; comment: string; avatar: string };
@@ -336,11 +337,11 @@ export default function TourDetailPage() {
   const [selectedDate, setSelectedDate] = useState('');
   const [guests, setGuests] = useState(2);
   const [saved, setSaved] = useState(false);
-  const [experienced, setExperienced] = useState(false);
+  const [userBookingsCount, setUserBookingsCount] = useState(0);
+  const [userReviewsCount, setUserReviewsCount] = useState(0);
   const [reviewNotice, setReviewNotice] = useState('');
   const [myRating, setMyRating] = useState(5);
   const [myComment, setMyComment] = useState('');
-  const [hasReviewed, setHasReviewed] = useState(false);
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [matchedLocations, setMatchedLocations] = useState<any[]>([]);
   
@@ -381,9 +382,34 @@ export default function TourDetailPage() {
   }, [id]);
 
   useEffect(() => {
+    if (user?.email) {
+      fetch(apiUrl(`/api/bookings/user/${user.email}`))
+        .then(res => res.json())
+        .then((bookings: any[]) => {
+          const count = bookings.filter(b => String(b.tourId) === String(id)).length;
+          setUserBookingsCount(count);
+        })
+        .catch(e => {
+          console.error("Failed to load bookings", e);
+          setUserBookingsCount(0);
+        });
+    } else {
+      setUserBookingsCount(0);
+    }
+  }, [user?.email, id]);
+
+  useEffect(() => {
+    if (user) {
+      const nameMatch = user.name || user.email.split('@')[0];
+      const myReviews = reviews.filter(r => r.name === nameMatch || r.name === 'Bạn');
+      setUserReviewsCount(myReviews.length);
+    } else {
+      setUserReviewsCount(0);
+    }
+  }, [reviews, user]);
+
+  useEffect(() => {
     setSaved(isFavorite(id));
-    setExperienced(isTourExperienced(id));
-    setHasReviewed(hasReviewedTourId(id));
     const loadTour = async () => {
       const data = await fetchTourById(id);
       setTour(data);
@@ -460,15 +486,12 @@ export default function TourDetailPage() {
     setSaved(next.some((item) => item.id === tour.id));
   };
 
-  const handleMarkExperienced = () => {
-    markTourExperienced(tour.id);
-    setExperienced(true);
-  };
+
 
   const handleSubmitReview = (event: FormEvent) => {
     event.preventDefault();
-    if (!experienced) {
-      setReviewNotice('Bạn chỉ có thể comment sau khi đã trải nghiệm tour.');
+    if (userBookingsCount <= userReviewsCount) {
+      setReviewNotice('Bạn cần đặt thêm tour này để có thể đánh giá tiếp.');
       return;
     }
     if (!myComment.trim()) {
@@ -491,8 +514,6 @@ export default function TourDetailPage() {
     // Save to localStorage so it persists across reloads
     localStorage.setItem(`tour_reviews_${id}`, JSON.stringify(updatedReviews));
 
-    addUserReview({ id: Date.now(), tourId: id, tour: tour.title, rating: myRating, comment: myComment.trim(), date: new Date().toLocaleDateString('vi-VN') });
-    setHasReviewed(true);
     setMyComment('');
     setReviewNotice('Đã gửi đánh giá thành công. Cảm ơn những chia sẻ của bạn!');
   };
@@ -682,11 +703,6 @@ export default function TourDetailPage() {
             <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 border border-slate-100/40 dark:border-slate-800/40 shadow-sm text-left">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
                 <h2 className="text-2xl font-black text-slate-900 dark:text-white font-sans leading-tight">Đánh giá từ khách hàng</h2>
-                {user && !experienced && (
-                  <button onClick={handleMarkExperienced} className="inline-flex items-center justify-center rounded-full border border-blue-200 bg-blue-50 px-4 py-2 text-xs font-black text-blue-700 hover:bg-blue-100 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-300">
-                    Hoàn thành tour (Giả lập)
-                  </button>
-                )}
               </div>
 
               {/* ===== TỔNG QUAN ĐIỂM + BIỂU ĐỒ PHÂN BỔ SAO ===== */}
@@ -772,33 +788,33 @@ export default function TourDetailPage() {
               <form onSubmit={handleSubmitReview} className="mt-8 rounded-3xl border border-slate-100 dark:border-slate-800 p-6">
                 <h3 className="text-lg font-extrabold text-slate-900 dark:text-white mb-4 font-sans">Viết đánh giá của bạn</h3>
                 
-                {hasReviewed ? (
-                  <p className="mb-4 rounded-2xl bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300">
-                    Bạn đã đánh giá tour này rồi. Cảm ơn những chia sẻ của bạn!
+                {userBookingsCount > userReviewsCount ? (
+                  <p className="mb-4 rounded-2xl bg-blue-50 border border-blue-100 px-4 py-3 text-sm font-semibold text-blue-700 dark:bg-blue-950/30 dark:border-blue-900 dark:text-blue-300">
+                    Bạn đã đặt tour này {userBookingsCount} lần và có thể viết {userBookingsCount - userReviewsCount} đánh giá nữa. Hãy chia sẻ trải nghiệm nhé!
                   </p>
-                ) : !user ? (
+                ) : userBookingsCount > 0 ? (
+                  <p className="mb-4 rounded-2xl bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300">
+                    Bạn đã viết đánh giá cho tất cả {userBookingsCount} lần đặt tour. Hãy đặt thêm tour để có thể đánh giá tiếp!
+                  </p>
+                ) : user ? (
+                  <p className="mb-4 rounded-2xl bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700 dark:bg-amber-950/30 dark:text-amber-300">
+                    Bạn chưa đặt tour này nên chưa thể gửi đánh giá. Hãy đặt tour để trải nghiệm nhé!
+                  </p>
+                ) : (
                   <div className="mb-4 rounded-2xl bg-amber-50 border border-amber-100 px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 dark:bg-amber-950/30 dark:border-amber-900">
                     <p className="text-sm font-semibold text-amber-700 dark:text-amber-300">
-                      Chỉ khách hàng đã đăng nhập và hoàn thành tour mới có thể đánh giá.
+                      Chỉ khách hàng đã đăng nhập và đặt tour mới có thể đánh giá.
                     </p>
                     <button onClick={() => navigate('/login')} className="shrink-0 px-4 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl transition-colors shadow-sm">
                       Đăng nhập ngay
                     </button>
                   </div>
-                ) : !experienced ? (
-                  <p className="mb-4 rounded-2xl bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700 dark:bg-amber-950/30 dark:text-amber-300">
-                    Bạn cần đặt và hoàn thành chuyến đi này để có thể gửi đánh giá.
-                  </p>
-                ) : (
-                  <p className="mb-4 rounded-2xl bg-blue-50 border border-blue-100 px-4 py-3 text-sm font-semibold text-blue-700 dark:bg-blue-950/30 dark:border-blue-900 dark:text-blue-300">
-                    Bạn đã hoàn thành tour này! Hãy chia sẻ trải nghiệm và đánh giá của bạn nhé.
-                  </p>
                 )}
                 <div className="mb-4">
                   <label className="block text-xs font-black uppercase text-slate-400 dark:text-slate-400 mb-2">Mức độ hài lòng</label>
                   <div className="flex items-center gap-1.5">
                     {[1, 2, 3, 4, 5].map((star) => (
-                      <button key={star} type="button" onClick={() => setMyRating(star)} className="hover:scale-110 transition-transform">
+                      <button key={star} type="button" onClick={() => setMyRating(star)} className="hover:scale-110 transition-transform" disabled={!user || userBookingsCount <= userReviewsCount}>
                         <Star className={`size-7 ${star <= myRating ? 'fill-amber-400 text-amber-400' : 'text-slate-300 dark:text-slate-400'}`} />
                       </button>
                     ))}
@@ -809,13 +825,13 @@ export default function TourDetailPage() {
                   value={myComment}
                   onChange={(e) => setMyComment(e.target.value)}
                   rows={4}
-                  disabled={!user || !experienced || hasReviewed}
+                  disabled={!user || userBookingsCount <= userReviewsCount}
                   placeholder="Chia sẻ trải nghiệm hành trình của bạn..."
                   className="w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-transparent px-4 py-3 text-sm font-medium outline-none disabled:cursor-not-allowed disabled:opacity-60"
                 />
                 <button
                   type="submit"
-                  disabled={!user || !experienced || hasReviewed}
+                  disabled={!user || userBookingsCount <= userReviewsCount}
                   className="mt-4 rounded-2xl bg-blue-900 px-6 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:bg-slate-400 dark:bg-blue-600 dark:disabled:bg-slate-700"
                 >
                   Gửi đánh giá
