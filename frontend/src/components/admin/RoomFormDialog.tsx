@@ -98,7 +98,7 @@ export default function RoomFormDialog({ open, onOpenChange, initial, onSubmit }
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent aria-describedby={undefined} className="sm:max-w-md rounded-3xl">
         <DialogHeader>
-          <DialogTitle className="text-xl font-black font-serif">
+          <DialogTitle className="text-xl font-black font-sans">
             {initial ? 'Chỉnh sửa phòng' : 'Thêm phòng mới'}
           </DialogTitle>
         </DialogHeader>

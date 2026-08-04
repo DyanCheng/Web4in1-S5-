@@ -1,17 +1,10 @@
 import type { Metadata } from "next";
-import { Montserrat, Playfair_Display, Geist_Mono } from "next/font/google";
+import { Inter, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
-const montserrat = Montserrat({
+const inter = Inter({
   subsets: ["latin", "vietnamese"],
   variable: "--font-sans",
-  weight: ["300", "400", "500", "600", "700"],
-});
-
-const playfair = Playfair_Display({
-  variable: "--font-serif",
-  subsets: ["latin", "vietnamese"],
-  weight: ["400", "500", "600", "700"],
 });
 
 const geistMono = Geist_Mono({
@@ -39,7 +32,7 @@ export default function RootLayout({
   return (
     <html
       lang="vi" suppressHydrationWarning
-      className={cn("h-full", "antialiased", playfair.variable, geistMono.variable, "font-sans", montserrat.variable)}
+      className={cn("h-full", "antialiased", inter.variable, geistMono.variable, "font-sans")}
     >
       <body suppressHydrationWarning 
       className="min-h-full flex flex-col">

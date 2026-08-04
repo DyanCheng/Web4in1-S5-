@@ -149,7 +149,7 @@ export default function PaymentPage() {
               <QrCode className="size-10 text-blue-600" />
             </div>
           )}
-          <h1 className="text-3xl font-black font-serif mb-2">
+          <h1 className="text-3xl font-black font-sans mb-2">
             {isPaid ? 'Thanh toán thành công!' : isPendingApproval ? 'Đang chờ Admin duyệt đơn' : 'Quét mã QR để thanh toán'}
           </h1>
           <p className="text-slate-500 dark:text-slate-400 font-semibold">
