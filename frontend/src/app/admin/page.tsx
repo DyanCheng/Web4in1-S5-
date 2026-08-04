@@ -631,7 +631,15 @@ export default function AdminDashboard() {
 
         <div className="mt-auto p-6 border-t border-slate-200/70 dark:border-slate-800">
           <div className="flex items-center gap-3">
-            <div className="size-12 rounded-full bg-slate-300 dark:bg-slate-700" />
+            <div className="size-12 rounded-full bg-slate-300 dark:bg-slate-700 overflow-hidden shrink-0 flex items-center justify-center">
+              {user.avatar ? (
+                <img src={user.avatar} alt={user.name} className="size-full object-cover" />
+              ) : (
+                <span className="text-lg font-bold text-slate-500 dark:text-slate-400">
+                  {user.name?.charAt(0).toUpperCase() || 'A'}
+                </span>
+              )}
+            </div>
             <div className="text-left">
               <p className="font-bold">{user.name}</p>
               <p className="text-sm text-slate-500 dark:text-slate-400">Quản trị hệ thống</p>

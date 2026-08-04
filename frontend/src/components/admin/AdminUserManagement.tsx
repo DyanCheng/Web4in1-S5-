@@ -9,21 +9,47 @@ export default function AdminUserManagement() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
 
+  const UserAvatar = ({ user, initials }: { user: any, initials: string }) => {
+    const [error, setError] = useState(false);
+    
+    if (!user.avatar_url || error) {
+      return <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{initials}</span>;
+    }
+    
+    return (
+      <img
+        src={user.avatar_url}
+        alt={user.full_name || user.email || 'User avatar'}
+        className="size-full object-cover"
+        onError={() => setError(true)}
+      />
+    );
+  };
+
+  const getInitials = (name?: string) => {
+    const cleanName = (name || 'User').trim();
+    const parts = cleanName.split(/\s+/).filter(Boolean);
+
+    if (parts.length === 0) return 'U';
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+
+    return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+  };
+
   useEffect(() => {
     fetchUsers();
   }, []);
 
   async function fetchUsers() {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('users')
-      .select('user_id, full_name, email, phone, status, created_at')
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      toast.error('Lỗi tải dữ liệu người dùng');
-    } else if (data) {
+    try {
+      const response = await fetch('/api/admin/users');
+      if (!response.ok) throw new Error('Network response was not ok');
+      const data = await response.json();
       setUsers(data);
+    } catch (error) {
+      console.error(error);
+      toast.error('Lỗi tải dữ liệu người dùng');
     }
     setLoading(false);
   }
@@ -92,7 +118,7 @@ export default function AdminUserManagement() {
             <table className="w-full text-left text-sm whitespace-nowrap">
               <thead className="bg-slate-50 dark:bg-slate-950/50 border-b border-slate-200 dark:border-slate-800">
                 <tr>
-                  <th className="px-6 py-4 font-semibold text-slate-600 dark:text-slate-400">Họ và tên</th>
+                  <th className="px-6 py-4 font-semibold text-slate-600 dark:text-slate-400">Người dùng</th>
                   <th className="px-6 py-4 font-semibold text-slate-600 dark:text-slate-400">Email</th>
                   <th className="px-6 py-4 font-semibold text-slate-600 dark:text-slate-400">Số điện thoại</th>
                   <th className="px-6 py-4 font-semibold text-slate-600 dark:text-slate-400">Trạng thái</th>
@@ -102,7 +128,16 @@ export default function AdminUserManagement() {
               <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
                 {filteredUsers.map((user) => (
                   <tr key={user.user_id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                    <td className="px-6 py-4 font-bold text-slate-800 dark:text-slate-200">{user.full_name || 'Khách vãng lai'}</td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="size-10 rounded-full overflow-hidden bg-slate-200 dark:bg-slate-700 flex items-center justify-center shrink-0">
+                          <UserAvatar user={user} initials={getInitials(user.full_name || user.email)} />
+                        </div>
+                        <div>
+                          <div className="font-bold text-slate-800 dark:text-slate-200">{user.full_name || 'Khách vãng lai'}</div>
+                        </div>
+                      </div>
+                    </td>
                     <td className="px-6 py-4 text-slate-600 dark:text-slate-300">{user.email}</td>
                     <td className="px-6 py-4 text-slate-600 dark:text-slate-300">{user.phone || '—'}</td>
                     <td className="px-6 py-4">
