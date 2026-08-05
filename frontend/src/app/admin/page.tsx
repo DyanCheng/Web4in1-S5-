@@ -421,6 +421,45 @@ export default function AdminDashboard() {
     [paymentSearch, paymentTransactions]
   );
 
+  const formatCurrency = (value: number) => `${Number(value || 0).toLocaleString('vi-VN')}đ`;
+
+  const ITEMS_PER_PAGE = 10;
+  const tourTotalPages = Math.max(1, Math.ceil(filteredTours.length / ITEMS_PER_PAGE));
+  const paginatedTours = filteredTours.slice((tourPage - 1) * ITEMS_PER_PAGE, tourPage * ITEMS_PER_PAGE);
+  const bookingTotalPages = Math.max(1, Math.ceil(bookings.length / ITEMS_PER_PAGE));
+  const paginatedBookings = bookings.slice((bookingPage - 1) * ITEMS_PER_PAGE, bookingPage * ITEMS_PER_PAGE);
+  const paymentTotalPages = Math.max(1, Math.ceil(filteredPayments.length / ITEMS_PER_PAGE));
+  const paginatedPayments = filteredPayments.slice((paymentPage - 1) * ITEMS_PER_PAGE, paymentPage * ITEMS_PER_PAGE);
+  const roomTotalPages = Math.max(1, Math.ceil(rooms.length / ITEMS_PER_PAGE));
+  const paginatedRooms = rooms.slice((roomPage - 1) * ITEMS_PER_PAGE, roomPage * ITEMS_PER_PAGE);
+
+  const renderPagination = (currentPage: number, totalPages: number, setPage: (p: number) => void) => {
+    if (totalPages <= 1) return null;
+    return (
+      <div className="flex items-center justify-between px-6 py-4 border-t border-slate-200/70 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60">
+        <button
+          type="button"
+          onClick={() => setPage(Math.max(1, currentPage - 1))}
+          disabled={currentPage === 1}
+          className="px-4 py-2 text-sm font-bold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl disabled:opacity-50 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+        >
+          Trước
+        </button>
+        <span className="text-sm font-semibold text-slate-500 dark:text-slate-400">
+          Trang <span className="text-slate-900 dark:text-white">{currentPage}</span> / {totalPages}
+        </span>
+        <button
+          type="button"
+          onClick={() => setPage(Math.min(totalPages, currentPage + 1))}
+          disabled={currentPage === totalPages}
+          className="px-4 py-2 text-sm font-bold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl disabled:opacity-50 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+        >
+          Tiếp theo
+        </button>
+      </div>
+    );
+  };
+
   const topTours = useMemo(() => {
     const salesMap = new Map<string, { title: string; revenue: number; orders: number; guests: number }>();
 
@@ -503,6 +542,23 @@ export default function AdminDashboard() {
 
   const handleConfirmBooking = (id: string) => {
     setBookings((prev) => prev.map((booking) => (booking.id === id ? { ...booking, status: 'confirmed' } : booking)));
+  };
+
+  const handleApprovePayment = async (paymentCode: string) => {
+    if (!confirm('Duyệt thanh toán này? Khách hàng sẽ thấy mã QR để thanh toán.')) return;
+    try {
+      const response = await fetch(apiUrl(`/api/payments/${paymentCode}/approve`), {
+        method: 'POST',
+        headers: adminHeaders(),
+      });
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.message || 'Lỗi khi duyệt');
+      }
+      await fetchData();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Lỗi khi duyệt');
+    }
   };
 
   const handleDeleteBooking = (id: string) => {
