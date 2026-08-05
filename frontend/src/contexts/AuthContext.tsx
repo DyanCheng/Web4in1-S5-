@@ -11,6 +11,7 @@ import React, {
 
 import { apiUrl, parseJsonResponse } from '@/lib/backendUrl'
 import { isStaleRealtimeToken } from '@/lib/supabase/realtime-auth'
+import { toast } from 'sonner'
 
 interface User {
   id: string
@@ -115,10 +116,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!stored) return
 
       const parsed = JSON.parse(stored) as StoredSession | User
+      let sessionUser: User | null = null;
       if ('user' in parsed) {
+        sessionUser = parsed.user;
         persistSession(parsed)
       } else {
+        sessionUser = parsed as User;
         persistSession({ user: parsed })
+      }
+
+      if (sessionUser) {
+        // Verify user status on load
+        fetch(`/api/auth/me?userId=${sessionUser.id}`)
+          .then(res => res.json())
+          .then(data => {
+            if (data.status === 'banned') {
+              persistSession(null)
+              toast.error('Tài khoản của bạn đã bị khóa')
+              window.location.href = '/login'
+            }
+          })
+          .catch(console.error)
       }
     } catch {
       localStorage.removeItem(STORAGE_KEY)
@@ -160,7 +178,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       )
     }
 
-    const data = await readAuthResponse(response, 'Đăng nhập thất bại')
+    let data: AuthResponse;
+    try {
+      data = await readAuthResponse(response, 'Đăng nhập thất bại')
+    } catch (error: any) {
+      // Login failed. Check if it's because the account is banned
+      const statusRes = await fetch(`/api/auth/me?email=${encodeURIComponent(email)}`)
+      if (statusRes.ok) {
+        const statusData = await statusRes.json()
+        if (statusData.status === 'banned') {
+          throw new Error('Tài khoản của bạn đã bị khóa')
+        }
+      }
+      throw error;
+    }
+    
+    // Check status right after login just in case
+    const statusRes = await fetch(`/api/auth/me?userId=${data.id}`)
+    if (statusRes.ok) {
+      const statusData = await statusRes.json()
+      if (statusData.status === 'banned') {
+        throw new Error('Tài khoản của bạn đã bị khóa')
+      }
+    }
+
     return applyAuthResponse(data)
   }
 
@@ -179,6 +220,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     const data = await readAuthResponse(response, 'Đăng nhập Google thất bại')
+
+    // Check status right after Google login
+    const statusRes = await fetch(`/api/auth/me?userId=${data.id}`)
+    if (statusRes.ok) {
+      const statusData = await statusRes.json()
+      if (statusData.status === 'banned') {
+        throw new Error('Tài khoản của bạn đã bị khóa')
+      }
+    }
+
     return applyAuthResponse(data)
   }
 

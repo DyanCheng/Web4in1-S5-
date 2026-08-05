@@ -62,6 +62,7 @@ builder.Services.AddSingleton<GoogleAuthService>();
 builder.Services.AddSingleton<PaymentDbService>();
 builder.Services.AddSingleton<TourDbService>();
 builder.Services.AddSingleton<HotelDbService>();
+builder.Services.AddSingleton<RevenueService>();
 builder.Services.AddSingleton<CheckoutService>();
 
 builder.Services.AddSingleton<SePayService>();
