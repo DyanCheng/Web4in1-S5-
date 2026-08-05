@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { format, startOfToday } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -8,6 +8,8 @@ import type { DateRange } from 'react-day-picker';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { ImageWithFallback } from '@/components/figma/ImageWithFallback';
+import ReviewModal from '@/components/hotel/ReviewModal';
+import { createClient } from '@/lib/supabase/client';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
@@ -20,6 +22,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -55,7 +63,8 @@ import {
 } from 'lucide-react';
 import RoomTypeModal from '@/components/RoomTypeModal';
 import { getHotelFavorites, toggleHotelFavorite } from '@/lib/hotelStorage';
-import { useEffect } from 'react';
+import { submitUnifiedCheckout } from '@/lib/checkoutApi';
+
 
 type SortMode = 'recommended' | 'price' | 'rating';
 type BookingMode = 'hourly' | 'overnight' | 'daily';
@@ -97,7 +106,7 @@ const otherServices = [
 // TODO: dữ liệu mock — backend HotelsController/HotelDbService đã sẵn sàng, cần wire fetch API
 const hotels = [
   {
-    id: 'ocean-view',
+    id: '1',
     name: 'Resort Sun Peninsula',
     location: 'Bãi Bắc, Bán đảo Sơn Trà, Đà Nẵng',
     area: 'Đà Nẵng',
@@ -111,7 +120,7 @@ const hotels = [
     features: ['WiFi miễn phí', 'Hồ bơi', 'Nhà hàng', 'Spa'],
   },
   {
-    id: 'duong-dong',
+    id: '2',
     name: 'Dương Đông Boutique Hotel',
     location: 'Dương Đông, Phú Quốc',
     area: 'Phú Quốc',
@@ -124,7 +133,7 @@ const hotels = [
     features: ['WiFi miễn phí', 'Gần bãi biển', 'Đưa đón sân bay'],
   },
   {
-    id: 'imperial-garden',
+    id: '3',
     name: 'Imperial Garden & Spa',
     location: 'Trần Hưng Đạo, Phú Quốc',
     area: 'Phú Quốc',
@@ -138,7 +147,7 @@ const hotels = [
     features: ['Nhà hàng', 'Spa', 'Hồ bơi', 'Phòng gym'],
   },
   {
-    id: 'nha-trang-bay',
+    id: '4',
     name: 'Nha Trang Bay Resort',
     location: 'Đường Trần Phú, Nha Trang',
     area: 'Nha Trang',
@@ -152,7 +161,7 @@ const hotels = [
     features: ['WiFi miễn phí', 'Hồ bơi', 'Nhà hàng', 'Gần bãi biển'],
   },
   {
-    id: 'da-nang-ocean',
+    id: '5',
     name: 'Đà Nẵng Ocean Hotel',
     location: 'Mỹ Khê, Đà Nẵng',
     area: 'Đà Nẵng',
@@ -165,7 +174,7 @@ const hotels = [
     features: ['WiFi miễn phí', 'Gần bãi biển', 'Bữa sáng miễn phí'],
   },
   {
-    id: 'hoi-an-lantern',
+    id: '6',
     name: 'Hội An Lantern Villa',
     location: 'Phố cổ Hội An, Quảng Nam',
     area: 'Hội An',
@@ -178,7 +187,7 @@ const hotels = [
     features: ['WiFi miễn phí', 'Bữa sáng miễn phí', 'Đưa đón sân bay'],
   },
   {
-    id: 'sapa-mountain',
+    id: '7',
     name: 'Sa Pa Mountain Lodge',
     location: 'Trung tâm Sa Pa, Lào Cai',
     area: 'Sa Pa',
@@ -191,7 +200,7 @@ const hotels = [
     features: ['WiFi miễn phí', 'Bữa sáng miễn phí', 'Nhà hàng'],
   },
   {
-    id: 'ha-long-pearl',
+    id: '8',
     name: 'Hạ Long Pearl Hotel',
     location: 'Bãi Cháy, Hạ Long',
     area: 'Hạ Long',
@@ -204,7 +213,7 @@ const hotels = [
     features: ['WiFi miễn phí', 'Hồ bơi', 'Nhà hàng'],
   },
   {
-    id: 'da-lat-pine',
+    id: '9',
     name: 'Đà Lạt Pine Garden',
     location: 'Hồ Tuyền Lâm, Đà Lạt',
     area: 'Đà Lạt',
@@ -217,7 +226,7 @@ const hotels = [
     features: ['WiFi miễn phí', 'Bữa sáng miễn phí', 'Nhà hàng'],
   },
   {
-    id: 'hanoi-heritage',
+    id: '10',
     name: 'Hà Nội Heritage Hotel',
     location: 'Hoàn Kiếm, Hà Nội',
     area: 'Hà Nội',
@@ -230,7 +239,7 @@ const hotels = [
     features: ['WiFi miễn phí', 'Nhà hàng', 'Đưa đón sân bay'],
   },
   {
-    id: 'saigon-sky',
+    id: '11',
     name: 'Sài Gòn Sky Suites',
     location: 'Quận 1, TP. Hồ Chí Minh',
     area: 'TP. Hồ Chí Minh',
@@ -244,7 +253,7 @@ const hotels = [
     features: ['WiFi miễn phí', 'Hồ bơi', 'Spa', 'Phòng gym'],
   },
   {
-    id: 'hue-riverside',
+    id: '12',
     name: 'Huế Riverside Hotel',
     location: 'Bờ sông Hương, Huế',
     area: 'Huế',
@@ -320,10 +329,10 @@ export default function HotelPage() {
   const [searchDestination, setSearchDestination] = useState('');
   const [bookingMode, setBookingMode] = useState<BookingMode>('daily');
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
-  const [dateRange, setDateRange] = useState<DateRange | undefined>({
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(() => ({
     from: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000),
     to: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
-  });
+  }));
   const [startTime, setStartTime] = useState('14:00');
   const [endTime, setEndTime] = useState('18:00');
   const [datePopoverOpen, setDatePopoverOpen] = useState(false);
@@ -334,25 +343,60 @@ export default function HotelPage() {
   const [sortMode, setSortMode] = useState<SortMode>('recommended');
   const [currentPage, setCurrentPage] = useState(1);
   const [favorites, setFavorites] = useState<string[]>([]);
+  const [reviewModalHotel, setReviewModalHotel] = useState<any | null>(null);
+  const [reviewStats, setReviewStats] = useState<Record<string, { rating: number, count: number }>>({});
+
   useEffect(() => {
+    async function fetchStats() {
+      try {
+        const supabase = createClient();
+        const { data } = await supabase.from('hotel_reviews').select('hotel_id, rating');
+        if (data) {
+          const stats: Record<string, { totalRating: number, count: number }> = {};
+          data.forEach((r: any) => {
+            if (!stats[r.hotel_id]) stats[r.hotel_id] = { totalRating: 0, count: 0 };
+            stats[r.hotel_id].totalRating += r.rating;
+            stats[r.hotel_id].count += 1;
+          });
+
+          const finalStats: Record<string, { rating: number, count: number }> = {};
+          Object.keys(stats).forEach(id => {
+            finalStats[id] = {
+              rating: stats[id].totalRating / stats[id].count,
+              count: stats[id].count
+            };
+          });
+          setReviewStats(finalStats);
+        }
+      } catch {
+        // Missing Supabase env or network — page still works without review stats
+      }
+    }
+    fetchStats();
+  }, []);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setFavorites(getHotelFavorites().map((h) => h.id));
   }, []);
   const [notice, setNotice] = useState('');
   // Modal state for room selection
   const [showRoomModal, setShowRoomModal] = useState(false);
   const [selectedHotel, setSelectedHotel] = useState<Hotel | null>(null);
-  const [selectedRoom, setSelectedRoom] = useState<any | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [selectedRooms, setSelectedRooms] = useState<Record<string, { room: any; quantity: number }>>({});
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [checkoutError, setCheckoutError] = useState('');
   const [adults, setAdults] = useState<number>(2);
   const [children, setChildren] = useState<number>(1);
-  const [roomQuantity, setRoomQuantity] = useState<number>(1);
   const [svcSlide, setSvcSlide] = useState<number>(0);
+  const [mapHotel, setMapHotel] = useState<Hotel | null>(null);
 
   const hotelRooms = useMemo(() => {
     if (!selectedHotel) return [];
     return [
       {
-        id: 'standard',
+        id: '371',
         name: 'Phòng Standard (Tiêu chuẩn)',
         badge: 'Bán chạy nhất',
         badgeColor: 'bg-orange-50 dark:bg-orange-950/30 text-orange-600 dark:text-orange-400 border border-orange-200 dark:border-orange-900',
@@ -365,7 +409,7 @@ export default function HotelPage() {
         image: 'https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&w=600&q=80',
       },
       {
-        id: 'deluxe',
+        id: '372',
         name: 'Phòng Deluxe View Biển',
         badge: 'Lựa chọn phổ biến',
         badgeColor: 'bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-900',
@@ -378,7 +422,7 @@ export default function HotelPage() {
         image: 'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=600&q=80',
       },
       {
-        id: 'vip',
+        id: '373',
         name: 'VIP Club Peninsula Suite',
         badge: 'Đẳng cấp VIP',
         badgeColor: 'bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-900',
@@ -391,7 +435,7 @@ export default function HotelPage() {
         image: 'https://images.unsplash.com/photo-1578683010236-d716f9a3f461?auto=format&fit=crop&w=600&q=80',
       },
       {
-        id: 'family',
+        id: '374',
         name: 'Phòng Family (2 Giường lớn)',
         badge: 'Dành cho gia đình',
         badgeColor: 'bg-purple-50 dark:bg-purple-950/30 text-purple-600 dark:text-purple-400 border border-purple-200 dark:border-purple-900',
@@ -423,18 +467,35 @@ export default function HotelPage() {
 
   const openRoomModal = (hotel: Hotel) => {
     setSelectedHotel(hotel);
-    setSelectedRoom(null);
+    setSelectedRooms({});
     setShowRoomModal(false);
   };
 
   const closeRoomModal = () => {
     setShowRoomModal(false);
     setSelectedHotel(null);
-    setSelectedRoom(null);
+    setSelectedRooms({});
   };
 
   const filteredHotels = useMemo(() => {
-    return hotels
+    const hotelsWithRealStats = hotels.map(h => {
+      const real = reviewStats[h.id];
+      if (!real) {
+        return {
+          ...h,
+          rating: 0,
+          reviews: 0
+        };
+      }
+      
+      return {
+        ...h,
+        rating: Number(real.rating.toFixed(1)),
+        reviews: real.count
+      };
+    });
+
+    return hotelsWithRealStats
       .filter((hotel) => {
         const matchesDestination = !searchDestination || hotel.area === searchDestination;
         const matchesStars = selectedStars.length === 0 || selectedStars.includes(hotel.stars);
@@ -451,7 +512,7 @@ export default function HotelPage() {
         if (sortMode === 'rating') return second.rating - first.rating;
         return second.reviews - first.reviews;
       });
-  }, [searchDestination, maxPrice, selectedArea, selectedFacilities, selectedStars, sortMode]);
+  }, [searchDestination, maxPrice, selectedArea, selectedFacilities, selectedStars, sortMode, reviewStats]);
 
   const dateSummary = useMemo(() => {
     if (bookingMode === 'hourly') {
@@ -541,9 +602,8 @@ export default function HotelPage() {
   };
 
   return (
-    <div className={`min-h-screen bg-slate-100 dark:bg-slate-950 font-sans transition-colors duration-300 flex flex-col ${
-      theme === 'dark' ? 'dark text-white' : 'text-slate-900'
-    }`}>
+    <div className={`min-h-screen bg-slate-100 dark:bg-slate-950 font-sans transition-colors duration-300 flex flex-col ${theme === 'dark' ? 'dark text-white' : 'text-slate-900'
+      }`}>
       <Header />
 
       <main className="flex-1">
@@ -554,7 +614,7 @@ export default function HotelPage() {
               <div className="mb-6">
                 <button
                   onClick={closeRoomModal}
-                  className="inline-flex items-center gap-1.5 text-xs font-black text-[#0b5cd5] hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 mb-3 transition-colors cursor-pointer"
+                  className="inline-flex items-center gap-1.5 text-xs font-black text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 mb-3 transition-colors cursor-pointer"
                 >
                   <ArrowLeft className="size-3.5" />
                   Quay lại danh sách khách sạn
@@ -578,6 +638,7 @@ export default function HotelPage() {
                     <p className="mt-1 flex items-center gap-1.5 text-xs font-bold text-slate-500 dark:text-slate-400">
                       <MapPin className="size-3.5 text-blue-600 shrink-0" />
                       <span>{selectedHotel.location}, Việt Nam</span>
+                      <button onClick={() => setMapHotel(selectedHotel)} className="text-blue-600 hover:underline ml-1 font-semibold">Xem bản đồ</button>
                     </p>
                   </div>
 
@@ -591,11 +652,10 @@ export default function HotelPage() {
                     </button>
                     <button
                       onClick={() => toggleFavorite(selectedHotel)}
-                      className={`inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-black transition-colors shadow-sm cursor-pointer ${
-                        favorites.includes(selectedHotel.id)
+                      className={`inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-black transition-colors shadow-sm cursor-pointer ${favorites.includes(selectedHotel.id)
                           ? 'border-red-200 bg-red-50 text-red-600 dark:border-red-950 dark:bg-red-950/20'
                           : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-850 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-800'
-                      }`}
+                        }`}
                     >
                       <Heart className={`size-3.5 ${favorites.includes(selectedHotel.id) ? 'fill-red-500 text-red-500' : 'text-slate-500'}`} />
                       {favorites.includes(selectedHotel.id) ? 'Đã lưu' : 'Lưu lại'}
@@ -609,15 +669,16 @@ export default function HotelPage() {
                 {/* Left Column: Room Cards */}
                 <div className="space-y-4">
                   {hotelRooms.map((room) => {
-                    const isSelected = selectedRoom?.id === room.id;
+                    const roomSelection = selectedRooms[room.id];
+                    const quantity = roomSelection?.quantity || 0;
+                    const isSelected = quantity > 0;
                     return (
                       <div
                         key={room.id}
-                        className={`bg-white dark:bg-slate-900 rounded-xl overflow-hidden border transition-all shadow-sm ${
-                          isSelected
+                        className={`bg-white dark:bg-slate-900 rounded-xl overflow-hidden border transition-all shadow-sm ${isSelected
                             ? 'border-blue-600 dark:border-blue-500 ring-1 ring-blue-600 dark:ring-blue-500'
                             : 'border-slate-200 dark:border-slate-850 hover:shadow-md'
-                        }`}
+                          }`}
                       >
                         <div className="grid grid-cols-1 md:grid-cols-[260px_1fr] md:items-stretch">
                           <div className="relative h-44 w-full md:h-auto overflow-hidden shrink-0">
@@ -652,7 +713,7 @@ export default function HotelPage() {
                                   {room.bed}
                                 </span>
                                 <span className="flex items-center gap-1">
-                                  {room.id === 'vip' ? <Waves className="size-3" /> : <Users className="size-3" />}
+                                  {room.id === '373' ? <Waves className="size-3" /> : <Users className="size-3" />}
                                   {room.guests}
                                 </span>
                               </div>
@@ -672,7 +733,7 @@ export default function HotelPage() {
                             <div className="mt-4 flex flex-row items-center justify-between gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
                               <div>
                                 <p className="text-[10px] font-bold text-slate-400">Giá mỗi đêm từ</p>
-                                <p className="text-lg font-black text-[#0b5cd5] dark:text-blue-400 leading-none mt-1">
+                                <p className="text-lg font-black text-blue-600 dark:text-blue-400 leading-none mt-1">
                                   {room.price.toLocaleString('vi-VN')} <span className="underline underline-offset-1 decoration-[1.5px]">đ</span>
                                 </p>
                                 <p className="text-[9px] font-medium text-slate-400 mt-1">
@@ -680,16 +741,35 @@ export default function HotelPage() {
                                 </p>
                               </div>
 
-                              <button
-                                onClick={() => setSelectedRoom(room)}
-                                className={`rounded-lg px-4 py-2 text-xs font-black transition-all cursor-pointer ${
-                                  isSelected
-                                    ? 'bg-[#0b5cd5] text-white hover:bg-blue-700'
-                                    : 'bg-[#0b5cd5] text-white hover:bg-blue-700'
-                                }`}
-                              >
-                                {isSelected ? 'Đã chọn' : 'Chọn phòng'}
-                              </button>
+                              {quantity === 0 ? (
+                                <button
+                                  onClick={() => setSelectedRooms(prev => ({ ...prev, [room.id]: { room, quantity: 1 } }))}
+                                  className="rounded-lg px-4 py-2 text-xs font-black transition-all cursor-pointer bg-blue-600 text-white hover:bg-blue-700"
+                                >
+                                  Chọn phòng
+                                </button>
+                              ) : (
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    onClick={() => setSelectedRooms(prev => {
+                                      const next = { ...prev };
+                                      if (quantity <= 1) delete next[room.id];
+                                      else next[room.id] = { room, quantity: quantity - 1 };
+                                      return next;
+                                    })}
+                                    className="size-8 rounded bg-slate-100 dark:bg-slate-800 font-bold flex items-center justify-center text-slate-800 dark:text-slate-100 transition-colors hover:bg-slate-200 dark:hover:bg-slate-700"
+                                  >
+                                    -
+                                  </button>
+                                  <span className="text-sm font-black w-4 text-center dark:text-white">{quantity}</span>
+                                  <button
+                                    onClick={() => setSelectedRooms(prev => ({ ...prev, [room.id]: { room, quantity: quantity + 1 } }))}
+                                    className="size-8 rounded bg-blue-600 font-bold flex items-center justify-center text-white transition-colors hover:bg-blue-700"
+                                  >
+                                    +
+                                  </button>
+                                </div>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -702,12 +782,18 @@ export default function HotelPage() {
                 <div className="space-y-4 lg:sticky lg:top-4">
                   {/* Booking Summary Box */}
                   <div className="bg-white dark:bg-slate-900 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-md">
-                    <div className="bg-[#0b5cd5] text-center py-3 text-white">
+                    <div className="bg-blue-600 text-center py-3 text-white">
                       <h3 className="text-sm font-black tracking-wide text-white uppercase">Tóm tắt đặt phòng</h3>
                     </div>
 
                     <div className="p-4 text-left space-y-3">
-                      {/* Date Picker Section */}
+                      {(() => {
+                        const totalSelectedRooms = Object.values(selectedRooms).reduce((acc, curr) => acc + curr.quantity, 0);
+                        const totalPrice = Object.values(selectedRooms).reduce((acc, curr) => acc + ((curr.room.price + curr.room.taxAndFee) * computedNights * curr.quantity), 0);
+                        const hasSelectedRooms = totalSelectedRooms > 0;
+                        return (
+                          <>
+                            {/* Date Picker Section */}
                       <div className="flex items-center justify-between border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 relative bg-slate-50 dark:bg-slate-800/50">
                         <div className="flex flex-col text-left">
                           <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">NGÀY NHẬN PHÒNG</span>
@@ -715,7 +801,7 @@ export default function HotelPage() {
                             {format(displayFromDate, "dd 'Th'MM, yyyy")}
                           </span>
                         </div>
-                        
+
                         <Popover>
                           <PopoverTrigger
                             type="button"
@@ -748,12 +834,8 @@ export default function HotelPage() {
 
                       {/* Guest Counter Section */}
                       <div className="flex justify-between items-center py-2 border-b border-slate-100 dark:border-slate-800">
-                        <span className="text-xs font-semibold text-slate-500">Số lượng phòng</span>
-                        <div className="flex items-center gap-2">
-                          <button onClick={() => setRoomQuantity(Math.max(1, roomQuantity - 1))} className="size-5 rounded bg-slate-100 dark:bg-slate-800 font-bold">-</button>
-                          <span className="text-xs font-black text-slate-800 dark:text-slate-100 w-4 text-center">{roomQuantity}</span>
-                          <button onClick={() => setRoomQuantity(roomQuantity + 1)} className="size-5 rounded bg-slate-100 dark:bg-slate-800 font-bold">+</button>
-                        </div>
+                        <span className="text-xs font-semibold text-slate-500">Tổng số phòng</span>
+                        <span className="text-xs font-black text-slate-800 dark:text-slate-100">{totalSelectedRooms}</span>
                       </div>
 
                       <div className="flex justify-between items-center py-2 border-b border-slate-100 dark:border-slate-800">
@@ -801,11 +883,17 @@ export default function HotelPage() {
                       </div>
 
                       {/* Selected Room Details */}
-                      <div className="p-3 bg-[#eef2ff] dark:bg-blue-950/20 rounded-lg">
+                      <div className="p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
                         <p className="text-[9px] font-black text-slate-400 uppercase">Phòng đã chọn:</p>
-                        <p className={`text-xs font-black mt-0.5 ${selectedRoom ? 'text-[#0b5cd5] dark:text-blue-400' : 'text-slate-400'}`}>
-                          {selectedRoom ? selectedRoom.name : 'Vui lòng chọn phòng'}
-                        </p>
+                        {hasSelectedRooms ? (
+                          Object.values(selectedRooms).map(({ room, quantity }) => (
+                            <div key={room.id} className="flex justify-between mt-1 text-xs font-black text-blue-600 dark:text-blue-400">
+                              <span>{quantity}x {room.name}</span>
+                            </div>
+                          ))
+                        ) : (
+                          <p className="text-xs font-black mt-0.5 text-slate-400">Vui lòng chọn phòng</p>
+                        )}
                       </div>
 
                       {/* Total Price & Submit Booking */}
@@ -813,15 +901,15 @@ export default function HotelPage() {
                         <div className="flex justify-between items-baseline mb-3">
                           <span className="text-xs font-black text-slate-800 dark:text-slate-200">Tổng cộng</span>
                           <div className="text-right">
-                            <span className="text-lg font-black text-[#0b5cd5] dark:text-blue-400 leading-none">
-                              {((selectedRoom ? (selectedRoom.price + selectedRoom.taxAndFee) * computedNights * roomQuantity : 0)).toLocaleString('vi-VN')} <span className="underline underline-offset-1 decoration-[1.5px]">đ</span>
+                            <span className="text-lg font-black text-blue-600 dark:text-blue-400 leading-none">
+                              {totalPrice.toLocaleString('vi-VN')} <span className="underline underline-offset-1 decoration-[1.5px]">đ</span>
                             </span>
                             <p className="text-[9px] font-medium text-slate-400 mt-0.5">Đã bao gồm tất cả thuế phí</p>
                           </div>
                         </div>
 
                         <button
-                          disabled={!selectedRoom}
+                          disabled={!hasSelectedRooms}
                           onClick={() => {
                             if (!user) {
                               router.push('/login');
@@ -829,16 +917,18 @@ export default function HotelPage() {
                             }
                             setShowConfirmModal(true);
                           }}
-                          className={`w-full py-2.5 rounded-lg text-xs font-black shadow-md transition-all cursor-pointer ${
-                            selectedRoom
-                              ? 'bg-[#0b5cd5] text-white hover:bg-blue-700'
+                          className={`w-full py-2.5 rounded-lg text-xs font-black shadow-md transition-all cursor-pointer ${hasSelectedRooms
+                              ? 'bg-blue-600 text-white hover:bg-blue-700'
                               : 'bg-[#85a8e6] text-white cursor-not-allowed opacity-100'
-                          }`}
+                            }`}
                         >
-                          {user && selectedRoom ? 'Đặt phòng' : 'Tiếp tục đặt phòng'}
+                          {user && hasSelectedRooms ? 'Đặt phòng' : 'Tiếp tục đặt phòng'}
                         </button>
                         <p className="text-[10px] text-slate-400 text-center mt-2 font-medium">Bạn sẽ không bị trừ tiền ngay lúc này</p>
                       </div>
+                          </>
+                        );
+                      })()}
                     </div>
                   </div>
 
@@ -848,26 +938,78 @@ export default function HotelPage() {
                       <AlertDialogHeader>
                         <AlertDialogTitle>Xác nhận đặt phòng</AlertDialogTitle>
                         <AlertDialogDescription className="space-y-2 mt-2" render={<div />}>
-                          <p>Bạn có chắc chắn muốn đặt phòng <strong>{selectedRoom?.name}</strong> tại khách sạn <strong>{selectedHotel?.name}</strong> không?</p>
-                          <div className="bg-slate-50 dark:bg-slate-800 p-3 rounded-lg text-sm text-slate-700 dark:text-slate-300">
-                            <p>Ngày nhận phòng: <strong>{format(displayFromDate, "dd/MM/yyyy")}</strong></p>
-                            <p>Ngày trả phòng: <strong>{format(displayToDate, "dd/MM/yyyy")}</strong></p>
-                            <p>Khách: <strong>{adults} Người lớn, {children} Trẻ em</strong></p>
-                            <p>Số lượng phòng: <strong>{roomQuantity}</strong></p>
-                            <p className="mt-2 text-[#0b5cd5] font-black text-base">Tổng cộng: {selectedRoom ? ((selectedRoom.price + selectedRoom.taxAndFee) * computedNights * roomQuantity).toLocaleString('vi-VN') : 0} đ</p>
-                          </div>
+                            <p>Bạn có chắc chắn muốn đặt <strong>{Object.values(selectedRooms).reduce((acc, curr) => acc + curr.quantity, 0)}</strong> phòng tại khách sạn <strong>{selectedHotel?.name}</strong> không?</p>
+                            <div className="mt-4 p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
+                              <p className="text-xs text-slate-500 mb-1">Thời gian: {format(displayFromDate, "dd/MM/yyyy")} - {format(displayToDate, "dd/MM/yyyy")} ({computedNights} đêm)</p>
+                              <p className="text-xs text-slate-500 mb-1">Khách: {adults} Người lớn, {children} Trẻ em</p>
+                              <div className="text-xs text-slate-500 mt-2 mb-1 border-t border-slate-200 dark:border-slate-700 pt-2">Phòng:
+                                {Object.values(selectedRooms).map(({ room, quantity }) => (
+                                  <div key={room.id} className="ml-2 font-semibold text-slate-700 dark:text-slate-300">
+                                    - {quantity}x {room.name}
+                                  </div>
+                                ))}
+                              </div>
+                              <p className="mt-2 text-blue-600 font-black text-base">Tổng cộng: {Object.values(selectedRooms).reduce((acc, curr) => acc + ((curr.room.price + curr.room.taxAndFee) * computedNights * curr.quantity), 0).toLocaleString('vi-VN')} đ</p>
+                            </div>
                         </AlertDialogDescription>
                       </AlertDialogHeader>
+                      {checkoutError && (
+                        <div className="mx-6 mb-2 p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900 rounded-xl text-xs font-semibold text-red-600">
+                          {checkoutError}
+                        </div>
+                      )}
                       <AlertDialogFooter>
                         <AlertDialogCancel>Hủy</AlertDialogCancel>
                         <AlertDialogAction
-                          onClick={() => {
-                            setNotice(`Đặt phòng thành công! CMC Travel đang chuẩn bị đơn hàng cho ${roomQuantity} phòng ${selectedRoom?.name} tại ${selectedHotel?.name}.`);
-                            setSelectedRoom(null);
-                            setShowConfirmModal(false);
+                          disabled={checkoutLoading}
+                          onClick={async (e) => {
+                            e.preventDefault();
+                            if (!user) { router.push('/login'); return; }
+                            setCheckoutLoading(true);
+                            setCheckoutError('');
+                            try {
+                              const rooms = Object.values(selectedRooms);
+                              const checkInStr = format(displayFromDate, 'yyyy-MM-dd');
+                              const checkOutStr = format(displayToDate, 'yyyy-MM-dd');
+                              const items = rooms.map(({ room, quantity }) => ({
+                                serviceType: 'hotel' as const,
+                                referenceId: String(room.id),
+                                title: `${room.name} - ${selectedHotel?.name}`,
+                                image: selectedHotel?.image || '',
+                                price: (room.price + (room.taxAndFee || 0)) * computedNights,
+                                quantity,
+                                guests: adults,
+                                date: checkInStr,
+                                metadata: {
+                                  hotelId: selectedHotel?.id,
+                                  hotelName: selectedHotel?.name,
+                                  roomId: String(room.id),
+                                  roomName: room.name,
+                                  checkOutDate: checkOutStr,
+                                  children,
+                                  totalNights: computedNights,
+                                },
+                              }));
+                              const result = await submitUnifiedCheckout({
+                                userId: user.id,
+                                userEmail: user.email,
+                                userName: user.name,
+                                phone: '',
+                                items,
+                              });
+                              sessionStorage.setItem(`payment_qr_${result.paymentCode}`, result.qrUrl);
+                              setSelectedRooms({});
+                              setShowConfirmModal(false);
+                              router.push(`/payment/${result.paymentCode}`);
+                            } catch (err) {
+                              setCheckoutError(err instanceof Error ? err.message : 'Lỗi thanh toán');
+                            } finally {
+                              setCheckoutLoading(false);
+                            }
                           }}
+                          className="bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60"
                         >
-                          Xác nhận đặt
+                          {checkoutLoading ? 'Đang xử lý...' : 'Xác nhận đặt'}
                         </AlertDialogAction>
                       </AlertDialogFooter>
                     </AlertDialogContent>
@@ -875,7 +1017,7 @@ export default function HotelPage() {
 
                   {/* Support Line */}
                   <div className="flex items-center gap-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 shadow-sm text-left">
-                    <div className="size-9 rounded-full border border-[#0b5cd5]/20 flex items-center justify-center text-[#0b5cd5] shrink-0 bg-blue-50 dark:bg-blue-950">
+                    <div className="size-9 rounded-full border border-blue-600/20 flex items-center justify-center text-blue-600 shrink-0 bg-blue-50 dark:bg-blue-950">
                       <Headphones className="size-4.5 text-blue-600" />
                     </div>
                     <div>
@@ -883,74 +1025,96 @@ export default function HotelPage() {
                       <p className="text-xs font-black text-slate-800 dark:text-slate-100 mt-1">Gọi ngay: 1900 1234</p>
                     </div>
                   </div>
-                      {/* Services Section */}
-                      <div className="space-y-3 pt-2">
-                        <div className="flex items-center justify-between">
-                          <h4 className="text-xs font-black text-slate-700 dark:text-slate-350 uppercase tracking-wider text-left">
-                            Khám phá các dịch vụ khác
-                          </h4>
-                          <div className="flex gap-1">
-                            <button
-                              onClick={() => setSvcSlide((prev) => Math.max(0, prev - 1))}
-                              disabled={svcSlide === 0}
-                              className="rounded-full p-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-blue-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer shadow-sm flex items-center justify-center"
-                            >
-                              <ChevronLeft className="size-3.5" />
-                            </button>
-                            <button
-                              onClick={() => setSvcSlide((prev) => Math.min(otherServices.length - 1, prev + 1))}
-                              disabled={svcSlide === otherServices.length - 1}
-                              className="rounded-full p-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-blue-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer shadow-sm flex items-center justify-center"
-                            >
-                              <ChevronRight className="size-3.5" />
-                            </button>
-                          </div>
-                        </div>
+                  {/* Services Section */}
+                  <div className="space-y-3 pt-2">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-xs font-black text-slate-700 dark:text-slate-350 uppercase tracking-wider text-left">
+                        Khám phá các dịch vụ khác
+                      </h4>
+                      <div className="flex gap-1">
+                        <button
+                          onClick={() => setSvcSlide((prev) => Math.max(0, prev - 1))}
+                          disabled={svcSlide === 0}
+                          className="rounded-full p-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-blue-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer shadow-sm flex items-center justify-center"
+                        >
+                          <ChevronLeft className="size-3.5" />
+                        </button>
+                        <button
+                          onClick={() => setSvcSlide((prev) => Math.min(otherServices.length - 1, prev + 1))}
+                          disabled={svcSlide === otherServices.length - 1}
+                          className="rounded-full p-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-blue-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer shadow-sm flex items-center justify-center"
+                        >
+                          <ChevronRight className="size-3.5" />
+                        </button>
+                      </div>
+                    </div>
 
-                        <div className="overflow-hidden w-full py-1">
+                    <div className="overflow-hidden w-full py-1">
+                      <div
+                        className="flex gap-3 transition-transform duration-300 ease-in-out"
+                        style={{ transform: `translateX(-${svcSlide * 140}px)` }}
+                      >
+                        {otherServices.map((svc) => (
                           <div
-                            className="flex gap-3 transition-transform duration-300 ease-in-out"
-                            style={{ transform: `translateX(-${svcSlide * 140}px)` }}
+                            key={svc.id}
+                            className="min-w-[130px] w-[130px] bg-white dark:bg-slate-900 rounded-xl p-3 border border-slate-150 dark:border-slate-800 shadow-sm flex flex-col items-center text-center justify-between shrink-0"
                           >
-                            {otherServices.map((svc) => (
-                              <div
-                                key={svc.id}
-                                className="min-w-[130px] w-[130px] bg-white dark:bg-slate-900 rounded-xl p-3 border border-slate-150 dark:border-slate-800 shadow-sm flex flex-col items-center text-center justify-between shrink-0"
-                              >
-                                <div className={`size-12 rounded-xl flex items-center justify-center ${svc.bgColor} mb-2`}>
-                                  {svc.icon === 'sprout' && <Sprout className="size-6" />}
-                                  {svc.icon === 'utensils' && <Utensils className="size-6" />}
-                                  {svc.icon === 'mountain' && <Mountain className="size-6" />}
-                                </div>
-                                <div className="flex-1 flex flex-col justify-between w-full">
-                                  <div>
-                                    <h5 className="text-[11px] font-black text-slate-850 dark:text-slate-100 leading-tight line-clamp-1">
-                                      {svc.name}
-                                    </h5>
-                                    <p className="text-[9px] text-slate-400 line-clamp-2 mt-1 leading-snug font-medium">
-                                      {svc.desc}
-                                    </p>
-                                  </div>
-                                  <button
-                                    onClick={() => setNotice(`Đang mở thông tin chi tiết dịch vụ ${svc.name}.`)}
-                                    className="mt-2.5 w-full text-[9px] font-black text-white bg-[#e07a5f] hover:bg-[#c6654a] py-1.5 rounded-md transition-colors cursor-pointer"
-                                  >
-                                    Xem chi tiết
-                                  </button>
-                                </div>
+                            <div className={`size-12 rounded-xl flex items-center justify-center ${svc.bgColor} mb-2`}>
+                              {svc.icon === 'sprout' && <Sprout className="size-6" />}
+                              {svc.icon === 'utensils' && <Utensils className="size-6" />}
+                              {svc.icon === 'mountain' && <Mountain className="size-6" />}
+                            </div>
+                            <div className="flex-1 flex flex-col justify-between w-full">
+                              <div>
+                                <h5 className="text-[11px] font-black text-slate-850 dark:text-slate-100 leading-tight line-clamp-1">
+                                  {svc.name}
+                                </h5>
+                                <p className="text-[9px] text-slate-400 line-clamp-2 mt-1 leading-snug font-medium">
+                                  {svc.desc}
+                                </p>
                               </div>
-                            ))}
+                              <button
+                                onClick={() => setNotice(`Đang mở thông tin chi tiết dịch vụ ${svc.name}.`)}
+                                className="mt-2.5 w-full text-[9px] font-black text-white bg-[#e07a5f] hover:bg-[#c6654a] py-1.5 rounded-md transition-colors cursor-pointer"
+                              >
+                                Xem chi tiết
+                              </button>
+                            </div>
                           </div>
-                        </div>
+                        ))}
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
         ) : (
           <>
-            <section className="bg-blue-700 dark:bg-blue-950 px-4 py-4">
-              <div className="max-w-7xl mx-auto bg-white dark:bg-slate-900 rounded-lg p-3 shadow-lg">
+            <section className="relative min-h-[640px] flex items-center justify-center py-20 overflow-hidden bg-slate-900">
+              {/* Background Image */}
+              <div className="absolute inset-0 z-0">
+                <img
+                  src="https://truongnauan.com/test_disk/photos/shares/kien-thuc-nghe-bep/hotel-la-gi/hotel-la-gi.jpg"
+                  alt="Hotel Background"
+                  className="w-full h-full object-cover opacity-85"
+                />
+                {/* Subtle gradient overlay */}
+                <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/30 to-slate-50/50 dark:to-slate-950/50"></div>
+              </div>
+
+              <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+                <div className="text-left max-w-3xl mb-10">
+                  <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-white leading-tight drop-shadow-md font-sans">
+                    Tìm Kiếm Khách Sạn <br />
+                    Đẳng Cấp 5 Sao
+                  </h1>
+                  <p className="mt-4 text-lg font-medium text-white/90 drop-shadow max-w-xl">
+                    Khám phá những không gian nghỉ dưỡng tuyệt vời nhất cho chuyến đi của bạn.
+                  </p>
+                </div>
+
+                <div className="bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-[2rem] shadow-2xl border border-slate-100 dark:border-slate-800">
                 <div className="grid grid-cols-1 md:grid-cols-[1.1fr_0.9fr_1.2fr_auto] gap-3">
                   <label className="flex flex-col gap-1 text-xs font-black text-slate-500 dark:text-slate-400">
                     Điểm đến
@@ -1077,6 +1241,7 @@ export default function HotelPage() {
                   </button>
                 </div>
               </div>
+            </div>
             </section>
 
             <section className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-10">
@@ -1210,11 +1375,10 @@ export default function HotelPage() {
                             setSortMode(item.id);
                             setCurrentPage(1);
                           }}
-                          className={`rounded-md px-3 py-2 text-xs font-black transition-colors ${
-                            sortMode === item.id
+                          className={`rounded-md px-3 py-2 text-xs font-black transition-colors ${sortMode === item.id
                               ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300'
                               : 'bg-slate-50 text-slate-500 hover:text-blue-600 dark:bg-slate-800 dark:text-slate-300'
-                          }`}
+                            }`}
                         >
                           {item.label}
                         </button>
@@ -1253,9 +1417,8 @@ export default function HotelPage() {
                             )}
                             <button
                               onClick={() => toggleFavorite(hotel)}
-                              className={`absolute top-3 right-3 flex size-9 items-center justify-center rounded-full bg-white shadow-md transition-colors ${
-                                favorites.includes(hotel.id) ? 'text-red-500' : 'text-slate-400 hover:text-red-500'
-                              }`}
+                              className={`absolute top-3 right-3 flex size-9 items-center justify-center rounded-full bg-white shadow-md transition-colors ${favorites.includes(hotel.id) ? 'text-red-500' : 'text-slate-400 hover:text-red-500'
+                                }`}
                               aria-label="Yêu thích khách sạn"
                             >
                               <Heart className={`size-4 ${favorites.includes(hotel.id) ? 'fill-red-500' : ''}`} />
@@ -1275,13 +1438,18 @@ export default function HotelPage() {
                                 </div>
                               </div>
 
-                              <div className="shrink-0 text-center">
+                              <div 
+                                className="shrink-0 text-center cursor-pointer hover:opacity-80 transition-opacity" 
+                                onClick={() => setReviewModalHotel(hotel)}
+                                title="Nhấn để xem và viết đánh giá"
+                              >
                                 <div className="inline-flex min-w-[40px] items-center justify-center rounded-md bg-blue-700 px-2 py-1 text-sm font-black leading-none text-white">
                                   {hotel.rating.toFixed(1)}
                                 </div>
                                 <p className="mt-1 text-[11px] font-black text-blue-700 dark:text-blue-300">{getScoreLabel(hotel.rating)}</p>
-                                <p className="text-[9px] font-semibold leading-tight text-slate-400">
-                                  {hotel.reviews.toLocaleString('vi-VN')} người đánh giá
+                                <p className="text-[9px] font-semibold leading-tight text-slate-400 flex flex-col items-center">
+                                  <span>{hotel.reviews.toLocaleString('vi-VN')} người đánh giá</span>
+                                  <span className="text-blue-500 mt-0.5 underline">Xem đánh giá</span>
                                 </p>
                               </div>
                             </div>
@@ -1290,7 +1458,7 @@ export default function HotelPage() {
                               <MapPin className="size-3.5 shrink-0 text-blue-600" />
                               <span>{hotel.location}</span>
                               <button
-                                onClick={() => setNotice(`Đang mở bản đồ cho ${hotel.name}.`)}
+                                onClick={() => setMapHotel(hotel)}
                                 className="font-bold text-blue-600 underline underline-offset-2 dark:text-blue-400"
                               >
                                 Xem trên bản đồ
@@ -1345,9 +1513,8 @@ export default function HotelPage() {
                         <button
                           key={page}
                           onClick={() => goToPage(page)}
-                          className={`size-9 rounded-md text-sm font-black ${
-                            page === currentPage ? 'bg-blue-700 text-white' : 'bg-white text-slate-500 dark:bg-slate-900 dark:text-slate-300'
-                          }`}
+                          className={`size-9 rounded-md text-sm font-black ${page === currentPage ? 'bg-blue-700 text-white' : 'bg-white text-slate-500 dark:bg-slate-900 dark:text-slate-300'
+                            }`}
                         >
                           {page}
                         </button>
@@ -1368,18 +1535,59 @@ export default function HotelPage() {
         )}
       </main>
 
-        <Footer />
-        {showRoomModal && selectedHotel && (
-          <RoomTypeModal
-            open={showRoomModal}
-            onClose={closeRoomModal}
-            hotel={selectedHotel}
-            onConfirm={(room) => {
-              setNotice(`Bạn đã chọn ${room.label} cho ${selectedHotel.name}.`);
-              closeRoomModal();
-            }}
-          />
-        )}
-      </div>
+      <Footer />
+      {showRoomModal && selectedHotel && (
+        <RoomTypeModal
+          open={showRoomModal}
+          onClose={closeRoomModal}
+          hotel={selectedHotel}
+          onConfirm={(room) => {
+            setNotice(`Bạn đã chọn ${room.label} cho ${selectedHotel.name}.`);
+            closeRoomModal();
+          }}
+        />
+      )}
+
+      <Dialog open={!!mapHotel} onOpenChange={(open) => !open && setMapHotel(null)}>
+        <DialogContent className="max-w-4xl sm:max-w-4xl md:max-w-5xl lg:max-w-6xl w-[95vw] md:w-[85vw] h-[60vh] sm:h-[70vh] md:h-[75vh] flex flex-col p-0 overflow-hidden bg-white dark:bg-slate-900 border-none">
+          <DialogHeader className="p-4 border-b border-slate-100 dark:border-slate-800 shrink-0">
+            <DialogTitle className="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
+              <MapPin className="size-5 text-blue-600" />
+              Vị trí {mapHotel?.name}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 w-full relative bg-slate-100 dark:bg-slate-800">
+            {mapHotel && (
+              <iframe
+                width="100%"
+                height="100%"
+                style={{ border: 0 }}
+                loading="lazy"
+                allowFullScreen
+                src={`https://maps.google.com/maps?q=${encodeURIComponent(`${mapHotel.name}, ${mapHotel.location}, Việt Nam`)}&t=&z=16&ie=UTF8&iwloc=&output=embed`}
+              ></iframe>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <ReviewModal 
+        isOpen={!!reviewModalHotel} 
+        onClose={() => setReviewModalHotel(null)} 
+        hotel={reviewModalHotel} 
+        onReviewAdded={(newReview: any) => {
+          setReviewStats(prev => {
+            const hId = newReview.hotel_id;
+            const existing = prev[hId] || { rating: 0, count: 0 };
+            const newCount = existing.count + 1;
+            const newTotal = (existing.rating * existing.count) + newReview.rating;
+            return {
+              ...prev,
+              [hId]: { rating: newTotal / newCount, count: newCount }
+            };
+          });
+        }}
+      />
+    </div>
   );
 }

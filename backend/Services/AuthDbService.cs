@@ -59,9 +59,8 @@ public class AuthDbService
 
         throw new InvalidOperationException("Configure ConnectionStrings:DefaultConnection or SUPABASE_URL + SUPABASE_KEY.");
     }
-
-    //Đăng ký người dùng từ database hoặc Supabase
-    public async Task<AuthResult> RegisterAsync(string email, string password, string name)
+    
+    public async Task<AuthResult> RegisterAsync(string email, string password, string name , string a = "Đăng ký người dùng từ database hoặc Supabase")
     {
         if (!string.IsNullOrWhiteSpace(_connectionString))
             return await RegisterViaDatabaseAsync(email, password, name);

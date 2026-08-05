@@ -26,6 +26,7 @@ export interface TourFormData {
 
 export interface TourRecord extends Omit<TourFormData, 'highlights' | 'included' | 'excluded'> {
   id: string;
+  status?: boolean;
   highlights?: string[];
   included?: string[];
   excluded?: string[];
@@ -132,7 +133,7 @@ export default function TourFormDialog({ open, onOpenChange, initial, onSubmit }
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent aria-describedby={undefined} className="sm:max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl">
         <DialogHeader>
-          <DialogTitle className="text-xl font-black font-serif">
+          <DialogTitle className="text-xl font-black font-sans">
             {initial ? 'Chỉnh sửa tour' : 'Thêm tour mới'}
           </DialogTitle>
         </DialogHeader>
@@ -140,51 +141,51 @@ export default function TourFormDialog({ open, onOpenChange, initial, onSubmit }
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <label className="block sm:col-span-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Tên tour *</span>
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Tên tour *</span>
               <input required value={form.title} onChange={(e) => handleChange('title', e.target.value)} className={`${inputClass} mt-1`} />
             </label>
             <label className="block">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Địa điểm *</span>
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Địa điểm *</span>
               <input required value={form.location} onChange={(e) => handleChange('location', e.target.value)} className={`${inputClass} mt-1`} />
             </label>
             <label className="block">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Thời gian *</span>
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Thời gian *</span>
               <input required value={form.duration} onChange={(e) => handleChange('duration', e.target.value)} placeholder="3 ngày 2 đêm" className={`${inputClass} mt-1`} />
             </label>
             <label className="block">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Giá (VNĐ) *</span>
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Giá (VNĐ) *</span>
               <input required type="number" min={0} value={form.price || ''} onChange={(e) => handleChange('price', Number(e.target.value))} className={`${inputClass} mt-1`} />
             </label>
             <label className="block">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">URL ảnh *</span>
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">URL ảnh *</span>
               <input required value={form.image} onChange={(e) => handleChange('image', e.target.value)} placeholder="https://images.unsplash.com/..." className={`${inputClass} mt-1`} />
             </label>
             <label className="block">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Đánh giá *</span>
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Đánh giá *</span>
               <input required type="number" min={0} max={5} step={0.1} value={form.rating} onChange={(e) => handleChange('rating', Number(e.target.value))} className={`${inputClass} mt-1`} />
             </label>
             <label className="block">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Số lượt đánh giá *</span>
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Số lượt đánh giá *</span>
               <input required type="number" min={0} value={form.reviews} onChange={(e) => handleChange('reviews', Number(e.target.value))} className={`${inputClass} mt-1`} />
             </label>
           </div>
 
           <label className="block">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Mô tả</span>
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Mô tả</span>
             <textarea rows={3} value={form.description} onChange={(e) => handleChange('description', e.target.value)} className={`${inputClass} mt-1 resize-none`} />
           </label>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <label className="block">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Điểm nổi bật</span>
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Điểm nổi bật</span>
               <textarea rows={4} value={form.highlights} onChange={(e) => handleChange('highlights', e.target.value)} placeholder="Mỗi dòng một mục" className={`${inputClass} mt-1 resize-none`} />
             </label>
             <label className="block">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Bao gồm</span>
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Bao gồm</span>
               <textarea rows={4} value={form.included} onChange={(e) => handleChange('included', e.target.value)} placeholder="Mỗi dòng một mục" className={`${inputClass} mt-1 resize-none`} />
             </label>
             <label className="block">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Không bao gồm</span>
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Không bao gồm</span>
               <textarea rows={4} value={form.excluded} onChange={(e) => handleChange('excluded', e.target.value)} placeholder="Mỗi dòng một mục" className={`${inputClass} mt-1 resize-none`} />
             </label>
           </div>

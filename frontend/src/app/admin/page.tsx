@@ -124,9 +124,19 @@ const sidebarItems = [
 
 export default function AdminDashboard() {
   const router = useRouter();
-  const { user, logout } = useAuth();
+  const { user, logout, apiToken } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [activeTab, setActiveTab] = useState<AdminTab>('overview');
+
+  const getInitials = (name: string) => {
+    if (!name) return '';
+    return name
+      .split(' ')
+      .map((w) => w[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
   const [tours, setTours] = useState<Tour[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [paymentSummary, setPaymentSummary] = useState<PaymentSummary | null>(null);
@@ -136,6 +146,10 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [paymentSearch, setPaymentSearch] = useState('');
+  const [tourPage, setTourPage] = useState(1);
+  const [bookingPage, setBookingPage] = useState(1);
+  const [paymentPage, setPaymentPage] = useState(1);
+  const [roomPage, setRoomPage] = useState(1);
   const [tourDialogOpen, setTourDialogOpen] = useState(false);
   const [editingTour, setEditingTour] = useState<Tour | null>(null);
   const [tourActionLoading, setTourActionLoading] = useState(false);
@@ -195,27 +209,32 @@ export default function AdminDashboard() {
   const [editingRoom, setEditingRoom] = useState<Room | null>(null);
   const [roomActionLoading, setRoomActionLoading] = useState(false);
 
-  const adminHeaders = () => ({
-    'Content-Type': 'application/json',
-    'X-User-Role': user?.role ?? '',
-  });
-
-  const formatCurrency = (value: number) => `${Number(value || 0).toLocaleString('vi-VN')}đ`;
-
-
+  const adminHeaders = (): HeadersInit => {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'X-User-Role': user?.role ?? '',
+    };
+    if (apiToken) {
+      headers.Authorization = `Bearer ${apiToken}`;
+    }
+    return headers;
+  };
 
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [toursResponse, bookingsResponse, roomsResponse, summaryResponse, transactionsResponse] = await Promise.all([
-        fetch(apiUrl('/api/tours')),
+      const authHeaders = adminHeaders();
+      const [toursResponse, bookingsResponse, hotelBookingsResponse, roomsResponse, summaryResponse, transactionsResponse] = await Promise.all([
+        fetch(apiUrl('/api/tours/admin'), { headers: adminHeaders() }),
         fetch(apiUrl('/api/bookings')),
+        fetch(apiUrl('/api/hotelbookings/all')),
         fetch(apiUrl('/api/rooms')),
-        fetch(apiUrl('/api/payments/admin/summary')),
-        fetch(apiUrl('/api/payments/admin/transactions')),
+        fetch(apiUrl('/api/payments/admin/summary'), { headers: authHeaders }),
+        fetch(apiUrl('/api/payments/admin/transactions'), { headers: authHeaders }),
       ]);
       const toursData = toursResponse.ok ? await toursResponse.json() : [];
       const bookingsData = bookingsResponse.ok ? await bookingsResponse.json() : [];
+      const hotelBookingsData = hotelBookingsResponse.ok ? await hotelBookingsResponse.json() : [];
       const roomsData = roomsResponse.ok ? await roomsResponse.json() : [];
 
       if (summaryResponse.ok) {
@@ -234,7 +253,28 @@ export default function AdminDashboard() {
         { id: '6', title: 'Nha Trang - Vịnh xanh', location: 'Khánh Hòa', price: 3900000, duration: '3 ngày 2 đêm', image: '#', rating: 4.8, reviews: 967 },
       ]);
 
-      setBookings(bookingsData.length ? bookingsData : [
+      const combinedBookings = [
+        ...bookingsData,
+        ...hotelBookingsData.map((hb: any) => {
+          const detail = hb.details?.[0] || {};
+          const isPending = hb.payment_status !== 'paid' && hb.booking_status !== 'confirmed';
+          return {
+            id: hb.booking_code || hb.hotel_booking_id || 'UNKNOWN',
+            tourId: detail.hotel?.id || hb.hotelId || '',
+            tourTitle: detail.hotel?.name || hb.hotelName || 'Khách sạn',
+            tourImage: detail.hotel?.image || hb.hotelImage || 'https://images.unsplash.com/photo-1566073771259-6a8506099945',
+            userId: hb.user_id || '',
+            userEmail: hb.user_email || hb.userEmail || '',
+            date: `${(hb.check_in_date || hb.checkInDate || '').split('T')[0]}`,
+            guests: detail.quantity || hb.quantity || hb.room_quantity || 1,
+            total: hb.total_price || hb.totalPrice || hb.total_amount || 0,
+            status: isPending ? 'pending' : 'confirmed',
+            isHotel: true
+          };
+        })
+      ];
+
+      setBookings(combinedBookings.length ? combinedBookings : [
         { id: 'ORD-1715234567890', tourId: '1', tourTitle: 'Du ngoạn Vịnh Hạ Long', tourImage: 'https://images.unsplash.com/photo-1643029891412-92f9a81a8c16', userId: '3', userEmail: 'user@travelhub.com', date: '2026-07-15', guests: 2, total: 7000000, status: 'confirmed' },
         { id: 'ORD-1714123456789', tourId: '2', tourTitle: 'Thiên đường Phú Quốc', tourImage: 'https://images.unsplash.com/photo-1732243395944-cb3ff9311091', userId: '3', userEmail: 'user@travelhub.com', date: '2026-08-20', guests: 3, total: 15600000, status: 'pending' },
       ]);
@@ -250,8 +290,9 @@ export default function AdminDashboard() {
       router.push('/login');
       return;
     }
-    void fetchData();
-  }, [user, router]);
+    fetchData();
+    // apiToken needed for payment admin endpoints ([Authorize])
+  }, [user, apiToken, router]);
 
 
 
@@ -469,21 +510,22 @@ export default function AdminDashboard() {
     setBookings((prev) => prev.filter((booking) => booking.id !== id));
   };
 
-  const handleDeleteTour = async (id: string) => {
-    if (!confirm('Bạn muốn xóa tour này?')) return;
+  const handleToggleTourStatus = async (tour: Tour) => {
+    const actionName = tour.status === false ? 'hiện' : 'ẩn';
+    if (!confirm(`Bạn muốn ${actionName} tour này?`)) return;
     setTourActionLoading(true);
     try {
-      const response = await fetch(`${getBackendUrl()}/api/tours/${id}`, {
-        method: 'DELETE',
+      const response = await fetch(`${getBackendUrl()}/api/tours/${tour.id}/toggle-status`, {
+        method: 'PATCH',
         headers: adminHeaders(),
       });
       if (!response.ok) {
         const err = await response.json();
-        throw new Error(err.message || 'Xóa tour thất bại');
+        throw new Error(err.message || `Cập nhật trạng thái tour thất bại`);
       }
       await fetchData();
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Xóa tour thất bại');
+      alert(err instanceof Error ? err.message : `Cập nhật trạng thái tour thất bại`);
     } finally {
       setTourActionLoading(false);
     }
@@ -656,7 +698,7 @@ export default function AdminDashboard() {
         </div>
       </aside>
 
-      <main className="flex-1">
+      <main className="flex-1 h-full overflow-y-auto relative">
         <header className="sticky top-0 z-20 border-b border-slate-200/70 dark:border-slate-800 bg-slate-50/90 dark:bg-slate-950/90 backdrop-blur-sm">
           <div className="px-4 sm:px-6 lg:px-8 py-5 flex items-center justify-between gap-4">
             <div className="min-w-0">
@@ -901,7 +943,7 @@ export default function AdminDashboard() {
                     <h3 className="text-xl font-black font-sans tracking-tight">Giao dịch gần đây</h3>
                     <p className="text-sm text-slate-500 dark:text-slate-400">Các đơn thanh toán SePay mới nhất</p>
                   </div>
-                  <div className="overflow-x-auto overflow-y-auto max-h-[400px]">
+                  <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead className="bg-slate-50 dark:bg-slate-950/60 text-slate-500 dark:text-slate-400 uppercase tracking-widest text-xs">
                         <tr>
@@ -921,9 +963,11 @@ export default function AdminDashboard() {
                               <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
                                 tx.payment_status === 'paid'
                                   ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300'
-                                  : 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300'
+                                  : tx.payment_status === 'pending_approval'
+                                    ? 'bg-purple-50 text-purple-700 dark:bg-purple-950/40 dark:text-purple-300'
+                                    : 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300'
                               }`}>
-                                {tx.payment_status === 'paid' ? 'Đã thanh toán' : 'Chờ thanh toán'}
+                                {tx.payment_status === 'paid' ? 'Đã thanh toán' : tx.payment_status === 'pending_approval' ? 'Chờ duyệt' : 'Chờ thanh toán'}
                               </span>
                             </td>
                           </tr>
@@ -1019,7 +1063,7 @@ export default function AdminDashboard() {
                     </div>
                   </div>
                 </div>
-                <div className="overflow-x-auto overflow-y-auto max-h-[500px]">
+                <div className="overflow-x-auto">
 
 
                   <table className="w-full text-sm">
@@ -1030,11 +1074,12 @@ export default function AdminDashboard() {
                         <th className="px-6 py-4 text-left">Ngày đêm</th>
                         <th className="px-6 py-4 text-left">Giá</th>
                         <th className="px-6 py-4 text-left">Đánh giá</th>
+                        <th className="px-6 py-4 text-left">Trạng thái</th>
                         <th className="px-6 py-4 text-left">Hành động</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-200/70 dark:divide-slate-800">
-                      {filteredTours.map((tour) => (
+                      {paginatedTours.map((tour) => (
                         <tr key={tour.id} className="hover:bg-slate-50 dark:hover:bg-slate-950/40">
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
@@ -1057,14 +1102,26 @@ export default function AdminDashboard() {
                           <td className="px-6 py-4 font-black text-blue-700 dark:text-blue-400">{tour.price.toLocaleString('vi-VN')}đ</td>
                           <td className="px-6 py-4 text-amber-600 dark:text-amber-500 font-bold">★ {tour.rating} ({tour.reviews})</td>
                           <td className="px-6 py-4">
+                            <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
+                              tour.status !== false
+                                ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300'
+                                : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
+                            }`}>
+                              {tour.status !== false ? 'Hoạt động' : 'Đã ẩn'}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
-
                               <button aria-label="Edit tour" onClick={() => openEditTour(tour)} disabled={tourActionLoading} className="text-blue-600 hover:text-blue-700 disabled:opacity-50">
                                 <Edit className="size-4" />
                               </button>
-                              <button aria-label="Delete tour" onClick={() => handleDeleteTour(tour.id)} disabled={tourActionLoading} className="text-red-500 hover:text-red-600 disabled:opacity-50">
-
-                                <Trash2 className="size-4" />
+                              <button 
+                                aria-label="Toggle tour status" 
+                                onClick={() => handleToggleTourStatus(tour)} 
+                                disabled={tourActionLoading} 
+                                className={`font-semibold disabled:opacity-50 ${tour.status === false ? 'text-emerald-600 hover:text-emerald-700' : 'text-slate-500 hover:text-slate-700'}`}
+                              >
+                                {tour.status === false ? 'Hiện' : 'Ẩn'}
                               </button>
                             </div>
                           </td>
@@ -1081,6 +1138,7 @@ export default function AdminDashboard() {
 
                     </tbody>
                   </table>
+                  {renderPagination(tourPage, tourTotalPages, setTourPage)}
                 </div>
               </section>
               )}
@@ -1094,7 +1152,7 @@ export default function AdminDashboard() {
                   </div>
                   <span className="text-sm font-bold text-slate-500 dark:text-slate-400">{bookings.length} đơn</span>
                 </div>
-                <div className="overflow-x-auto overflow-y-auto max-h-[500px]">
+                <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead className="bg-slate-50 dark:bg-slate-950/60 text-slate-500 dark:text-slate-400 uppercase tracking-widest text-xs">
                       <tr>
@@ -1109,7 +1167,7 @@ export default function AdminDashboard() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-200/70 dark:divide-slate-800">
-                      {bookings.map((booking) => (
+                      {paginatedBookings.map((booking) => (
                         <tr key={booking.id} className="hover:bg-slate-50 dark:hover:bg-slate-950/40">
                           <td className="px-6 py-4 font-bold">{booking.id}</td>
                           <td className="px-6 py-4">{booking.userEmail}</td>
@@ -1142,6 +1200,7 @@ export default function AdminDashboard() {
                       ))}
                     </tbody>
                   </table>
+                  {renderPagination(bookingPage, bookingTotalPages, setBookingPage)}
                 </div>
               </section>
               )}
@@ -1164,7 +1223,7 @@ export default function AdminDashboard() {
                   </div>
                 </div>
 
-                <div className="overflow-x-auto overflow-y-auto max-h-[500px]">
+                <div className="overflow-x-auto">
 
                   <table className="w-full text-sm">
                     <thead className="bg-slate-50 dark:bg-slate-950/60 text-slate-500 dark:text-slate-400 uppercase tracking-widest text-xs">
@@ -1176,10 +1235,11 @@ export default function AdminDashboard() {
                         <th className="px-6 py-4 text-left">Trạng thái</th>
                         <th className="px-6 py-4 text-left">SePay ID</th>
                         <th className="px-6 py-4 text-left">Thời gian</th>
+                        <th className="px-6 py-4 text-left">Thao tác</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-200/70 dark:divide-slate-800">
-                      {filteredPayments.map((tx) => (
+                      {paginatedPayments.map((tx) => (
                         <tr key={tx.order_payment_id} className="hover:bg-slate-50 dark:hover:bg-slate-950/40 align-top">
                           <td className="px-6 py-4 font-bold">{tx.payment_code}</td>
                           <td className="px-6 py-4">
@@ -1205,9 +1265,11 @@ export default function AdminDashboard() {
                             <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
                               tx.payment_status === 'paid'
                                 ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300'
-                                : 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300'
+                                : tx.payment_status === 'pending_approval'
+                                  ? 'bg-purple-50 text-purple-700 dark:bg-purple-950/40 dark:text-purple-300'
+                                  : 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300'
                             }`}>
-                              {tx.payment_status === 'paid' ? 'Đã thanh toán' : 'Chờ thanh toán'}
+                              {tx.payment_status === 'paid' ? 'Đã thanh toán' : tx.payment_status === 'pending_approval' ? 'Chờ duyệt' : 'Chờ thanh toán'}
                             </span>
                           </td>
                           <td className="px-6 py-4 text-xs text-slate-500">{tx.sepay_transaction_id || '—'}</td>
@@ -1215,15 +1277,26 @@ export default function AdminDashboard() {
                             <p>Tạo: {new Date(tx.created_at).toLocaleString('vi-VN')}</p>
                             {tx.paid_at && <p className="text-emerald-600">TT: {new Date(tx.paid_at).toLocaleString('vi-VN')}</p>}
                           </td>
+                          <td className="px-6 py-4">
+                            {tx.payment_status === 'pending_approval' && (
+                              <button 
+                                onClick={() => handleApprovePayment(tx.payment_code)}
+                                className="rounded-xl bg-blue-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-blue-700 transition-colors"
+                              >
+                                Duyệt
+                              </button>
+                            )}
+                          </td>
                         </tr>
                       ))}
                       {filteredPayments.length === 0 && (
                         <tr>
-                          <td colSpan={7} className="px-6 py-12 text-center text-slate-500 dark:text-slate-400">Chưa có giao dịch thanh toán</td>
+                          <td colSpan={8} className="px-6 py-12 text-center text-slate-500 dark:text-slate-400">Chưa có giao dịch thanh toán</td>
                         </tr>
                       )}
                     </tbody>
                   </table>
+                  {renderPagination(paymentPage, paymentTotalPages, setPaymentPage)}
                 </div>
               </section>
               )}
@@ -1241,7 +1314,7 @@ export default function AdminDashboard() {
                     Thêm phòng mới
                   </button>
                 </div>
-                <div className="overflow-x-auto overflow-y-auto max-h-[500px]">
+                <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead className="bg-slate-50 dark:bg-slate-950/60 text-slate-500 dark:text-slate-400 uppercase tracking-widest text-xs">
                       <tr>
@@ -1254,7 +1327,7 @@ export default function AdminDashboard() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-200/70 dark:divide-slate-800">
-                      {rooms.map((room) => (
+                      {paginatedRooms.map((room) => (
                         <tr key={room.id} className="hover:bg-slate-50 dark:hover:bg-slate-950/40">
                           <td className="px-6 py-4 font-bold text-slate-900 dark:text-white">{room.name}</td>
                           <td className="px-6 py-4 text-slate-600 dark:text-slate-300">{room.type}</td>
@@ -1290,6 +1363,7 @@ export default function AdminDashboard() {
                       )}
                     </tbody>
                   </table>
+                  {renderPagination(roomPage, roomTotalPages, setRoomPage)}
                 </div>
               </section>
               )}

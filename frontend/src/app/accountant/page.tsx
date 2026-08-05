@@ -948,6 +948,7 @@ export default function AdminDashboard() {
                               {booking.status === 'confirmed' ? 'Đã duyệt' : 'Chờ duyệt'}
                             </span>
                           </td>
+                          <td className="px-6 py-4 text-right font-bold text-slate-900 dark:text-slate-50">{tx.amount}</td>
                         </tr>
                       ))}
                     </tbody>

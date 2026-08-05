@@ -16,13 +16,13 @@ public class SePayService
         _paymentCodePrefix = configuration["SEPAY_PAYMENT_CODE_PREFIX"] ?? "CMCTOUR";
         _webhookApiKey = configuration["SEPAY_WEBHOOK_API_KEY"];
     }
-
+    //Tạo mã thanh toán 
     public string GeneratePaymentCode()
     {
         var suffix = Guid.NewGuid().ToString("N")[..8].ToUpperInvariant();
         return $"{_paymentCodePrefix}{DateTimeOffset.UtcNow.ToUnixTimeSeconds()}{suffix}";
     }
-
+    //Tạo url qr code
     public string BuildQrUrl(string paymentCode, decimal amount)
     {
         if (string.IsNullOrWhiteSpace(_bankAccount))
@@ -39,7 +39,7 @@ public class SePayService
         return "https://qr.sepay.vn/img?" + string.Join("&", query.Select(kv =>
             $"{Uri.EscapeDataString(kv.Key)}={Uri.EscapeDataString(kv.Value)}"));
     }
-
+    //Xác thực webhook
     public bool IsWebhookAuthorized(string? authorizationHeader)
     {
         if (string.IsNullOrWhiteSpace(_webhookApiKey))
@@ -70,7 +70,7 @@ public class SePayService
 
         return false;
     }
-
+    //Trích xuất mã thanh toán từ code hoặc nội dung
     public string? ExtractPaymentCode(string? code, string? content)
     {
         if (!string.IsNullOrWhiteSpace(code))

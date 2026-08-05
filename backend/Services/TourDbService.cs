@@ -1,4 +1,4 @@
-﻿using System.Net.Http.Json;
+using System.Net.Http.Json;
 using System.Text.Json;
 using Backend.Models;
 using Backend.Controllers;
@@ -20,6 +20,7 @@ namespace Backend.Services
 
         public TourDbService(IConfiguration configuration, IHttpClientFactory httpClientFactory)
         {
+
             _supabaseUrl = FirstConfig(configuration, "SUPABASE_URL", "Supabase:Url");
             _supabaseKey = FirstConfig(
                 configuration,
@@ -86,6 +87,22 @@ namespace Backend.Services
             }
         }
 
+        public async Task<List<Tour>> GetAllToursAdminAsync(string? destination)
+        {
+            try
+            {
+                var response = await PostRpcAsync("get_tours_admin", new { p_destination = destination ?? string.Empty });
+                if (response == null) return new List<Tour>();
+
+                return JsonSerializer.Deserialize<List<Tour>>(response.Value.GetRawText(), _jsonOptions) ?? new List<Tour>();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in GetAllToursAdminAsync: {ex.Message}");
+                return new List<Tour>();
+            }
+        }
+
         private async Task<Tour?> FetchTourByIdAsync(long tourId)
         {
             var response = await PostRpcAsync("get_tour_by_id", new { p_id = tourId });
@@ -127,7 +144,9 @@ namespace Backend.Services
                     p_description = request.Description,
                     p_highlights = request.Highlights ?? new List<string>(),
                     p_included = request.Included ?? new List<string>(),
-                    p_excluded = request.Excluded ?? new List<string>()
+                    p_excluded = request.Excluded ?? new List<string>(),
+                    p_rating = request.Rating,
+                    p_reviews = request.Reviews
                 });
 
                 if (response == null) return null;
@@ -157,7 +176,9 @@ namespace Backend.Services
                     p_description = request.Description,
                     p_highlights = request.Highlights ?? new List<string>(),
                     p_included = request.Included ?? new List<string>(),
-                    p_excluded = request.Excluded ?? new List<string>()
+                    p_excluded = request.Excluded ?? new List<string>(),
+                    p_rating = request.Rating,
+                    p_reviews = request.Reviews
                 });
 
                 if (response == null) return null;
@@ -182,6 +203,22 @@ namespace Backend.Services
             catch (Exception ex)
             {
                 Console.WriteLine($"Error in DeleteTourAsync: {ex.Message}");
+                return false;
+            }
+        }
+
+        public async Task<bool> ToggleTourStatusAsync(string id)
+        {
+            if (!long.TryParse(id, out var parsedId)) return false;
+
+            try
+            {
+                await PostRpcAsync("toggle_tour_status", new { p_id = parsedId });
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in ToggleTourStatusAsync: {ex.Message}");
                 return false;
             }
         }

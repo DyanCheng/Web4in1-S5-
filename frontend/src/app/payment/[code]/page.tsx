@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Check, Loader2, QrCode, RefreshCw } from 'lucide-react';
+import { Check, Loader2, QrCode, RefreshCw, Clock } from 'lucide-react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -117,7 +117,7 @@ export default function PaymentPage() {
 
   if (error || !payment) {
     return (
-      <div className={`min-h-screen ${theme === 'dark' ? 'dark bg-slate-950 text-white' : 'bg-slate-50 text-slate-900'}`}>
+      <div className={`min-h-screen ${theme === 'dark' ? 'dark bg-slate-950 text-white' : 'bg-slate-50 text-slate-900 dark:text-slate-50'}`}>
         <Header />
         <div className="max-w-lg mx-auto px-4 py-24 text-center">
           <p className="text-red-500 font-bold">{error || 'Đơn thanh toán không tồn tại'}</p>
@@ -128,9 +128,10 @@ export default function PaymentPage() {
   }
 
   const isPaid = payment.status === 'paid';
+  const isPendingApproval = payment.status === 'pending_approval';
 
   return (
-    <div className={`min-h-screen flex flex-col ${theme === 'dark' ? 'dark bg-slate-950 text-white' : 'bg-slate-50 text-slate-900'}`}>
+    <div className={`min-h-screen flex flex-col ${theme === 'dark' ? 'dark bg-slate-950 text-white' : 'bg-slate-50 text-slate-900 dark:text-slate-50'}`}>
       <Header />
 
       <div className="flex-1 max-w-2xl mx-auto w-full px-4 py-12">
@@ -139,13 +140,17 @@ export default function PaymentPage() {
             <div className="inline-flex items-center justify-center w-20 h-20 bg-emerald-50 dark:bg-emerald-950/40 rounded-full mb-4">
               <Check className="size-10 text-emerald-500" />
             </div>
+          ) : isPendingApproval ? (
+            <div className="inline-flex items-center justify-center w-20 h-20 bg-amber-50 dark:bg-amber-950/40 rounded-full mb-4">
+              <Clock className="size-10 text-amber-500" />
+            </div>
           ) : (
             <div className="inline-flex items-center justify-center w-20 h-20 bg-blue-50 dark:bg-blue-950/40 rounded-full mb-4">
               <QrCode className="size-10 text-blue-600" />
             </div>
           )}
-          <h1 className="text-3xl font-black font-serif mb-2">
-            {isPaid ? 'Thanh toán thành công!' : 'Quét mã QR để thanh toán'}
+          <h1 className="text-3xl font-black font-sans mb-2">
+            {isPaid ? 'Thanh toán thành công!' : isPendingApproval ? 'Đang chờ Admin duyệt đơn' : 'Quét mã QR để thanh toán'}
           </h1>
           <p className="text-slate-500 dark:text-slate-400 font-semibold">
             Mã thanh toán: <span className="font-black text-blue-600">{payment.paymentCode}</span>
@@ -154,22 +159,37 @@ export default function PaymentPage() {
 
         <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 border border-slate-100 dark:border-slate-800 shadow-sm space-y-6">
           <div className="flex justify-between text-sm font-bold">
-            <span className="text-slate-500">Số tiền</span>
+            <span className="text-slate-500 dark:text-slate-400">Số tiền</span>
             <span className="text-blue-700 dark:text-blue-400 text-lg font-black">
               {payment.amount.toLocaleString('vi-VN')}đ
             </span>
           </div>
           <div className="flex justify-between text-sm font-bold">
-            <span className="text-slate-500">Trạng thái</span>
-            <span className={isPaid ? 'text-emerald-500' : 'text-amber-500'}>
-              {isPaid ? 'Đã thanh toán' : 'Đang chờ thanh toán'}
+            <span className="text-slate-500 dark:text-slate-400">Trạng thái</span>
+            <span className={isPaid ? 'text-emerald-500' : isPendingApproval ? 'text-amber-500' : 'text-blue-500'}>
+              {isPaid ? 'Đã thanh toán' : isPendingApproval ? 'Đang chờ duyệt' : 'Đang chờ thanh toán'}
             </span>
           </div>
 
-          {!isPaid && qrUrl && (
+          {isPendingApproval && (
+            <div className="flex flex-col items-center gap-4 pt-4">
+              <div className="p-4 bg-amber-50 dark:bg-amber-950/30 rounded-2xl border border-amber-100 dark:border-amber-900/50">
+                <p className="text-sm text-amber-800 dark:text-amber-200 text-center">
+                  Đơn đặt của bạn đã được ghi nhận và đang chờ bộ phận quản trị duyệt. 
+                  Bạn có thể giữ nguyên trang này, hoặc lưu lại URL để kiểm tra tiến độ sau.
+                </p>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-slate-400 mt-2">
+                <RefreshCw className="size-3.5 animate-spin" />
+                Đang tự động làm mới trạng thái...
+              </div>
+            </div>
+          )}
+
+          {!isPaid && !isPendingApproval && qrUrl && (
             <div className="flex flex-col items-center gap-4 pt-4">
               <img src={qrUrl} alt="SePay QR Code" className="w-64 h-64 rounded-2xl border border-slate-200 dark:border-slate-700" />
-              <p className="text-xs text-slate-500 text-center max-w-sm">
+              <p className="text-xs text-slate-500 dark:text-slate-400 text-center max-w-sm">
                 Quét mã QR bằng app ngân hàng. Nội dung chuyển khoản phải chứa mã <strong>{payment.paymentCode}</strong>.
                 Hệ thống sẽ tự động xác nhận sau khi nhận tiền.
               </p>

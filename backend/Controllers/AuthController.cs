@@ -1,5 +1,10 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 using Backend.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.IdentityModel.Tokens;
 
 namespace Backend.Controllers;
 
@@ -11,20 +16,24 @@ public class AuthController : ControllerBase
     private readonly GoogleAuthService _googleAuth;
     private readonly RealtimeAuthService _realtimeAuth;
     private readonly AuthLogService _authLog;
+    private readonly IConfiguration _configuration;
 
     public AuthController(
         AuthDbService authDb,
         GoogleAuthService googleAuth,
         RealtimeAuthService realtimeAuth,
-        AuthLogService authLog)
+        AuthLogService authLog,
+        IConfiguration configuration)
     {
         _authDb = authDb;
         _googleAuth = googleAuth;
         _realtimeAuth = realtimeAuth;
         _authLog = authLog;
+        _configuration = configuration;
     }
 
     [HttpPost("login")]
+    [EnableRateLimiting("login")]
     public async Task<IActionResult> Login([FromBody] LoginRequest request)
     {
         var ipAddress = GetClientIp();
@@ -63,6 +72,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("register")]
+    [EnableRateLimiting("login")]
     public async Task<IActionResult> Register([FromBody] RegisterRequest request)
     {
         var ipAddress = GetClientIp();
@@ -192,6 +202,8 @@ public class AuthController : ControllerBase
             user.Role,
             password);
 
+        var apiToken = GenerateApiToken(user);
+
         return new
         {
             id = user.Id,
@@ -200,9 +212,36 @@ public class AuthController : ControllerBase
             role = user.Role,
             avatar = user.Avatar,
             accessToken = token?.AccessToken,
+            apiToken = apiToken,
             tokenExpiresAt = token?.ExpiresAt,
             realtimeConfigured = token != null,
         };
+    }
+
+    private string GenerateApiToken(AuthResult user)
+    {
+        var jwtSecret = _configuration["JWT_SECRET"] ?? "ThisIsADefaultSecretKeyForDevelopmentOnly123!";
+        var key = Encoding.UTF8.GetBytes(jwtSecret);
+
+        var claims = new[]
+        {
+            new Claim(JwtRegisteredClaimNames.Sub, user.Id),
+            new Claim(JwtRegisteredClaimNames.Email, user.Email),
+            new Claim("name", user.Name),
+            new Claim(ClaimTypes.Role, user.Role),
+            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+        };
+
+        var tokenDescriptor = new SecurityTokenDescriptor
+        {
+            Subject = new ClaimsIdentity(claims),
+            Expires = DateTime.UtcNow.AddDays(7),
+            SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+        };
+
+        var tokenHandler = new JwtSecurityTokenHandler();
+        var token = tokenHandler.CreateToken(tokenDescriptor);
+        return tokenHandler.WriteToken(token);
     }
 
     private string? GetClientIp()

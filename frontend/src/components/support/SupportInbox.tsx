@@ -108,13 +108,13 @@ export function SupportInbox() {
   )
 
   return (
-    <div className="flex h-[calc(100vh-2rem)] min-h-[32rem] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+    <div className="flex h-[calc(100vh-2rem)] min-h-[32rem] overflow-hidden rounded-2xl border border-slate-200 bg-white dark:bg-slate-900 shadow-sm dark:border-slate-800 dark:bg-slate-900">
       <aside className="flex w-full max-w-sm flex-col border-r border-slate-200 dark:border-slate-800">
         <div className="border-b border-slate-200 px-4 py-4 dark:border-slate-800">
           <h2 className="text-lg font-bold text-slate-900 dark:text-white">
             Hỗ trợ khách hàng
           </h2>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-slate-500 dark:text-slate-400">
             Chọn hội thoại để trả lời theo thứ tự tin nhắn
           </p>
         </div>
@@ -133,12 +133,12 @@ export function SupportInbox() {
 
         <div className="flex-1 overflow-y-auto">
           {isLoading ? (
-            <div className="flex items-center justify-center gap-2 py-10 text-sm text-slate-500">
+            <div className="flex items-center justify-center gap-2 py-10 text-sm text-slate-500 dark:text-slate-400">
               <Loader2 className="size-4 animate-spin" />
               Đang tải...
             </div>
           ) : sessions.length === 0 ? (
-            <div className="px-4 py-10 text-center text-sm text-slate-500">
+            <div className="px-4 py-10 text-center text-sm text-slate-500 dark:text-slate-400">
               Chưa có hội thoại hỗ trợ nào.
             </div>
           ) : (
@@ -180,7 +180,7 @@ export function SupportInbox() {
                         {formatTime(session.lastMessageAt ?? session.updatedAt)}
                       </span>
                     </div>
-                    <p className="truncate text-xs text-slate-500">
+                    <p className="truncate text-xs text-slate-500 dark:text-slate-400">
                       {session.customerEmail}
                     </p>
                     <p
@@ -210,7 +210,7 @@ export function SupportInbox() {
                 <h3 className="truncate font-bold text-slate-900 dark:text-white">
                   {selected.customerName}
                 </h3>
-                <p className="truncate text-sm text-slate-500">
+                <p className="truncate text-sm text-slate-500 dark:text-slate-400">
                   {selected.customerEmail}
                 </p>
               </div>
@@ -238,12 +238,12 @@ export function SupportInbox() {
               className="flex-1 space-y-1 overflow-y-auto bg-slate-50 p-4 dark:bg-slate-950"
             >
               {isLoadingHistory ? (
-                <div className="flex h-full items-center justify-center gap-2 text-sm text-slate-500">
+                <div className="flex h-full items-center justify-center gap-2 text-sm text-slate-500 dark:text-slate-400">
                   <Loader2 className="size-4 animate-spin" />
                   Đang tải tin nhắn...
                 </div>
               ) : messages.length === 0 ? (
-                <div className="flex h-full items-center justify-center text-sm text-slate-500">
+                <div className="flex h-full items-center justify-center text-sm text-slate-500 dark:text-slate-400">
                   Chưa có tin nhắn trong hội thoại này.
                 </div>
               ) : (
@@ -287,7 +287,7 @@ export function SupportInbox() {
             </form>
           </>
         ) : (
-          <div className="flex flex-1 flex-col items-center justify-center gap-3 text-slate-500">
+          <div className="flex flex-1 flex-col items-center justify-center gap-3 text-slate-500 dark:text-slate-400">
             <MessageSquare className="size-10 opacity-40" />
             <p className="text-sm">Chọn một hội thoại bên trái để bắt đầu.</p>
           </div>

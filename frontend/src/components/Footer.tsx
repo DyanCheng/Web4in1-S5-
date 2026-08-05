@@ -11,7 +11,7 @@ export default function Footer() {
           
           {/* Brand Info */}
           <div className="md:col-span-1">
-            <h2 className="text-xl font-black text-white mb-4">CMC Travel</h2>
+            <img src="/logo.png" alt="CMC Travel" className="h-12 w-auto mb-4" />
             <p className="text-slate-400 leading-relaxed mb-6">
               Nền tảng đặt tour du lịch hàng đầu Việt Nam. Chúng tôi mang đến cho bạn những trải nghiệm tuyệt vời nhất tại mọi điểm đến.
             </p>
@@ -64,7 +64,7 @@ export default function Footer() {
         </div>
 
         {/* Copyright */}
-        <div className="pt-8 border-t border-slate-800 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-slate-500">
+        <div className="pt-8 border-t border-slate-800 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-slate-500 dark:text-slate-400">
           <p>&copy; 2026 CMC Travel. All rights reserved.</p>
           <div className="flex gap-6">
             <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>

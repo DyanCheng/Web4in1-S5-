@@ -1,12 +1,10 @@
 import type { Metadata } from "next";
-import { Inter, Playfair_Display, Geist_Mono } from "next/font/google";
+import { Inter, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
-const inter = Inter({subsets:['latin'],variable:'--font-sans'});
-
-const playfair = Playfair_Display({
-  variable: "--font-serif",
-  subsets: ["latin"],
+const inter = Inter({
+  subsets: ["latin", "vietnamese"],
+  variable: "--font-sans",
 });
 
 const geistMono = Geist_Mono({
@@ -14,6 +12,7 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+import { BackToTop } from "@/components/BackToTop";
 import { SupportChatWidget } from "@/components/support/SupportChatWidget";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { CartProvider } from "@/contexts/CartContext";
@@ -33,7 +32,7 @@ export default function RootLayout({
   return (
     <html
       lang="vi" suppressHydrationWarning
-      className={cn("h-full", "antialiased", playfair.variable, geistMono.variable, "font-sans", inter.variable)}
+      className={cn("h-full", "antialiased", inter.variable, geistMono.variable, "font-sans")}
     >
       <body suppressHydrationWarning 
       className="min-h-full flex flex-col">
@@ -41,6 +40,7 @@ export default function RootLayout({
           <AuthProvider>
             <CartProvider>
               {children}
+              <BackToTop />
               <SupportChatWidget />
             </CartProvider>
           </AuthProvider>
