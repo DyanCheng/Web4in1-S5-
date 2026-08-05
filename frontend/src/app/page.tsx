@@ -658,41 +658,89 @@ export default function HomePage() {
                       <div className="relative">
                         <div 
                           id={`carousel-${section.id}`}
-                          className="flex gap-4 overflow-x-auto scroll-smooth snap-x snap-mandatory pb-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                          className="flex gap-4 overflow-x-auto snap-x snap-mandatory pt-4 pb-8 px-4 -mx-4 [&::-webkit-scrollbar]:hidden"
+                          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                         >
                           {section.tours.map((tour) => (
-                            <TourCard
-                              key={tour.id}
-                              tour={tour}
-                              isFavorite={favoriteIds.includes(tour.id)}
-                              onToggleFavorite={handleToggleFavorite}
-                              onOpen={(id) => navigate(`/tour/${id}`)}
-                            />
+                            <div 
+                              key={tour.id} 
+                              className="flex-none w-[280px] md:w-[300px] snap-start bg-white dark:bg-slate-900 rounded-3xl overflow-hidden shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 cursor-pointer group flex flex-col border border-slate-100 dark:border-slate-800 relative"
+                              onClick={() => navigate(`/tour/${tour.id}`)}
+                            >
+                              <div className="relative h-[200px] md:h-[220px] overflow-hidden rounded-t-3xl">
+                                <ImageWithFallback src={tour.image} alt={tour.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out" />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                                
+                                {tour.badge && (
+                                  <span className="absolute top-3 left-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-xs font-black px-2.5 py-1 rounded-full shadow-lg">
+                                    {tour.badge}
+                                  </span>
+                                )}
+                                
+                                <div className="absolute top-3 right-3 z-10">
+                                  <button onClick={(e) => handleToggleFavorite(e, tour)} className="bg-white/90 backdrop-blur-md p-2 rounded-full hover:bg-white dark:bg-slate-900 text-slate-400 shadow-md transition-all hover:scale-110">
+                                    <Heart className={`size-4 ${favoriteIds.includes(tour.id) ? 'fill-red-500 text-red-500' : ''}`} />
+                                  </button>
+                                </div>
+
+                                <div className="absolute bottom-3 left-3 right-3 flex justify-between items-center z-10">
+                                  <div className="flex items-center gap-1.5 bg-black/50 backdrop-blur-md text-white px-2 py-1 rounded-lg text-xs font-semibold">
+                                    <MapPin className="size-3" />
+                                    <span className="truncate max-w-[100px]">{tour.location || 'Khám phá'}</span>
+                                  </div>
+                                  {tour.duration && (
+                                    <div className="flex items-center gap-1.5 bg-black/50 backdrop-blur-md text-white px-2 py-1 rounded-lg text-xs font-semibold">
+                                      <Clock className="size-3" />
+                                      <span>{tour.duration}</span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                              
+                              <div className="p-5 flex flex-col flex-1 bg-white dark:bg-slate-900">
+                                <div className="flex items-center gap-1.5 mb-2">
+                                  <Star className="size-4 fill-amber-400 text-amber-400" />
+                                  <span className="text-sm font-extrabold text-slate-700 dark:text-slate-200">{tour.rating}</span>
+                                  <span className="text-xs font-medium text-slate-400">({tour.reviews} đánh giá)</span>
+                                </div>
+                                <h4 className="font-extrabold text-slate-900 dark:text-white text-base leading-snug mb-3 line-clamp-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                                  {tour.title}
+                                </h4>
+                                
+                                <div className="mt-auto flex justify-between items-end pt-4 border-t border-slate-100 dark:border-slate-800">
+                                  <div>
+                                    <p className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider mb-0.5">Giá từ</p>
+                                    <span className="text-blue-600 dark:text-blue-400 font-black text-xl tracking-tight">
+                                      {tour.price.toLocaleString('vi-VN')} <span className="text-sm font-bold">₫</span>
+                                    </span>
+                                  </div>
+                                  <div className="size-8 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white dark:group-hover:bg-blue-500 transition-colors">
+                                    <ArrowRight className="size-4 -rotate-45 group-hover:rotate-0 transition-transform duration-300" />
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
                           ))}
                         </div>
                         <button 
-                          type="button"
-                          aria-label="Cuộn trái"
-                          className="interactive-press absolute top-[105px] md:top-[115px] -left-3 -translate-y-1/2 bg-white/95 backdrop-blur-md dark:bg-slate-800/95 border border-slate-200 dark:border-slate-700 shadow-xl p-2.5 rounded-full hidden md:group-hover/section:flex hover:bg-slate-50 dark:hover:bg-slate-700 z-10 cursor-pointer text-blue-600"
+                          className="absolute top-[130px] md:top-[150px] -left-5 -translate-y-1/2 bg-white/95 backdrop-blur-xl dark:bg-slate-800/95 border border-slate-200 dark:border-slate-700 shadow-2xl p-3.5 rounded-full hidden md:group-hover:flex hover:bg-slate-50 hover:scale-110 transition-all z-10 cursor-pointer text-blue-600 group/btn"
                           onClick={(e) => {
                             e.preventDefault();
                             const container = document.getElementById(`carousel-${section.id}`);
                             if (container) container.scrollBy({ left: -320, behavior: 'smooth' });
                           }}
                         >
-                          <ChevronLeft className="size-5" />
+                          <ArrowLeft className="size-5 md:size-6 group-hover/btn:-translate-x-1 transition-transform" />
                         </button>
                         <button 
-                          type="button"
-                          aria-label="Cuộn phải"
-                          className="interactive-press absolute top-[105px] md:top-[115px] -right-3 -translate-y-1/2 bg-white/95 backdrop-blur-md dark:bg-slate-800/95 border border-slate-200 dark:border-slate-700 shadow-xl p-2.5 rounded-full hidden md:group-hover/section:flex hover:bg-slate-50 dark:hover:bg-slate-700 z-10 cursor-pointer text-blue-600"
+                          className="absolute top-[130px] md:top-[150px] -right-5 -translate-y-1/2 bg-white/95 backdrop-blur-xl dark:bg-slate-800/95 border border-slate-200 dark:border-slate-700 shadow-2xl p-3.5 rounded-full hidden md:group-hover:flex hover:bg-slate-50 hover:scale-110 transition-all z-10 cursor-pointer text-blue-600 group/btn"
                           onClick={(e) => {
                             e.preventDefault();
                             const container = document.getElementById(`carousel-${section.id}`);
                             if (container) container.scrollBy({ left: 320, behavior: 'smooth' });
                           }}
                         >
-                          <ArrowRight className="size-5" />
+                          <ArrowRight className="size-5 md:size-6 group-hover/btn:translate-x-1 transition-transform" />
                         </button>
                       </div>
                     </div>

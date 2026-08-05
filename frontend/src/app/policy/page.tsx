@@ -105,7 +105,7 @@ export default function PolicyPage() {
 
       <main className="flex-1 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 w-full">
         <div className="text-center mb-12">
-          <h1 className="text-3xl sm:text-4xl font-black font-serif text-slate-900 dark:text-white mb-3">
+          <h1 className="text-3xl sm:text-4xl font-black font-sans text-slate-900 dark:text-white mb-3">
             Chính sách & Điều khoản
           </h1>
           <p className="text-slate-500 dark:text-slate-400 font-semibold text-sm max-w-2xl mx-auto">

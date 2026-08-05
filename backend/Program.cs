@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using System.Text;
 using System.Threading.RateLimiting;
 using Backend.Services;
@@ -48,7 +49,9 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             IssuerSigningKey = new SymmetricSecurityKey(key),
             ValidateIssuer = false,
             ValidateAudience = false,
-            ClockSkew = TimeSpan.Zero
+            ClockSkew = TimeSpan.Zero,
+            RoleClaimType = ClaimTypes.Role,
+            NameClaimType = ClaimTypes.NameIdentifier,
         };
     });
 
@@ -62,6 +65,7 @@ builder.Services.AddSingleton<GoogleAuthService>();
 builder.Services.AddSingleton<PaymentDbService>();
 builder.Services.AddSingleton<TourDbService>();
 builder.Services.AddSingleton<HotelDbService>();
+builder.Services.AddSingleton<RevenueService>();
 builder.Services.AddSingleton<CheckoutService>();
 
 builder.Services.AddSingleton<SePayService>();

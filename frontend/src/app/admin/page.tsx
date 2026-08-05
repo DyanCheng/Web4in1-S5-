@@ -7,23 +7,32 @@ import { useTheme } from '@/contexts/ThemeContext';
 import TourFormDialog, { type TourRecord } from '@/components/admin/TourFormDialog';
 import RoomFormDialog, { type RoomRecord } from '@/components/admin/RoomFormDialog';
 import { PageSkeleton } from '@/components/ux/PageSkeleton';
+import AdminUserManagement from '@/components/admin/AdminUserManagement';
 import {
   BarChart3,
   Bell,
+  Building2,
+  CalendarDays,
   CheckCircle2,
   CreditCard,
   DollarSign,
   Edit,
+  Loader2,
+  MessageSquare,
   Plus,
   Search,
   Settings,
   Shield,
   ShoppingBag,
-  Trash2,
-  Users,
+  Sparkles,
   Sun,
-  Building2,
-  MessageSquare,
+  Trash2,
+  TrendingUp,
+  Users,
+  X,
+  Download,
+  FileText,
+  ArrowLeft
 } from 'lucide-react';
 import { apiUrl, getBackendUrl, normalizeBackendUrl } from '@/lib/backendUrl';
 
@@ -56,6 +65,22 @@ interface PaymentSummary {
   today_revenue: number;
 }
 
+interface RevenuePoint {
+  month?: number;
+  monthName?: string;
+  totalRevenue: number;
+  orderCount: number;
+}
+
+interface RevenueStatisticsResponse {
+  year?: number;
+  startDate?: string;
+  endDate?: string;
+  totalRevenue: number;
+  totalOrders: number;
+  data: RevenuePoint[];
+}
+
 interface PaymentTransaction {
   order_payment_id: number;
   payment_code: string;
@@ -82,11 +107,12 @@ interface Room {
   status: string;
 }
 
-type AdminTab = 'overview' | 'tours' | 'orders' | 'payments' | 'hotels' | 'settings';
-
+type AdminTab = 'overview' | 'tours' | 'orders' | 'payments' | 'hotels' | 'settings' | 'users';
+type RevenuePeriod = 'today' | 'week' | 'month' | 'custom';
 
 const sidebarItems = [
   { id: 'overview', label: 'Tổng quan', icon: BarChart3 },
+  { id: 'users', label: 'Quản lý người dùng', icon: Users },
   { id: 'tours', label: 'Quản lý tour', icon: ShoppingBag },
   { id: 'orders', label: 'Đơn đặt chỗ', icon: CheckCircle2 },
   { id: 'payments', label: 'Thanh toán', icon: CreditCard },
@@ -116,6 +142,8 @@ export default function AdminDashboard() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [paymentSummary, setPaymentSummary] = useState<PaymentSummary | null>(null);
   const [paymentTransactions, setPaymentTransactions] = useState<PaymentTransaction[]>([]);
+  const [revenuePeriod, setRevenuePeriod] = useState<RevenuePeriod>('month');
+  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().slice(0, 10));
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [paymentSearch, setPaymentSearch] = useState('');
@@ -126,6 +154,57 @@ export default function AdminDashboard() {
   const [tourDialogOpen, setTourDialogOpen] = useState(false);
   const [editingTour, setEditingTour] = useState<Tour | null>(null);
   const [tourActionLoading, setTourActionLoading] = useState(false);
+  const [detailModal, setDetailModal] = useState<{ type: 'transaction' | 'period_transactions' | 'tour' | 'customer', data: any, parent?: any } | null>(null);
+
+  const handleExportCSV = () => {
+    const filteredTx = paymentTransactions.filter(tx => {
+      const txDate = new Date(tx.paid_at || tx.created_at);
+      if (revenuePeriod === 'month') {
+        const today = new Date();
+        return txDate.getMonth() === today.getMonth() && txDate.getFullYear() === today.getFullYear();
+      } else if (revenuePeriod === 'week') {
+        const today = new Date();
+        const firstDayOfWeek = new Date(today.setDate(today.getDate() - today.getDay() + 1));
+        firstDayOfWeek.setHours(0, 0, 0, 0);
+        return txDate >= firstDayOfWeek;
+      } else if (revenuePeriod === 'today') {
+        const today = new Date();
+        return txDate.getDate() === today.getDate() && txDate.getMonth() === today.getMonth() && txDate.getFullYear() === today.getFullYear();
+      } else if (revenuePeriod === 'custom') {
+        if (!selectedDate) return true;
+        const sDate = new Date(selectedDate);
+        return txDate.getDate() === sDate.getDate() && txDate.getMonth() === sDate.getMonth() && txDate.getFullYear() === sDate.getFullYear();
+      }
+      return true;
+    });
+
+    const headers = ['Mã giao dịch', 'Khách hàng', 'Email', 'Dịch vụ', 'SL/Khách', 'Mã Đặt Chỗ', 'Số tiền', 'Trạng thái', 'Thời gian', 'Mã Sepay'];
+    const rows = filteredTx.map(tx => {
+      const serviceName = tx.order_items?.map(item => item.title).join(' + ') || 'Không rõ';
+      const totalGuestsOrQty = tx.order_items?.reduce((sum, item) => sum + (item.guests || item.quantity || 0), 0) || 0;
+      
+      return [
+        tx.payment_code,
+        tx.user_name || 'Khách vãng lai',
+        tx.user_email,
+        serviceName,
+        totalGuestsOrQty.toString(),
+        tx.booking_refs?.join(' | ') || 'N/A',
+        tx.amount,
+        tx.payment_status === 'paid' ? 'Đã thanh toán' : 'Chưa thanh toán',
+        tx.paid_at ? new Date(tx.paid_at).toLocaleString('vi-VN') : '—',
+        tx.sepay_transaction_id || 'N/A'
+      ];
+    });
+    const csvContent = "data:text/csv;charset=utf-8,\uFEFF" + [headers, ...rows].map(e => e.join(",")).join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `BaoCaoDoanhThu_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  };
   const [rooms, setRooms] = useState<Room[]>([]);
   const [roomDialogOpen, setRoomDialogOpen] = useState(false);
   const [editingRoom, setEditingRoom] = useState<Room | null>(null);
@@ -147,7 +226,7 @@ export default function AdminDashboard() {
       setLoading(true);
       const authHeaders = adminHeaders();
       const [toursResponse, bookingsResponse, hotelBookingsResponse, roomsResponse, summaryResponse, transactionsResponse] = await Promise.all([
-        fetch(apiUrl('/api/tours')),
+        fetch(apiUrl('/api/tours/admin'), { headers: adminHeaders() }),
         fetch(apiUrl('/api/bookings')),
         fetch(apiUrl('/api/hotelbookings/all')),
         fetch(apiUrl('/api/rooms')),
@@ -216,6 +295,8 @@ export default function AdminDashboard() {
     // apiToken needed for payment admin endpoints ([Authorize])
   }, [user, apiToken, router]);
 
+
+
   const filteredTours = useMemo(
     () =>
       tours.filter((tour) =>
@@ -225,10 +306,102 @@ export default function AdminDashboard() {
     [searchQuery, tours]
   );
 
+  const monthlyRevenue = useMemo(() => {
+    // Calculate last 6 months (including current month) robustly
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonthIndex = now.getMonth(); // 0-11
+    const data = Array.from({ length: 6 }, (_, i) => {
+      const monthIndex = currentMonthIndex - (5 - i);
+      const d = new Date(currentYear, monthIndex, 1); // Date() will adjust year/month boundaries correctly
+      const monthNum = d.getMonth() + 1;
+      const year = d.getFullYear();
+      const monthName = `Tháng ${monthNum}`;
+      return {
+        month: monthNum,
+        year,
+        monthName,
+        totalRevenue: 0,
+        orderCount: 0,
+      };
+    });
+
+    paymentTransactions.forEach((tx) => {
+      if (tx.payment_status === 'paid' && tx.paid_at) {
+        const date = new Date(tx.paid_at);
+        const txMonth = date.getMonth() + 1;
+        const txYear = date.getFullYear();
+        
+        const dataItem = data.find(d => d.month === txMonth && d.year === txYear);
+        if (dataItem) {
+          dataItem.totalRevenue += Number(tx.amount || 0);
+          dataItem.orderCount += 1;
+        }
+      }
+    });
+
+    const totalRevenue = data.reduce((sum, item) => sum + item.totalRevenue, 0);
+    const totalOrders = data.reduce((sum, item) => sum + item.orderCount, 0);
+
+    return {
+      totalRevenue,
+      totalOrders,
+      data,
+    };
+  }, [paymentTransactions]);
+
+  const rangeRevenue = useMemo(() => {
+    let startDate: Date;
+    let endDate: Date;
+    const today = new Date();
+
+    if (revenuePeriod === 'today') {
+      startDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0);
+      endDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59);
+    } else if (revenuePeriod === 'week') {
+      startDate = new Date(today);
+      startDate.setDate(today.getDate() - 6);
+      startDate.setHours(0, 0, 0, 0);
+      endDate = new Date(today);
+      endDate.setHours(23, 59, 59, 999);
+    } else if (revenuePeriod === 'month') {
+      startDate = new Date(today.getFullYear(), today.getMonth(), 1, 0, 0, 0);
+      endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59);
+    } else if (revenuePeriod === 'custom' && selectedDate) {
+      startDate = new Date(`${selectedDate}T00:00:00`);
+      endDate = new Date(`${selectedDate}T23:59:59`);
+    } else {
+      startDate = new Date(today);
+      startDate.setHours(0, 0, 0, 0);
+      endDate = new Date(today);
+      endDate.setHours(23, 59, 59, 999);
+    }
+
+    let totalRevenue = 0;
+    let totalOrders = 0;
+
+    paymentTransactions.forEach((tx) => {
+      if (tx.payment_status === 'paid' && tx.paid_at) {
+        const paidDate = new Date(tx.paid_at);
+        if (paidDate >= startDate && paidDate <= endDate) {
+          totalRevenue += Number(tx.amount || 0);
+          totalOrders += 1;
+        }
+      }
+    });
+
+    return {
+      totalRevenue,
+      totalOrders,
+    };
+  }, [paymentTransactions, revenuePeriod, selectedDate]);
+
   const totalRevenue = paymentSummary?.total_revenue ?? bookings.reduce((sum, booking) => sum + Number(booking.total), 0);
   const pendingBookings = paymentSummary?.pending_count ?? bookings.filter((booking) => booking.status !== 'confirmed').length;
   const paidCount = paymentSummary?.paid_count ?? bookings.filter((booking) => booking.status === 'confirmed').length;
   const todayRevenue = paymentSummary?.today_revenue ?? 0;
+  const selectedRevenue = rangeRevenue?.totalRevenue ?? 0;
+  const selectedOrders = rangeRevenue?.totalOrders ?? 0;
   const uniqueCustomers = new Set([
     ...bookings.map((booking) => booking.userEmail),
     ...paymentTransactions.map((tx) => tx.user_email),
@@ -249,25 +422,24 @@ export default function AdminDashboard() {
     [paymentSearch, paymentTransactions]
   );
 
+  const formatCurrency = (value: number) => `${Number(value || 0).toLocaleString('vi-VN')}đ`;
+
   const ITEMS_PER_PAGE = 10;
-  
-  const tourTotalPages = Math.ceil(filteredTours.length / ITEMS_PER_PAGE);
+  const tourTotalPages = Math.max(1, Math.ceil(filteredTours.length / ITEMS_PER_PAGE));
   const paginatedTours = filteredTours.slice((tourPage - 1) * ITEMS_PER_PAGE, tourPage * ITEMS_PER_PAGE);
-
-  const bookingTotalPages = Math.ceil(bookings.length / ITEMS_PER_PAGE);
+  const bookingTotalPages = Math.max(1, Math.ceil(bookings.length / ITEMS_PER_PAGE));
   const paginatedBookings = bookings.slice((bookingPage - 1) * ITEMS_PER_PAGE, bookingPage * ITEMS_PER_PAGE);
-
-  const paymentTotalPages = Math.ceil(filteredPayments.length / ITEMS_PER_PAGE);
+  const paymentTotalPages = Math.max(1, Math.ceil(filteredPayments.length / ITEMS_PER_PAGE));
   const paginatedPayments = filteredPayments.slice((paymentPage - 1) * ITEMS_PER_PAGE, paymentPage * ITEMS_PER_PAGE);
-
-  const roomTotalPages = Math.ceil(rooms.length / ITEMS_PER_PAGE);
+  const roomTotalPages = Math.max(1, Math.ceil(rooms.length / ITEMS_PER_PAGE));
   const paginatedRooms = rooms.slice((roomPage - 1) * ITEMS_PER_PAGE, roomPage * ITEMS_PER_PAGE);
 
   const renderPagination = (currentPage: number, totalPages: number, setPage: (p: number) => void) => {
     if (totalPages <= 1) return null;
     return (
       <div className="flex items-center justify-between px-6 py-4 border-t border-slate-200/70 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60">
-        <button 
+        <button
+          type="button"
           onClick={() => setPage(Math.max(1, currentPage - 1))}
           disabled={currentPage === 1}
           className="px-4 py-2 text-sm font-bold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl disabled:opacity-50 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
@@ -277,7 +449,8 @@ export default function AdminDashboard() {
         <span className="text-sm font-semibold text-slate-500 dark:text-slate-400">
           Trang <span className="text-slate-900 dark:text-white">{currentPage}</span> / {totalPages}
         </span>
-        <button 
+        <button
+          type="button"
           onClick={() => setPage(Math.min(totalPages, currentPage + 1))}
           disabled={currentPage === totalPages}
           className="px-4 py-2 text-sm font-bold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl disabled:opacity-50 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
@@ -288,25 +461,88 @@ export default function AdminDashboard() {
     );
   };
 
-  const handleConfirmBooking = async (id: string) => {
-    try {
-      const isHotel = id.startsWith('HTL-') || id.startsWith('hotel_');
-      const endpoint = isHotel ? `/api/hotelbookings/${id}/confirm` : `/api/bookings/${id}/confirm`;
-      
-      const response = await fetch(apiUrl(endpoint), {
-        method: 'POST',
-        headers: adminHeaders()
-      });
-      
-      if (!response.ok) {
-        throw new Error('Lỗi khi duyệt đơn');
+  const topTours = useMemo(() => {
+    const salesMap = new Map<string, { title: string; revenue: number; orders: number; guests: number }>();
+
+    const addSale = (title: string, revenue: number, orders: number, guests: number) => {
+      const existing = salesMap.get(title);
+      if (existing) {
+        existing.revenue += revenue;
+        existing.orders += orders;
+        existing.guests += guests;
+      } else {
+        salesMap.set(title, { title, revenue, orders, guests });
       }
-      
-      setBookings((prev) => prev.map((booking) => (booking.id === id ? { ...booking, status: 'confirmed' } : booking)));
-      alert('Đã duyệt đơn thành công');
-    } catch (err: any) {
-      alert(err.message || 'Lỗi khi duyệt');
-    }
+    };
+
+    bookings.forEach((booking) => {
+      addSale(booking.tourTitle, Number(booking.total), 1, booking.guests);
+    });
+
+    paymentTransactions.forEach((transaction) => {
+      if (transaction.payment_status !== 'paid') {
+        return;
+      }
+
+      (transaction.order_items || []).forEach((item) => {
+        const title = item.title || 'Dịch vụ';
+        const quantity = Number(item.quantity || item.guests || 1);
+        const lineTotal = Number(item.lineTotal || transaction.amount || 0);
+        addSale(title, lineTotal, 1, quantity);
+      });
+    });
+
+    return Array.from(salesMap.values())
+      .sort((a, b) => b.revenue - a.revenue)
+      .slice(0, 3);
+  }, [bookings, paymentTransactions]);
+
+  const topCustomers = useMemo(() => {
+    const customerMap = new Map<string, { email: string; revenue: number; orders: number }>();
+
+    const addCustomer = (email: string, revenue: number) => {
+      if (!email) return;
+      const existing = customerMap.get(email);
+      if (existing) {
+        existing.revenue += revenue;
+        existing.orders += 1;
+      } else {
+        customerMap.set(email, { email, revenue, orders: 1 });
+      }
+    };
+
+    bookings.forEach((booking) => {
+      addCustomer(booking.userEmail, Number(booking.total));
+    });
+
+    paymentTransactions.forEach((transaction) => {
+      if (transaction.payment_status === 'paid') {
+        addCustomer(transaction.user_email, Number(transaction.amount));
+      }
+    });
+
+    return Array.from(customerMap.values())
+      .sort((a, b) => b.revenue - a.revenue)
+      .slice(0, 3);
+  }, [bookings, paymentTransactions]);
+
+  const revenuePeriodOptions: Array<{ id: RevenuePeriod; label: string }> = [
+    { id: 'today', label: 'Hôm nay' },
+    { id: 'week', label: 'Tuần' },
+    { id: 'month', label: 'Tháng' },
+    { id: 'custom', label: 'Tùy chọn' },
+  ];
+
+  const revenuePeriodLabel = revenuePeriod === 'custom'
+    ? `Ngày ${selectedDate}`
+    : revenuePeriod === 'today'
+      ? 'Hôm nay'
+      : revenuePeriod === 'week'
+        ? '7 ngày qua'
+        : 'Tháng này';
+
+  const handleConfirmBooking = (id: string) => {
+    setBookings((prev) => prev.map((booking) => (booking.id === id ? { ...booking, status: 'confirmed' } : booking)));
   };
 
   const handleApprovePayment = async (paymentCode: string) => {
@@ -314,10 +550,10 @@ export default function AdminDashboard() {
     try {
       const response = await fetch(apiUrl(`/api/payments/${paymentCode}/approve`), {
         method: 'POST',
-        headers: adminHeaders()
+        headers: adminHeaders(),
       });
       if (!response.ok) {
-        const err = await response.json();
+        const err = await response.json().catch(() => ({}));
         throw new Error(err.message || 'Lỗi khi duyệt');
       }
       await fetchData();
@@ -331,21 +567,22 @@ export default function AdminDashboard() {
     setBookings((prev) => prev.filter((booking) => booking.id !== id));
   };
 
-  const handleDeleteTour = async (id: string) => {
-    if (!confirm('Bạn muốn xóa tour này?')) return;
+  const handleToggleTourStatus = async (tour: Tour) => {
+    const actionName = tour.status === false ? 'hiện' : 'ẩn';
+    if (!confirm(`Bạn muốn ${actionName} tour này?`)) return;
     setTourActionLoading(true);
     try {
-      const response = await fetch(`${getBackendUrl()}/api/tours/${id}`, {
-        method: 'DELETE',
+      const response = await fetch(`${getBackendUrl()}/api/tours/${tour.id}/toggle-status`, {
+        method: 'PATCH',
         headers: adminHeaders(),
       });
       if (!response.ok) {
         const err = await response.json();
-        throw new Error(err.message || 'Xóa tour thất bại');
+        throw new Error(err.message || `Cập nhật trạng thái tour thất bại`);
       }
       await fetchData();
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Xóa tour thất bại');
+      alert(err instanceof Error ? err.message : `Cập nhật trạng thái tour thất bại`);
     } finally {
       setTourActionLoading(false);
     }
@@ -376,6 +613,8 @@ export default function AdminDashboard() {
     setEditingTour(tour);
     setTourDialogOpen(true);
   };
+
+
 
   const handleDeleteRoom = async (id: number) => {
     if (!confirm('Bạn muốn xóa phòng này?')) return;
@@ -447,14 +686,15 @@ export default function AdminDashboard() {
     hotels: { title: 'Quản lý khách sạn', subtitle: 'Quản lý phòng và trạng thái phòng.' },
 
     settings: { title: 'Cài đặt hệ thống', subtitle: 'Cấu hình chung cho nền tảng CMC Travel.' },
+    users: { title: 'Quản lý người dùng', subtitle: 'Xem danh sách và thao tác Khóa / Mở khóa tài khoản.' },
   };
 
   return (
-    <div className={`h-screen overflow-hidden bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white flex ${theme === 'dark' ? 'dark' : ''}`}>
-      <aside className="hidden xl:flex h-full w-70 flex-col shrink-0 border-r border-slate-200/70 dark:border-slate-800 bg-slate-100/80 dark:bg-slate-900/80 backdrop-blur-sm">
+    <div className={`min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white flex ${theme === 'dark' ? 'dark' : ''}`}>
+      <aside className="hidden xl:flex w-70 flex-col border-r border-slate-200/70 dark:border-slate-800 bg-slate-100/80 dark:bg-slate-900/80 backdrop-blur-sm sticky top-0 h-screen overflow-y-auto">
         <div className="p-8">
           <div className="text-left">
-            <h1 className="text-3xl font-black text-blue-700 dark:text-blue-400 font-serif">CMC Travel</h1>
+            <h1 className="text-3xl font-black text-blue-700 dark:text-blue-400 font-sans tracking-tight">CMC Travel</h1>
             <p className="text-sm text-slate-500 dark:text-slate-400">Bảng quản trị</p>
           </div>
         </div>
@@ -490,17 +730,15 @@ export default function AdminDashboard() {
 
         <div className="mt-auto p-6 border-t border-slate-200/70 dark:border-slate-800">
           <div className="flex items-center gap-3">
-            {user.avatar ? (
-              <img
-                src={user.avatar}
-                alt={user.name}
-                className="size-12 rounded-full object-cover border-2 border-blue-500 shadow-sm"
-              />
-            ) : (
-              <div className="size-12 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white text-sm font-bold border-2 border-blue-500 shadow-sm select-none">
-                {getInitials(user.name)}
-              </div>
-            )}
+            <div className="size-12 rounded-full bg-slate-300 dark:bg-slate-700 overflow-hidden shrink-0 flex items-center justify-center">
+              {user.avatar ? (
+                <img src={user.avatar} alt={user.name} className="size-full object-cover" />
+              ) : (
+                <span className="text-lg font-bold text-slate-500 dark:text-slate-400">
+                  {user.name?.charAt(0).toUpperCase() || 'A'}
+                </span>
+              )}
+            </div>
             <div className="text-left">
               <p className="font-bold">{user.name}</p>
               <p className="text-sm text-slate-500 dark:text-slate-400">Quản trị hệ thống</p>
@@ -521,7 +759,7 @@ export default function AdminDashboard() {
         <header className="sticky top-0 z-20 border-b border-slate-200/70 dark:border-slate-800 bg-slate-50/90 dark:bg-slate-950/90 backdrop-blur-sm">
           <div className="px-4 sm:px-6 lg:px-8 py-5 flex items-center justify-between gap-4">
             <div className="min-w-0">
-              <h2 className="text-2xl sm:text-3xl font-black font-serif">{tabTitles[activeTab].title}</h2>
+              <h2 className="text-2xl sm:text-3xl font-black font-sans tracking-tight">{tabTitles[activeTab].title}</h2>
               <p className="text-sm text-slate-500 dark:text-slate-400">{tabTitles[activeTab].subtitle}</p>
             </div>
             <div className="flex items-center gap-3">
@@ -542,10 +780,12 @@ export default function AdminDashboard() {
         </header>
 
         <div className="px-4 sm:px-6 lg:px-8 py-8">
+
           {loading ? (
             <PageSkeleton variant="dashboard" hideChrome className="min-h-0 bg-transparent dark:bg-transparent" />
           ) : (
             <>
+              {activeTab === 'users' && <AdminUserManagement />}
               {(activeTab === 'overview' || activeTab === 'payments') && (
               <section className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
                 {stats.map((stat) => {
@@ -567,10 +807,195 @@ export default function AdminDashboard() {
               )}
 
               {activeTab === 'overview' && (
-              <section className="mt-8 grid grid-cols-1 xl:grid-cols-[1.7fr_1fr] gap-6">
+                <section className="mt-8 rounded-[32px] border border-slate-200/70 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 text-slate-900 dark:text-white shadow-sm">
+                  <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                    <div>
+                      <div className="inline-flex items-center gap-2 rounded-full bg-slate-100 dark:bg-slate-800 px-3 py-1 text-sm font-semibold text-slate-600 dark:text-slate-300">
+                        <Sparkles className="size-4 text-blue-600 dark:text-blue-400" />
+                        Doanh thu & bán hàng
+                      </div>
+                      <h3 className="mt-4 text-2xl font-black font-sans tracking-tight">Phân tích doanh thu theo thời gian</h3>
+                      <p className="mt-2 max-w-2xl text-sm text-slate-500 dark:text-slate-400">
+                        Theo dõi hiệu quả theo ngày, tuần, tháng hoặc một thời điểm cụ thể để ra quyết định nhanh hơn.
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap gap-2 items-center">
+                      <div className="flex flex-wrap gap-1 bg-slate-100 dark:bg-slate-800/50 p-1 rounded-full border border-slate-150 dark:border-slate-800">
+                        {revenuePeriodOptions.map((option) => (
+                          <button
+                            key={option.id}
+                            onClick={() => setRevenuePeriod(option.id)}
+                            className={`rounded-full px-3.5 py-1.5 text-sm font-bold transition-colors ${
+                              revenuePeriod === option.id
+                                ? 'bg-blue-600 dark:bg-blue-500 text-white shadow-sm'
+                                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                            }`}
+                          >
+                            {option.label}
+                          </button>
+                        ))}
+                      </div>
+                      <button
+                        onClick={handleExportCSV}
+                        className="flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition-colors border border-emerald-200 dark:border-emerald-800"
+                        title="Xuất dữ liệu CSV"
+                      >
+                        <Download className="size-4" /> Xuất CSV
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="mt-6 grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
+                    <div className="rounded-3xl border border-slate-150 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/20 p-5">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-slate-500 dark:text-slate-400 font-semibold">Giai đoạn đang xem</p>
+                          <p className="mt-1 text-xl font-black text-slate-800 dark:text-slate-200">{revenuePeriodLabel}</p>
+                        </div>
+                        <div className="rounded-2xl bg-blue-50 dark:bg-blue-950/40 p-3 text-blue-600 dark:text-blue-400">
+                          <TrendingUp className="size-5" />
+                        </div>
+                      </div>
+
+                      <div className="mt-6 grid gap-4 sm:grid-cols-3">
+                        <div className="rounded-2xl border border-slate-100 dark:border-slate-900 bg-white dark:bg-slate-950/50 p-4 shadow-xs">
+                          <p className="text-xs uppercase tracking-[0.3em] text-slate-400 font-bold">Doanh thu</p>
+                          <p className="mt-2 text-xl font-black text-slate-800 dark:text-slate-100">{formatCurrency(selectedRevenue)}</p>
+                        </div>
+                        <div 
+                          className="rounded-2xl border border-slate-100 dark:border-slate-900 bg-white dark:bg-slate-950/50 p-4 shadow-xs cursor-pointer hover:border-blue-300 dark:hover:border-blue-700 transition-colors group"
+                          onClick={() => setDetailModal({ type: 'period_transactions', data: { periodLabel: revenuePeriodLabel } })}
+                        >
+                          <p className="text-xs uppercase tracking-[0.3em] text-slate-400 font-bold group-hover:text-blue-500 transition-colors">Đơn hàng</p>
+                          <p className="mt-2 text-xl font-black text-slate-800 dark:text-slate-100">{selectedOrders}</p>
+                        </div>
+                        <div className="rounded-2xl border border-slate-100 dark:border-slate-900 bg-white dark:bg-slate-950/50 p-4 shadow-xs">
+                          <p className="text-xs uppercase tracking-[0.3em] text-slate-400 font-bold">TB/đơn</p>
+                          <p className="mt-2 text-xl font-black text-slate-800 dark:text-slate-100">{selectedOrders > 0 ? formatCurrency(selectedRevenue / selectedOrders) : '0đ'}</p>
+                        </div>
+                      </div>
+
+                      {revenuePeriod === 'custom' && (
+                        <div className="mt-4 flex items-center gap-3">
+                          <label className="flex items-center gap-2 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
+                            <CalendarDays className="size-4 text-slate-400" />
+                            <input
+                              type="date"
+                              value={selectedDate}
+                              onChange={(event) => setSelectedDate(event.target.value)}
+                              className="bg-transparent outline-none"
+                            />
+                          </label>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="rounded-3xl border border-slate-150 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/20 p-5">
+                      <div className="flex items-center gap-2 text-sm font-bold text-slate-600 dark:text-slate-300">
+                        <CalendarDays className="size-4 text-blue-600 dark:text-blue-400" />
+                        Xu hướng doanh thu 6 tháng gần đây
+                      </div>
+                      <div className="mt-4 space-y-3">
+                        {(monthlyRevenue?.data ?? []).map((item, idx) => {
+                          const dataArr = monthlyRevenue?.data ?? [];
+                          const maxValue = Math.max(...dataArr.map((entry) => entry.totalRevenue), 0);
+                          const widthPct = maxValue > 0 ? (item.totalRevenue / maxValue) * 100 : 0;
+                          return (
+                            <div key={`${item.year ?? ''}-${item.month ?? item.monthName}-${idx}`} className="flex items-center gap-3">
+                              <div className="w-20 text-sm text-slate-400 font-semibold">{item.monthName || '—'}</div>
+                              <div className="h-2.5 flex-1 rounded-full bg-slate-100 dark:bg-slate-800/80">
+                                {item.totalRevenue > 0 ? (
+                                  <div
+                                    className="h-2.5 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 dark:from-blue-400 dark:to-indigo-400"
+                                    style={{ width: `${widthPct}%` }}
+                                  />
+                                ) : null}
+                              </div>
+                              <div className="w-24 text-right text-sm font-black text-slate-800 dark:text-slate-200">{formatCurrency(item.totalRevenue)}</div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-6 grid gap-4 lg:grid-cols-2">
+                    <div className="rounded-3xl border border-slate-150 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/20 p-5">
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <h4 className="text-lg font-black flex items-center gap-2 text-slate-800 dark:text-slate-100"><Sparkles className="size-4 text-blue-600 dark:text-blue-400" /> Top tour bán chạy</h4>
+                          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Tour mang lại doanh thu cao nhất.</p>
+                        </div>
+                      </div>
+                      <div className="mt-4 space-y-3">
+                        {topTours.map((tour, index) => (
+                          <div 
+                            key={`${tour.title}-${index}`} 
+                            onClick={() => setDetailModal({ type: 'tour', data: tour })}
+                            className="rounded-2xl border border-slate-100 dark:border-slate-900 bg-white dark:bg-slate-950/50 p-4 flex items-center gap-4 transition-all hover:scale-[1.01] hover:border-blue-300 dark:hover:border-blue-700 shadow-xs cursor-pointer"
+                          >
+                            <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-300 font-black">
+                              #{index + 1}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-bold text-slate-800 dark:text-slate-200 truncate">{tour.title}</p>
+                              <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{tour.guests} khách · {tour.orders} đơn</p>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-black text-blue-600 dark:text-blue-400">{formatCurrency(tour.revenue)}</p>
+                            </div>
+                          </div>
+                        ))}
+                        {topTours.length === 0 && (
+                          <div className="rounded-2xl bg-slate-100/50 dark:bg-slate-950/30 p-4 text-sm text-slate-500 dark:text-slate-400 text-center">
+                            Chưa có dữ liệu bán hàng.
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="rounded-3xl border border-slate-150 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/20 p-5">
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <h4 className="text-lg font-black flex items-center gap-2 text-slate-800 dark:text-slate-100"><Users className="size-4 text-emerald-600 dark:text-emerald-400" /> Top khách hàng</h4>
+                          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Khách hàng chi tiêu nhiều nhất.</p>
+                        </div>
+                      </div>
+                      <div className="mt-4 space-y-3">
+                        {topCustomers.map((customer, index) => (
+                          <div 
+                            key={`${customer.email}-${index}`} 
+                            onClick={() => setDetailModal({ type: 'customer', data: customer })}
+                            className="rounded-2xl border border-slate-100 dark:border-slate-900 bg-white dark:bg-slate-950/50 p-4 flex items-center gap-4 transition-all hover:scale-[1.01] hover:border-emerald-300 dark:hover:border-emerald-700 shadow-xs cursor-pointer"
+                          >
+                            <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-300 font-black">
+                              #{index + 1}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-bold text-slate-800 dark:text-slate-200 truncate">{customer.email}</p>
+                              <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{customer.orders} đơn hàng</p>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-black text-emerald-600 dark:text-emerald-400">{formatCurrency(customer.revenue)}</p>
+                            </div>
+                          </div>
+                        ))}
+                        {topCustomers.length === 0 && (
+                          <div className="rounded-2xl bg-slate-100/50 dark:bg-slate-950/30 p-4 text-sm text-slate-500 dark:text-slate-400 text-center">
+                            Chưa có dữ liệu khách hàng.
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </section>
+              )}
+
+              {activeTab === 'overview' && (
+                <section className="mt-8 grid grid-cols-1 xl:grid-cols-[1.7fr_1fr] gap-6">
                 <div className="rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 shadow-sm overflow-hidden">
                   <div className="p-6 border-b border-slate-200/70 dark:border-slate-800">
-                    <h3 className="text-xl font-black font-serif">Giao dịch gần đây</h3>
+                    <h3 className="text-xl font-black font-sans tracking-tight">Giao dịch gần đây</h3>
                     <p className="text-sm text-slate-500 dark:text-slate-400">Các đơn thanh toán SePay mới nhất</p>
                   </div>
                   <div className="overflow-x-auto">
@@ -614,7 +1039,7 @@ export default function AdminDashboard() {
 
                 <div className="space-y-6">
                   <div className="rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 shadow-sm p-6">
-                    <h3 className="text-xl font-black font-serif mb-5">Thao tác nhanh</h3>
+                    <h3 className="text-xl font-black font-sans tracking-tight mb-5">Thao tác nhanh</h3>
                     <div className="grid grid-cols-2 gap-4">
                       {[
                         { label: 'Thêm đối tác', icon: Users },
@@ -634,7 +1059,7 @@ export default function AdminDashboard() {
                   </div>
 
                   <div className="rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 shadow-sm p-6">
-                    <h3 className="text-xl font-black font-serif mb-5">Hoạt động gần đây</h3>
+                    <h3 className="text-xl font-black font-sans tracking-tight mb-5">Hoạt động gần đây</h3>
                     <div className="space-y-5 text-sm">
                       <div className="flex gap-3">
                         <div className="size-9 rounded-full bg-emerald-100 dark:bg-emerald-950/40 flex items-center justify-center text-emerald-600">✓</div>
@@ -667,7 +1092,7 @@ export default function AdminDashboard() {
               <section className={`${activeTab === 'tours' ? 'mt-0' : 'mt-8'} rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 shadow-sm overflow-hidden`}>
                 <div className="p-6 border-b border-slate-200/70 dark:border-slate-800 flex items-center justify-between gap-4 flex-wrap">
                   <div>
-                    <h3 className="text-xl font-black font-serif">Quản lý tour</h3>
+                    <h3 className="text-xl font-black font-sans tracking-tight">Quản lý tour</h3>
                     <p className="text-sm text-slate-500 dark:text-slate-400">Danh sách tour hiện có trong hệ thống</p>
                   </div>
 
@@ -704,6 +1129,7 @@ export default function AdminDashboard() {
                         <th className="px-6 py-4 text-left">Ngày đêm</th>
                         <th className="px-6 py-4 text-left">Giá</th>
                         <th className="px-6 py-4 text-left">Đánh giá</th>
+                        <th className="px-6 py-4 text-left">Trạng thái</th>
                         <th className="px-6 py-4 text-left">Hành động</th>
                       </tr>
                     </thead>
@@ -731,14 +1157,26 @@ export default function AdminDashboard() {
                           <td className="px-6 py-4 font-black text-blue-700 dark:text-blue-400">{tour.price.toLocaleString('vi-VN')}đ</td>
                           <td className="px-6 py-4 text-amber-600 dark:text-amber-500 font-bold">★ {tour.rating} ({tour.reviews})</td>
                           <td className="px-6 py-4">
+                            <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
+                              tour.status !== false
+                                ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300'
+                                : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
+                            }`}>
+                              {tour.status !== false ? 'Hoạt động' : 'Đã ẩn'}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
-
                               <button aria-label="Edit tour" onClick={() => openEditTour(tour)} disabled={tourActionLoading} className="text-blue-600 hover:text-blue-700 disabled:opacity-50">
                                 <Edit className="size-4" />
                               </button>
-                              <button aria-label="Delete tour" onClick={() => handleDeleteTour(tour.id)} disabled={tourActionLoading} className="text-red-500 hover:text-red-600 disabled:opacity-50">
-
-                                <Trash2 className="size-4" />
+                              <button 
+                                aria-label="Toggle tour status" 
+                                onClick={() => handleToggleTourStatus(tour)} 
+                                disabled={tourActionLoading} 
+                                className={`font-semibold disabled:opacity-50 ${tour.status === false ? 'text-emerald-600 hover:text-emerald-700' : 'text-slate-500 hover:text-slate-700'}`}
+                              >
+                                {tour.status === false ? 'Hiện' : 'Ẩn'}
                               </button>
                             </div>
                           </td>
@@ -764,7 +1202,7 @@ export default function AdminDashboard() {
               <section className="mt-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 shadow-sm overflow-hidden">
                 <div className="p-6 border-b border-slate-200/70 dark:border-slate-800 flex items-center justify-between">
                   <div>
-                    <h3 className="text-xl font-black font-serif">Đơn đặt chỗ</h3>
+                    <h3 className="text-xl font-black font-sans tracking-tight">Đơn đặt chỗ</h3>
                     <p className="text-sm text-slate-500 dark:text-slate-400">Phê duyệt hoặc hủy các đơn chờ xử lý</p>
                   </div>
                   <span className="text-sm font-bold text-slate-500 dark:text-slate-400">{bookings.length} đơn</span>
@@ -826,7 +1264,7 @@ export default function AdminDashboard() {
               <section className="mt-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 shadow-sm overflow-hidden">
                 <div className="p-6 border-b border-slate-200/70 dark:border-slate-800 flex items-center justify-between gap-4 flex-wrap">
                   <div>
-                    <h3 className="text-xl font-black font-serif">Lịch sử giao dịch SePay</h3>
+                    <h3 className="text-xl font-black font-sans tracking-tight">Lịch sử giao dịch SePay</h3>
                     <p className="text-sm text-slate-500 dark:text-slate-400">{filteredPayments.length} giao dịch · {uniqueCustomers} khách hàng</p>
                   </div>
                   <div className="relative w-full max-w-md">
@@ -923,7 +1361,7 @@ export default function AdminDashboard() {
               <section className="mt-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 shadow-sm overflow-hidden">
                 <div className="p-6 border-b border-slate-200/70 dark:border-slate-800 flex items-center justify-between gap-4 flex-wrap">
                   <div>
-                    <h3 className="text-xl font-black font-serif">Quản lý Phòng Khách sạn</h3>
+                    <h3 className="text-xl font-black font-sans tracking-tight">Quản lý Phòng Khách sạn</h3>
                     <p className="text-sm text-slate-500 dark:text-slate-400">Danh sách các phòng hiện có trong hệ thống</p>
                   </div>
                   <button onClick={openCreateRoom} className="inline-flex items-center gap-2 rounded-2xl bg-blue-700 px-4 py-2.5 text-sm font-bold text-white">
@@ -988,7 +1426,7 @@ export default function AdminDashboard() {
 
               {activeTab === 'settings' && (
               <section className="mt-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 shadow-sm p-8">
-                <h3 className="text-xl font-black font-serif mb-2">Cấu hình thanh toán SePay</h3>
+                <h3 className="text-xl font-black font-sans tracking-tight mb-2">Cấu hình thanh toán SePay</h3>
                 <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
                   Thiết lập biến môi trường <code className="text-xs bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">SEPAY_BANK_ACCOUNT</code>, webhook URL và API key trong file <code className="text-xs bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">.env</code>.
                 </p>
@@ -1010,6 +1448,149 @@ export default function AdminDashboard() {
           )}
         </div>
       </main>
+
+      {detailModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm" onClick={(e) => { if (e.target === e.currentTarget) setDetailModal(null); }}>
+          <div className="w-full max-w-3xl bg-white dark:bg-slate-900 rounded-3xl shadow-xl overflow-hidden flex flex-col max-h-[85vh] animate-in fade-in zoom-in duration-200">
+            <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-slate-800">
+              <h2 className="text-xl font-black flex items-center gap-2 text-slate-900 dark:text-white">
+                {detailModal.parent && (
+                  <button onClick={() => setDetailModal(detailModal.parent)} className="mr-1 p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors">
+                    <ArrowLeft className="size-5 text-slate-600 dark:text-slate-400" />
+                  </button>
+                )}
+                {detailModal.type === 'transaction' && <><FileText className="size-5 text-blue-600" /> Chi tiết giao dịch</>}
+                {detailModal.type === 'period_transactions' && <><ShoppingBag className="size-5 text-blue-600" /> Danh sách đơn hàng ({detailModal.data.periodLabel})</>}
+                {detailModal.type === 'tour' && <><Sparkles className="size-5 text-purple-600" /> Khách mua Tour: {detailModal.data.title}</>}
+                {detailModal.type === 'customer' && <><Users className="size-5 text-emerald-600" /> Lịch sử mua của: {detailModal.data.email}</>}
+              </h2>
+              <button onClick={() => setDetailModal(null)} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                <X className="size-5 text-slate-500" />
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto bg-slate-50/50 dark:bg-slate-950/20">
+              {detailModal.type === 'transaction' && (
+                <div className="space-y-6">
+                  <div className="grid grid-cols-2 gap-4 bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-xs">
+                    <div><p className="text-sm text-slate-500 font-semibold mb-1">Mã GD</p><p className="font-bold text-slate-900 dark:text-slate-100">{detailModal.data.payment_code}</p></div>
+                    <div><p className="text-sm text-slate-500 font-semibold mb-1">Số tiền</p><p className="font-bold text-blue-600 text-lg">{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(detailModal.data.amount)}</p></div>
+                    <div><p className="text-sm text-slate-500 font-semibold mb-1">Khách hàng</p><p className="font-bold text-slate-900 dark:text-slate-100">{detailModal.data.user_name || 'Khách vãng lai'}</p></div>
+                    <div><p className="text-sm text-slate-500 font-semibold mb-1">Email</p><p className="font-bold text-slate-900 dark:text-slate-100">{detailModal.data.user_email}</p></div>
+                    <div><p className="text-sm text-slate-500 font-semibold mb-1">Trạng thái</p>
+                      <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-bold ${detailModal.data.payment_status === 'paid' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-400' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-400'}`}>
+                        {detailModal.data.payment_status === 'paid' ? 'Đã thanh toán' : 'Chưa thanh toán'}
+                      </span>
+                    </div>
+                    <div><p className="text-sm text-slate-500 font-semibold mb-1">Thời gian</p><p className="font-bold text-slate-900 dark:text-slate-100">{detailModal.data.paid_at ? new Date(detailModal.data.paid_at).toLocaleString('vi-VN') : '—'}</p></div>
+                  </div>
+                  {detailModal.data.order_items && detailModal.data.order_items.length > 0 && (
+                    <div>
+                      <p className="font-bold mb-3 text-slate-800 dark:text-slate-200">Sản phẩm / Dịch vụ đã mua:</p>
+                      <ul className="space-y-3">
+                        {detailModal.data.order_items.map((item: any, i: number) => (
+                          <li key={i} className="flex gap-4 p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-xs">
+                            {item.image && <img src={item.image} alt={item.title} className="w-20 h-20 object-cover rounded-xl" />}
+                            <div className="flex-1">
+                              <p className="font-bold text-slate-900 dark:text-slate-100">{item.title}</p>
+                              <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-600 dark:text-slate-400">
+                                <span>Loại: <b>{item.serviceType === 'tour' ? 'Tour du lịch' : 'Phòng khách sạn'}</b></span>
+                                <span>Số lượng: <b>{item.quantity}</b></span>
+                                <span>Đơn giá: <b>{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(item.price)}</b></span>
+                              </div>
+                              <p className="mt-2 text-sm font-black text-blue-600">Thành tiền: {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(item.lineTotal)}</p>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
+              {detailModal.type === 'period_transactions' && (
+                <div className="space-y-3">
+                  {paymentTransactions
+                    .filter(tx => {
+                      const txDate = new Date(tx.paid_at || tx.created_at);
+                      if (revenuePeriod === 'month') {
+                        const today = new Date();
+                        return txDate.getMonth() === today.getMonth() && txDate.getFullYear() === today.getFullYear();
+                      } else if (revenuePeriod === 'week') {
+                        const today = new Date();
+                        const firstDayOfWeek = new Date(today.setDate(today.getDate() - today.getDay() + 1));
+                        firstDayOfWeek.setHours(0, 0, 0, 0);
+                        return txDate >= firstDayOfWeek;
+                      } else if (revenuePeriod === 'today') {
+                        const today = new Date();
+                        return txDate.getDate() === today.getDate() && txDate.getMonth() === today.getMonth() && txDate.getFullYear() === today.getFullYear();
+                      } else if (revenuePeriod === 'custom') {
+                        if (!selectedDate) return true;
+                        const sDate = new Date(selectedDate);
+                        return txDate.getDate() === sDate.getDate() && txDate.getMonth() === sDate.getMonth() && txDate.getFullYear() === sDate.getFullYear();
+                      }
+                      return true;
+                    })
+                    .sort((a, b) => new Date(b.paid_at || b.created_at).getTime() - new Date(a.paid_at || a.created_at).getTime())
+                    .map((tx, i) => (
+                      <div key={i} onClick={() => setDetailModal({ type: 'transaction', data: tx, parent: detailModal })} className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 flex justify-between items-center cursor-pointer hover:border-blue-300 dark:hover:border-blue-700 transition-colors shadow-xs">
+                        <div>
+                          <p className="font-bold text-slate-800 dark:text-slate-200">{tx.user_email || tx.payment_code}</p>
+                          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{new Date(tx.paid_at || tx.created_at).toLocaleString('vi-VN')} · <span className={tx.payment_status === 'paid' ? 'text-emerald-600 font-semibold' : 'text-amber-600 font-semibold'}>{tx.payment_status === 'paid' ? 'Thành công' : 'Chưa thanh toán'}</span></p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-black text-blue-600">{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(tx.amount)}</p>
+                          <p className="text-xs text-slate-400 mt-1 font-mono">{tx.payment_code}</p>
+                        </div>
+                      </div>
+                  ))}
+                  {paymentTransactions.length === 0 && (
+                    <div className="text-center py-8 text-slate-500">Không có giao dịch nào trong giai đoạn này.</div>
+                  )}
+                </div>
+              )}
+              {detailModal.type === 'tour' && (
+                <div className="space-y-3">
+                  {paymentTransactions
+                    .filter(tx => tx.payment_status === 'paid' && tx.order_items?.some((i: any) => i.referenceId === detailModal.data.id || i.title === detailModal.data.title))
+                    .sort((a, b) => new Date(b.paid_at || b.created_at).getTime() - new Date(a.paid_at || a.created_at).getTime())
+                    .map((tx, i) => (
+                      <div key={i} onClick={() => setDetailModal({ type: 'transaction', data: tx, parent: detailModal })} className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 flex justify-between items-center cursor-pointer hover:border-blue-300 dark:hover:border-blue-700 transition-colors shadow-xs">
+                        <div>
+                          <p className="font-bold text-slate-800 dark:text-slate-200">{tx.user_email}</p>
+                          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{new Date(tx.paid_at || tx.created_at).toLocaleString('vi-VN')}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-black text-blue-600">{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(tx.amount)}</p>
+                          <p className="text-xs text-slate-400 mt-1 font-mono">{tx.payment_code}</p>
+                        </div>
+                      </div>
+                  ))}
+                  {paymentTransactions.filter(tx => tx.payment_status === 'paid' && tx.order_items?.some((i: any) => i.referenceId === detailModal.data.id || i.title === detailModal.data.title)).length === 0 && (
+                    <div className="text-center py-8 text-slate-500">Chưa có giao dịch chi tiết nào được ghi nhận cho tour này.</div>
+                  )}
+                </div>
+              )}
+              {detailModal.type === 'customer' && (
+                <div className="space-y-3">
+                  {paymentTransactions
+                    .filter(tx => tx.user_email === detailModal.data.email)
+                    .sort((a, b) => new Date(b.paid_at || b.created_at).getTime() - new Date(a.paid_at || a.created_at).getTime())
+                    .map((tx, i) => (
+                      <div key={i} onClick={() => setDetailModal({ type: 'transaction', data: tx, parent: detailModal })} className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 flex justify-between items-center cursor-pointer hover:border-emerald-300 dark:hover:border-emerald-700 transition-colors shadow-xs">
+                        <div>
+                          <p className="font-bold text-slate-800 dark:text-slate-200">{tx.payment_code}</p>
+                          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{new Date(tx.paid_at || tx.created_at).toLocaleString('vi-VN')} · <span className={tx.payment_status === 'paid' ? 'text-emerald-600 font-semibold' : 'text-amber-600 font-semibold'}>{tx.payment_status === 'paid' ? 'Thành công' : 'Chưa thanh toán'}</span></p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-black text-emerald-600">{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(tx.amount)}</p>
+                        </div>
+                      </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       <TourFormDialog
         open={tourDialogOpen}

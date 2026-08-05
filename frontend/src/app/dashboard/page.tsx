@@ -173,21 +173,22 @@ export default function DashboardPage() {
         method: 'DELETE',
       });
 
+      const data = await response.json();
       if (!response.ok) {
-        throw new Error('Hủy đặt tour thất bại');
+        throw new Error(data.message || 'Hủy đặt tour thất bại');
       }
 
-      alert('Đã hủy đặt tour thành công!');
+      alert(data.message || 'Đã hủy đặt tour thành công!');
       fetchBookings();
     } catch (err: any) {
       alert(err.message || 'Lỗi kết nối máy chủ');
-      // Direct local filter for robust fallback experience
-      setBookings(prev => prev.filter(b => b.id !== id));
+      // If error, don't remove locally, maybe just refetch
+      fetchBookings();
     }
   };
 
   const handleDownloadInvoice = (id: string) => {
-    alert(`Đang tải hóa đơn ${id}...`);
+    window.open(`/invoice/${id}`, '_blank');
   };
 
   if (!user) {
@@ -208,7 +209,7 @@ export default function DashboardPage() {
           <span className="inline-block px-4 py-1.5 text-xs font-extrabold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 rounded-full border border-blue-100/30 uppercase tracking-widest mb-3">
             Tài khoản cá nhân
           </span>
-          <h1 className="text-3xl sm:text-4xl font-extrabold font-serif leading-tight text-slate-900 dark:text-white">
+          <h1 className="text-3xl sm:text-4xl font-extrabold font-sans leading-tight text-slate-900 dark:text-white">
             Dashboard Của Tôi
           </h1>
         </div>
@@ -320,7 +321,7 @@ export default function DashboardPage() {
             {/* Bookings Tab */}
             {activeTab === 'bookings' && (
               <div className="space-y-6">
-                <h2 className="text-2xl font-black text-slate-900 dark:text-white font-serif leading-tight mb-4">Các hành trình đã đặt</h2>
+                <h2 className="text-2xl font-black text-slate-900 dark:text-white font-sans leading-tight mb-4">Các hành trình đã đặt</h2>
 
                 {loading ? (
                   <div className="rounded-3xl border border-slate-100/40 bg-white p-6 shadow-sm dark:border-slate-800/40 dark:bg-slate-900">
@@ -347,12 +348,13 @@ export default function DashboardPage() {
                         <div className="flex items-start justify-between mb-2">
                           <h3 className="text-lg font-extrabold text-slate-900 dark:text-white leading-tight">{booking.tourTitle}</h3>
                           <span
-                            className={`px-3 py-1 rounded-full text-xxs font-black tracking-wide uppercase ${booking.status === 'confirmed'
-                                ? 'bg-green-50 text-green-700 dark:bg-green-950/40 dark:text-green-400'
-                                : 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400'
+                            className={`px-3 py-1 rounded-full text-xxs font-black tracking-wide uppercase ${
+                                booking.status === 'confirmed' ? 'bg-green-50 text-green-700 dark:bg-green-950/40 dark:text-green-400' :
+                                booking.status === 'cancelled' ? 'bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-400' :
+                                'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400'
                               }`}
                           >
-                            {booking.status === 'confirmed' ? 'Đã duyệt' : 'Chờ duyệt'}
+                            {booking.status === 'confirmed' ? 'Đã duyệt' : booking.status === 'cancelled' ? 'Đã hủy' : 'Chờ duyệt'}
                           </span>
                         </div>
 
@@ -373,22 +375,24 @@ export default function DashboardPage() {
 
                         <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-800">
                           <div className="text-2xl font-black text-blue-900 dark:text-blue-400">{Number(booking.total).toLocaleString('vi-VN')}đ</div>
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => handleDownloadInvoice(booking.id)}
-                              className="px-4 py-2 bg-blue-900 dark:bg-blue-600 text-white rounded-2xl hover:bg-blue-955 dark:hover:bg-blue-700 transition-colors flex items-center gap-1.5 font-bold text-xs cursor-pointer shadow-sm"
-                            >
-                              <Download className="size-3.5" />
-                              Hóa đơn
-                            </button>
-                            <button
-                              onClick={() => handleDeleteBooking(booking.id)}
-                              className="px-4 py-2 bg-red-50 hover:bg-red-100 text-red-655 rounded-2xl transition-colors flex items-center gap-1.5 font-bold text-xs cursor-pointer"
-                            >
-                              <Trash2 className="size-3.5" />
-                              Hủy tour
-                            </button>
-                          </div>
+                          {booking.status !== 'cancelled' && (
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => handleDownloadInvoice(booking.id)}
+                                className="px-4 py-2 bg-blue-900 dark:bg-blue-600 text-white rounded-2xl hover:bg-blue-955 dark:hover:bg-blue-700 transition-colors flex items-center gap-1.5 font-bold text-xs cursor-pointer shadow-sm"
+                              >
+                                <Download className="size-3.5" />
+                                Hóa đơn
+                              </button>
+                              <button
+                                onClick={() => handleDeleteBooking(booking.id)}
+                                className="px-4 py-2 bg-red-50 hover:bg-red-100 text-red-655 rounded-2xl transition-colors flex items-center gap-1.5 font-bold text-xs cursor-pointer"
+                              >
+                                <Trash2 className="size-3.5" />
+                                Hủy tour
+                              </button>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -400,7 +404,7 @@ export default function DashboardPage() {
             {/* Hotels Tab */}
             {activeTab === 'hotels' && (
               <div className="space-y-6">
-                <h2 className="text-2xl font-black text-slate-900 dark:text-white font-serif leading-tight mb-4">Các khách sạn đã đặt</h2>
+                <h2 className="text-2xl font-black text-slate-900 dark:text-white font-sans leading-tight mb-4">Các khách sạn đã đặt</h2>
 
                 {loadingHotels ? (
                   <div className="rounded-3xl border border-slate-100/40 bg-white p-6 shadow-sm dark:border-slate-800/40 dark:bg-slate-900">
@@ -485,7 +489,7 @@ export default function DashboardPage() {
             {/* Invoices Tab */}
             {activeTab === 'invoices' && (
               <div>
-                <h2 className="text-2xl font-black text-slate-900 dark:text-white font-serif mb-6">Lịch sử hóa đơn</h2>
+                <h2 className="text-2xl font-black text-slate-900 dark:text-white font-sans mb-6">Lịch sử hóa đơn</h2>
 
                 <div className="bg-white dark:bg-slate-900 rounded-3xl overflow-hidden border border-slate-100/40 dark:border-slate-800/40 shadow-sm">
                   <div className="overflow-x-auto">
@@ -537,7 +541,7 @@ export default function DashboardPage() {
             {/* Reviews Tab */}
             {activeTab === 'reviews' && (
               <div className="space-y-6">
-                <h2 className="text-2xl font-black text-slate-900 dark:text-white font-serif mb-6">Đánh giá của tôi</h2>
+                <h2 className="text-2xl font-black text-slate-900 dark:text-white font-sans mb-6">Đánh giá của tôi</h2>
 
                 <div className="space-y-4">
                   {reviews.length === 0 ? (
@@ -563,7 +567,7 @@ export default function DashboardPage() {
 
                   {/* Add Review Form */}
                   <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 border border-slate-100/40 dark:border-slate-800/40 shadow-sm">
-                    <h3 className="text-lg font-extrabold text-slate-900 dark:text-white mb-6 font-serif">Viết đánh giá hành trình mới</h3>
+                    <h3 className="text-lg font-extrabold text-slate-900 dark:text-white mb-6 font-sans">Viết đánh giá hành trình mới</h3>
 
                     <form className="space-y-5" onSubmit={handleSubmitReview}>
                       {experiencedTourIds.length === 0 && (
@@ -626,7 +630,7 @@ export default function DashboardPage() {
             {/* Profile Tab */}
             {activeTab === 'profile' && (
               <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 border border-slate-100/40 dark:border-slate-800/40 shadow-sm">
-                <h2 className="text-2xl font-black text-slate-900 dark:text-white font-serif mb-6">Thông tin tài khoản</h2>
+                <h2 className="text-2xl font-black text-slate-900 dark:text-white font-sans mb-6">Thông tin tài khoản</h2>
 
                 <form className="space-y-5" onSubmit={(e) => { e.preventDefault(); alert('Cập nhật thông tin thành công!'); }}>
 
@@ -666,7 +670,7 @@ export default function DashboardPage() {
                   </div>
 
                   <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-800">
-                    <h3 className="text-lg font-black text-slate-900 dark:text-white font-serif mb-4 flex items-center gap-2">
+                    <h3 className="text-lg font-black text-slate-900 dark:text-white font-sans mb-4 flex items-center gap-2">
                       <Key className="size-5 text-blue-600" /> Thông tin đăng nhập
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -703,7 +707,7 @@ export default function DashboardPage() {
             {/* Vouchers Tab */}
             {activeTab === 'vouchers' && (
               <div className="space-y-6">
-                <h2 className="text-2xl font-black text-slate-900 dark:text-white font-serif mb-6 flex items-center gap-2">
+                <h2 className="text-2xl font-black text-slate-900 dark:text-white font-sans mb-6 flex items-center gap-2">
                   <Ticket className="size-6 text-blue-600" />
                   Kho Voucher & Mã giảm giá
                 </h2>

@@ -98,7 +98,7 @@ export default function CheckoutPage() {
           <span className="inline-block px-4 py-1.5 text-xs font-extrabold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 rounded-full border border-blue-100/30 uppercase tracking-widest mb-3">
             Xác nhận đặt tour
           </span>
-          <h1 className="text-3xl sm:text-4xl font-extrabold font-serif leading-tight text-slate-900 dark:text-white">
+          <h1 className="text-3xl sm:text-4xl font-extrabold font-sans leading-tight text-slate-900 dark:text-white">
             Thanh Toán & Liên Hệ
           </h1>
         </div>
@@ -110,7 +110,7 @@ export default function CheckoutPage() {
 
               {/* Contact Information */}
               <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 border border-slate-100/40 dark:border-slate-800/40 shadow-sm text-left">
-                <h2 className="text-xl font-extrabold text-slate-900 dark:text-white mb-6 font-serif">Thông tin liên hệ hành trình</h2>
+                <h2 className="text-xl font-extrabold text-slate-900 dark:text-white mb-6 font-sans">Thông tin liên hệ hành trình</h2>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <div>
@@ -164,7 +164,7 @@ export default function CheckoutPage() {
 
               {/* Payment Method */}
               <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 border border-slate-100/40 dark:border-slate-800/40 shadow-sm text-left">
-                <h2 className="text-xl font-extrabold text-slate-900 dark:text-white mb-6 font-serif">Phương thức thanh toán</h2>
+                <h2 className="text-xl font-extrabold text-slate-900 dark:text-white mb-6 font-sans">Phương thức thanh toán</h2>
 
                 <div className="grid grid-cols-1 gap-4 mb-4">
                   <button
@@ -208,7 +208,7 @@ export default function CheckoutPage() {
           {/* Summary Column */}
           <div className="lg:col-span-1 text-left">
             <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 sticky top-24 shadow-sm border border-slate-100/40 dark:border-slate-800/40">
-              <h2 className="text-xl font-extrabold text-slate-900 dark:text-white mb-6 font-serif">Tóm tắt hành trình</h2>
+              <h2 className="text-xl font-extrabold text-slate-900 dark:text-white mb-6 font-sans">Tóm tắt hành trình</h2>
 
               <div className="space-y-4 mb-6">
                 {items.map((item) => (
