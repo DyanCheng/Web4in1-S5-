@@ -26,6 +26,14 @@ namespace Backend.Controllers
             return Ok(tours);
         }
 
+        [HttpGet("admin")]
+        [Authorize(Roles = "admin")]
+        public async Task<IActionResult> GetAllAdmin([FromQuery] string? destination)
+        {
+            var tours = await _tourDb.GetAllToursAdminAsync(destination);
+            return Ok(tours);
+        }
+
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(string id)
         {
@@ -78,6 +86,17 @@ namespace Backend.Controllers
                 return NotFound(new { message = "Không tìm thấy tour này" });
 
             return Ok(new { message = "Đã xóa tour thành công" });
+        }
+
+        [HttpPatch("{id}/toggle-status")]
+        [Authorize(Roles = "admin")]
+        public async Task<IActionResult> ToggleStatus(string id)
+        {
+            var success = await _tourDb.ToggleTourStatusAsync(id);
+            if (!success)
+                return NotFound(new { message = "Không tìm thấy tour này" });
+
+            return Ok(new { message = "Đã cập nhật trạng thái tour thành công" });
         }
     }
 

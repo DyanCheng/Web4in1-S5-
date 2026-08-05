@@ -26,6 +26,7 @@ export interface TourFormData {
 
 export interface TourRecord extends Omit<TourFormData, 'highlights' | 'included' | 'excluded'> {
   id: string;
+  status?: boolean;
   highlights?: string[];
   included?: string[];
   excluded?: string[];
@@ -132,7 +133,7 @@ export default function TourFormDialog({ open, onOpenChange, initial, onSubmit }
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent aria-describedby={undefined} className="sm:max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl">
         <DialogHeader>
-          <DialogTitle className="text-xl font-black font-serif">
+          <DialogTitle className="text-xl font-black font-sans">
             {initial ? 'Chỉnh sửa tour' : 'Thêm tour mới'}
           </DialogTitle>
         </DialogHeader>

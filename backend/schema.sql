@@ -144,6 +144,54 @@ WHERE tour_id = 5;
 
 -- 3. Create PL/pgSQL database functions (RPC endpoints)
 
+-- GET TOURS (ADMIN)
+CREATE OR REPLACE FUNCTION public.get_tours_admin(p_destination text DEFAULT NULL)
+RETURNS json
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  v_result json;
+BEGIN
+  SELECT json_agg(t) INTO v_result
+  FROM (
+    SELECT 
+      t.tour_id::text AS id,
+      t.destination_city_id::text AS city_id,
+      t.title,
+      COALESCE(t.location, c.city_name) AS location,
+      t.base_price AS price,
+      COALESCE(t.duration, (t.duration_days::text || ' ngày ' || COALESCE(t.duration_nights, t.duration_days - 1)::text || ' đêm')) AS duration,
+      COALESCE(t.image_url, 'https://images.unsplash.com/photo-1643029891412-92f9a81a8c16') AS image,
+      COALESCE(t.rating_avg, 5.0) AS rating,
+      COALESCE(t.total_reviews, 0) AS reviews,
+      t.description,
+      COALESCE(t.highlights, ARRAY[]::text[]) AS highlights,
+      COALESCE(t.included, ARRAY[]::text[]) AS included,
+      COALESCE(t.excluded, ARRAY[]::text[]) AS excluded,
+      (c.country_id = c_dep.country_id) AS is_domestic,
+      t.status
+    FROM public.tours t
+    LEFT JOIN public.cities c ON t.destination_city_id = c.city_id
+    LEFT JOIN public.cities c_dep ON t.departure_city_id = c_dep.city_id
+    WHERE (p_destination IS NULL OR p_destination = '' OR LOWER(t.title) LIKE '%' || LOWER(p_destination) || '%' OR LOWER(c.city_name) LIKE '%' || LOWER(p_destination) || '%')
+    ORDER BY t.tour_id DESC
+  ) t;
+  
+  RETURN COALESCE(v_result, '[]'::json);
+END;
+$$;
+
+-- TOGGLE TOUR STATUS
+CREATE OR REPLACE FUNCTION public.toggle_tour_status(p_id bigint)
+RETURNS json
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  UPDATE public.tours SET status = NOT COALESCE(status, false) WHERE tour_id = p_id;
+  RETURN json_build_object('success', true);
+END;
+$$;
+
 -- GET TOURS
 CREATE OR REPLACE FUNCTION public.get_tours(p_destination text DEFAULT NULL)
 RETURNS json
@@ -239,7 +287,6 @@ BEGIN
 END;
 $$;
 
--- CREATE TOUR
 CREATE OR REPLACE FUNCTION public.create_tour(
   p_title text,
   p_location text,
@@ -249,7 +296,9 @@ CREATE OR REPLACE FUNCTION public.create_tour(
   p_description text,
   p_highlights text[],
   p_included text[],
-  p_excluded text[]
+  p_excluded text[],
+  p_rating numeric DEFAULT 5.0,
+  p_reviews int DEFAULT 0
 )
 RETURNS json
 LANGUAGE plpgsql
@@ -269,7 +318,7 @@ BEGIN
   INSERT INTO public.tours 
     (provider_id, category_id, policy_id, title, slug, description, departure_city_id, destination_city_id, duration_days, base_price, status, location, duration, image_url, highlights, included, excluded, rating_avg, total_reviews)
   VALUES 
-    (1, 1, 1, p_title, regexp_replace(lower(p_title), '[^a-z0-9]+', '-', 'g'), p_description, v_city_id, v_city_id, 3, p_price, true, p_location, p_duration, p_image, p_highlights, p_included, p_excluded, 5.0, 0)
+    (1, 1, 1, p_title, regexp_replace(lower(p_title), '[^a-z0-9]+', '-', 'g'), p_description, v_city_id, v_city_id, 3, p_price, true, p_location, p_duration, p_image, p_highlights, p_included, p_excluded, p_rating, p_reviews)
   RETURNING tour_id INTO v_tour_id;
 
   SELECT row_to_json(t) INTO v_result
@@ -296,7 +345,6 @@ BEGIN
 END;
 $$;
 
--- UPDATE TOUR
 CREATE OR REPLACE FUNCTION public.update_tour(
   p_id bigint,
   p_title text,
@@ -307,7 +355,9 @@ CREATE OR REPLACE FUNCTION public.update_tour(
   p_description text,
   p_highlights text[],
   p_included text[],
-  p_excluded text[]
+  p_excluded text[],
+  p_rating numeric DEFAULT NULL,
+  p_reviews int DEFAULT NULL
 )
 RETURNS json
 LANGUAGE plpgsql
@@ -335,6 +385,8 @@ BEGIN
     included = p_included,
     excluded = p_excluded,
     destination_city_id = v_city_id,
+    rating_avg = COALESCE(p_rating, rating_avg),
+    total_reviews = COALESCE(p_reviews, total_reviews),
     updated_at = CURRENT_TIMESTAMP
   WHERE tour_id = p_id;
 
@@ -534,8 +586,8 @@ RETURNS json
 LANGUAGE plpgsql
 AS $$
 BEGIN
-  DELETE FROM public.bookings WHERE booking_code = p_booking_code;
-  RETURN json_build_object('success', true);
+  UPDATE public.bookings SET booking_status = 'cancelled' WHERE booking_code = p_booking_code;
+  RETURN json_build_object('success', true, 'message', 'Đã yêu cầu hủy đơn. Bộ phận kế toán sẽ tiến hành hoàn tiền (nếu có) trong 3-5 ngày làm việc.');
 END;
 $$;
 
@@ -566,8 +618,8 @@ GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated, se
 
 GRANT EXECUTE ON FUNCTION public.get_tours(text) TO anon, authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.get_tour_by_id(bigint) TO anon, authenticated, service_role;
-GRANT EXECUTE ON FUNCTION public.create_tour(text, text, numeric, text, text, text, text[], text[], text[]) TO anon, authenticated, service_role;
-GRANT EXECUTE ON FUNCTION public.update_tour(bigint, text, text, numeric, text, text, text, text[], text[], text[]) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.create_tour(text, text, numeric, text, text, text, text[], text[], text[], numeric, int) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.update_tour(bigint, text, text, numeric, text, text, text, text[], text[], text[], numeric, int) TO anon, authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.delete_tour(bigint) TO anon, authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.get_bookings() TO anon, authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.get_user_bookings(text) TO anon, authenticated, service_role;
