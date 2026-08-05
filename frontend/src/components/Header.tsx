@@ -1,16 +1,24 @@
 "use client";
 
-import { usePathname, useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Sun, Moon, Menu, Heart, ChevronDown, Plane, Bus, Car, Shield, MessageSquare, LayoutDashboard, History, LogOut } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { canAccessSupportInbox } from '@/lib/chat/support-constants';
 
+const navLinkClass =
+  'interactive-press hover:text-blue-600 dark:hover:text-blue-400 transition-colors py-2 uppercase font-bold text-sm tracking-wider focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 rounded-md';
+
+const menuItemClass =
+  'interactive-press w-full flex items-center gap-3 px-4 py-3 text-left text-sm font-semibold normal-case tracking-normal text-slate-700 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-slate-700 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500/40';
+
+const mobileItemClass =
+  'interactive-press px-3 py-2 text-left text-sm font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40';
+
 export default function Header() {
-  const router = useRouter();
   const pathname = usePathname();
-  const navigate = (url: string) => router.push(url);
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -38,11 +46,11 @@ export default function Header() {
     const handleScroll = () => {
       setScrolled(window.scrollY > 10);
     };
-    window.addEventListener('scroll', handleScroll);
+    handleScroll();
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Đóng dropdown khi click ra ngoài
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (moreRef.current && !moreRef.current.contains(e.target as Node)) {
@@ -56,14 +64,12 @@ export default function Header() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Đóng dropdown khi đổi trang
   useEffect(() => {
     setUserMenuOpen(false);
     setMoreOpen(false);
     setMobileMenuOpen(false);
   }, [pathname]);
 
-  // Lấy chữ cái đầu để hiển thị trong avatar khi chưa có ảnh
   const getInitials = (name: string) => {
     return name
       .split(' ')
@@ -80,55 +86,44 @@ export default function Header() {
     { label: 'Bảo hiểm du lịch', icon: Shield, href: '/insurance' },
   ];
 
-  const goAndCloseUserMenu = (url: string) => {
-    navigate(url);
-    setUserMenuOpen(false);
-  };
-
   return (
     <header className={`sticky top-0 z-50 transition-all duration-300 ${
       scrolled 
-        ? 'bg-white/90 dark:bg-slate-900/90 backdrop-blur-md shadow-md py-4' 
-        : 'bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 py-5'
+        ? 'bg-white/90 dark:bg-slate-900/90 backdrop-blur-md shadow-md border-b border-slate-200/60 dark:border-slate-700/60 py-4' 
+        : 'bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 py-5 shadow-none'
     }`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center">
           
-          {/* Logo */}
-          <div className="flex items-center gap-2 cursor-pointer group py-1" onClick={() => navigate('/')}>
+          <Link href="/" className="flex items-center gap-2 group py-1 interactive-press rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40">
             <img 
               src="/logo.png" 
               alt="CMC Travel" 
-              className="h-16 sm:h-20 w-auto group-hover:scale-105 transition-transform"
+              className="h-16 sm:h-20 w-auto group-hover:scale-105 transition-transform duration-200"
             />
-          </div>
+          </Link>
           
-          {/* Desktop Nav links */}
           <nav className="hidden md:flex items-center gap-8 font-bold text-sm tracking-wider uppercase text-slate-600 dark:text-slate-350">
-            {/* Tours */}
-            <button 
-              onClick={() => navigate('/#tours')}
-              className={`hover:text-blue-600 dark:hover:text-blue-400 transition-colors py-2 uppercase font-bold text-sm tracking-wider cursor-pointer ${
-                pathname === '/' ? 'text-blue-600 dark:text-blue-400' : ''
-              }`}
+            <Link
+              href="/#tours"
+              className={`${navLinkClass} ${pathname === '/' ? 'text-blue-600 dark:text-blue-400' : ''}`}
             >
               Tours
-            </button>
+            </Link>
 
-            {/* Khách sạn */}
-            <button
-              onClick={() => navigate('/hotel')}
-              className={`hover:text-blue-600 dark:hover:text-blue-400 transition-colors py-2 uppercase font-bold text-sm tracking-wider cursor-pointer ${
-                pathname.startsWith('/hotel') ? 'text-blue-600 dark:text-blue-400' : ''
-              }`}
+            <Link
+              href="/hotel"
+              prefetch
+              className={`${navLinkClass} ${pathname.startsWith('/hotel') ? 'text-blue-600 dark:text-blue-400' : ''}`}
             >
               Khách sạn
-            </button>
-            {/* Xem thêm dropdown */}
+            </Link>
+
             <div ref={moreRef} className="relative">
               <button
+                type="button"
                 onClick={() => setMoreOpen(!moreOpen)}
-                className={`hover:text-blue-600 dark:hover:text-blue-400 transition-colors py-2 uppercase font-bold text-sm tracking-wider cursor-pointer inline-flex items-center gap-1 ${
+                className={`${navLinkClass} inline-flex items-center gap-1 cursor-pointer ${
                   moreOpen ? 'text-blue-600 dark:text-blue-400' : ''
                 }`}
               >
@@ -136,18 +131,18 @@ export default function Header() {
                 <ChevronDown className={`size-4 transition-transform duration-200 ${moreOpen ? 'rotate-180' : ''}`} />
               </button>
 
-              {/* Dropdown panel */}
               {moreOpen && (
                 <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 w-56 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-700 py-2 z-50 animate-fade-in">
-                  {/* Arrow */}
                   <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-2 overflow-hidden">
                     <div className="w-3 h-3 bg-white dark:bg-slate-800 border-l border-t border-slate-100 dark:border-slate-700 rotate-45 mx-auto mt-1" />
                   </div>
                   {moreItems.map(({ label, icon: Icon, href }) => (
-                    <button
+                    <Link
                       key={href}
-                      onClick={() => { navigate(href); setMoreOpen(false); }}
-                      className={`w-full flex items-center gap-3 px-4 py-3 text-left text-sm font-semibold normal-case tracking-normal text-slate-700 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-slate-700 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer ${
+                      href={href}
+                      prefetch
+                      onClick={() => setMoreOpen(false)}
+                      className={`${menuItemClass} ${
                         pathname.startsWith(href) ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-slate-700' : ''
                       }`}
                     >
@@ -155,31 +150,29 @@ export default function Header() {
                         <Icon className="size-4" />
                       </span>
                       {label}
-                    </button>
+                    </Link>
                   ))}
                 </div>
               )}
             </div>
           </nav>
 
-          {/* Right Action buttons */}
           <div className="flex items-center gap-3">
-
-            {/* Dark Mode Toggle */}
             <button
+              type="button"
               onClick={toggleTheme}
-              className="p-2 text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-all duration-200 cursor-pointer"
+              className="interactive-press p-2 text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
               aria-label="Toggle Dark Mode"
             >
               {theme === 'dark' ? <Sun className="size-5 text-yellow-400" /> : <Moon className="size-5" />}
             </button>
 
-            {/* Auth Buttons */}
             {user ? (
               <div ref={userMenuRef} className="relative hidden sm:block w-full">
                 <button
+                  type="button"
                   onClick={() => setUserMenuOpen(!userMenuOpen)} 
-                  className="relative flex items-center gap-1 pl-1 pr-2 py-1 rounded-full hover transition-transform duration-200 cursor-pointer before:absolute before:inset-0 before:rounded-full before:bg-white/30 before:opacity-0 before:transition-opacity hover:before:opacity-100"
+                  className="interactive-press relative flex items-center gap-1 pl-1 pr-2 py-1 rounded-full cursor-pointer before:absolute before:inset-0 before:rounded-full before:bg-white/30 before:opacity-0 before:transition-opacity hover:before:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
                   aria-expanded={userMenuOpen}
                   aria-haspopup="menu"
                 >
@@ -199,7 +192,7 @@ export default function Header() {
                 {userMenuOpen && (
                   <div
                     role="menu"
-                    className="absolute right-0 top-full mt-3 w-64 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-700 py-2 z-50"
+                    className="absolute right-0 top-full mt-3 w-64 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-700 py-2 z-50 animate-fade-in"
                   >
                     <div className="absolute -top-2 right-6 w-4 h-2 overflow-hidden">
                       <div className="w-3 h-3 bg-white dark:bg-slate-800 border-l border-t border-slate-100 dark:border-slate-700 rotate-45 mx-auto mt-1" />
@@ -211,47 +204,56 @@ export default function Header() {
                     </div>
 
                     <div className="p-1.5">
-                      <button
+                      <Link
                         role="menuitem"
-                        onClick={() => goAndCloseUserMenu('/dashboard')}
-                        className="w-full flex items-center gap-3 px-3 py-2.5 text-left text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-slate-700 hover:text-blue-600 dark:hover:text-blue-400 rounded-xl transition-colors cursor-pointer"
+                        href="/dashboard"
+                        prefetch
+                        onClick={() => setUserMenuOpen(false)}
+                        className="interactive-press w-full flex items-center gap-3 px-3 py-2.5 text-left text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-slate-700 hover:text-blue-600 dark:hover:text-blue-400 rounded-xl transition-colors cursor-pointer"
                       >
                         <LayoutDashboard className="size-4 shrink-0" />
                         Dashboard / Hồ sơ
-                      </button>
-                      <button
+                      </Link>
+                      <Link
                         role="menuitem"
-                        onClick={() => goAndCloseUserMenu('/dashboard')}
-                        className="w-full flex items-center gap-3 px-3 py-2.5 text-left text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-slate-700 hover:text-blue-600 dark:hover:text-blue-400 rounded-xl transition-colors cursor-pointer"
+                        href="/dashboard"
+                        prefetch
+                        onClick={() => setUserMenuOpen(false)}
+                        className="interactive-press w-full flex items-center gap-3 px-3 py-2.5 text-left text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-slate-700 hover:text-blue-600 dark:hover:text-blue-400 rounded-xl transition-colors cursor-pointer"
                       >
                         <History className="size-4 shrink-0" />
                         Lịch sử đặt tour
-                      </button>
-                      <button
+                      </Link>
+                      <Link
                         role="menuitem"
-                        onClick={() => goAndCloseUserMenu('/favorites')}
-                        className="w-full flex items-center gap-3 px-3 py-2.5 text-left text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-slate-700 hover:text-blue-600 dark:hover:text-blue-400 rounded-xl transition-colors cursor-pointer"
+                        href="/favorites"
+                        prefetch
+                        onClick={() => setUserMenuOpen(false)}
+                        className="interactive-press w-full flex items-center gap-3 px-3 py-2.5 text-left text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-slate-700 hover:text-blue-600 dark:hover:text-blue-400 rounded-xl transition-colors cursor-pointer"
                       >
                         <Heart className="size-4 shrink-0" />
                         Yêu thích
-                      </button>
+                      </Link>
                       {canAccessAdmin && (
-                        <button
+                        <Link
                           role="menuitem"
-                          onClick={() => goAndCloseUserMenu(getAdminPath())}
-                          className="w-full flex items-center gap-3 px-3 py-2.5 text-left text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-slate-700 hover:text-blue-600 dark:hover:text-blue-400 rounded-xl transition-colors cursor-pointer"
+                          href={getAdminPath()}
+                          prefetch
+                          onClick={() => setUserMenuOpen(false)}
+                          className="interactive-press w-full flex items-center gap-3 px-3 py-2.5 text-left text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-slate-700 hover:text-blue-600 dark:hover:text-blue-400 rounded-xl transition-colors cursor-pointer"
                         >
                           <Shield className="size-4 shrink-0" />
                           Quản trị
-                        </button>
+                        </Link>
                       )}
                     </div>
 
                     <div className="border-t border-slate-100 dark:border-slate-700 p-1.5 mt-1">
                       <button
+                        type="button"
                         role="menuitem"
                         onClick={() => { logout(); setUserMenuOpen(false); }}
-                        className="w-full flex items-center gap-3 px-3 py-2.5 text-left text-sm font-semibold text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-xl transition-colors cursor-pointer"
+                        className="interactive-press w-full flex items-center gap-3 px-3 py-2.5 text-left text-sm font-semibold text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-xl transition-colors cursor-pointer"
                       >
                         <LogOut className="size-4 shrink-0" />
                         Đăng xuất
@@ -262,89 +264,99 @@ export default function Header() {
               </div>
             ) : (
               <div className="hidden sm:flex items-center gap-3">
-                <button
-                  onClick={() => navigate('/login')}
-                  className="px-4 py-2 text-slate-700 dark:text-slate-200 hover:text-blue-600 transition-colors font-bold text-sm cursor-pointer"
+                <Link
+                  href="/login"
+                  prefetch
+                  className="interactive-press px-4 py-2 text-slate-700 dark:text-slate-200 hover:text-blue-600 transition-colors font-bold text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 rounded-md"
                 >
                   Đăng nhập
-                </button>
-                <button
-                  onClick={() => navigate('/register')}
-                  className="px-5 py-2 bg-blue-900 hover:bg-blue-950 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-full transition-all font-bold text-sm shadow-md cursor-pointer"
+                </Link>
+                <Link
+                  href="/register"
+                  prefetch
+                  className="interactive-press px-5 py-2 bg-blue-900 hover:bg-blue-950 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-full transition-all font-bold text-sm shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
                 >
                   Đăng ký
-                </button>
+                </Link>
               </div>
             )}
 
-            {/* Mobile Menu Toggle */}
             <button
+              type="button"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-2 text-slate-600 dark:text-slate-350 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg cursor-pointer"
+              className="interactive-press md:hidden p-2 text-slate-600 dark:text-slate-350 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
             >
               <Menu className="size-5.5" />
             </button>
           </div>
         </div>
 
-        {/* Mobile Menu Panel */}
         {mobileMenuOpen && (
-          <div className="md:hidden mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 flex flex-col gap-3 text-left">
-            <button 
-              onClick={() => { navigate('/#tours'); setMobileMenuOpen(false); }}
-              className="px-3 py-2 text-left text-sm font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg cursor-pointer"
+          <div className="md:hidden mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 flex flex-col gap-3 text-left animate-fade-in">
+            <Link 
+              href="/#tours"
+              onClick={() => setMobileMenuOpen(false)}
+              className={mobileItemClass}
             >
               Tours
-            </button>
-            <button
-              onClick={() => { navigate('/hotel'); setMobileMenuOpen(false); }}
-              className="px-3 py-2 text-left text-sm font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg cursor-pointer"
+            </Link>
+            <Link
+              href="/hotel"
+              prefetch
+              onClick={() => setMobileMenuOpen(false)}
+              className={mobileItemClass}
             >
               Khách sạn
-            </button>
+            </Link>
             {canAccessSupportInbox(user?.role) ? (
-              <button
-                onClick={() => { navigate('/employee/support'); setMobileMenuOpen(false); }}
-                className="px-3 py-2 text-left text-sm font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg cursor-pointer inline-flex items-center gap-2"
+              <Link
+                href="/employee/support"
+                prefetch
+                onClick={() => setMobileMenuOpen(false)}
+                className={`${mobileItemClass} inline-flex items-center gap-2`}
               >
                 <MessageSquare className="size-4" />
                 Hỗ trợ
-              </button>
+              </Link>
             ) : null}
-            <button
-              onClick={() => { navigate('/favorites'); setMobileMenuOpen(false); }}
-              className="px-3 py-2 text-left text-sm font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg cursor-pointer inline-flex items-center gap-2"
+            <Link
+              href="/favorites"
+              prefetch
+              onClick={() => setMobileMenuOpen(false)}
+              className={`${mobileItemClass} inline-flex items-center gap-2`}
             >
               <Heart className="size-4" />
               Yêu thích
-            </button>
+            </Link>
 
-            {/* Xem thêm section mobile */}
             <div className="px-3 py-2">
               <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Xem thêm</p>
               <div className="flex flex-col gap-1">
                 {moreItems.map(({ label, icon: Icon, href }) => (
-                  <button
+                  <Link
                     key={href}
-                    onClick={() => { navigate(href); setMobileMenuOpen(false); }}
-                    className="flex items-center gap-3 px-2 py-2 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg cursor-pointer"
+                    href={href}
+                    prefetch
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="interactive-press flex items-center gap-3 px-2 py-2 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg cursor-pointer"
                   >
                     <span className="p-1.5 bg-blue-100 dark:bg-blue-900/40 rounded-lg text-blue-600 dark:text-blue-400">
                       <Icon className="size-3.5" />
                     </span>
                     {label}
-                  </button>
+                  </Link>
                 ))}
               </div>
             </div>
 
             {user?.role === 'admin' && (
-              <button 
-                onClick={() => { navigate('/#partners'); setMobileMenuOpen(false); }}
-                className="px-3 py-2 text-sm font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg text-left cursor-pointer"
+              <Link 
+                href="/#partners"
+                onClick={() => setMobileMenuOpen(false)}
+                className={mobileItemClass}
               >             
                 Đối tác
-              </button>
+              </Link>
             )}
 
             <div className="border-t border-slate-100 dark:border-slate-800 my-2 pt-2">
@@ -363,39 +375,48 @@ export default function Header() {
                       <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{user.email}</p>
                     </div>
                   </div>
-                  <button
-                    onClick={() => { navigate('/dashboard'); setMobileMenuOpen(false); }}
-                    className="px-3 py-2 flex items-center gap-3 text-left text-sm font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg cursor-pointer"
+                  <Link
+                    href="/dashboard"
+                    prefetch
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={`${mobileItemClass} flex items-center gap-3`}
                   >
                     <LayoutDashboard className="size-4" />
                     Dashboard / Hồ sơ
-                  </button>
-                  <button
-                    onClick={() => { navigate('/dashboard'); setMobileMenuOpen(false); }}
-                    className="px-3 py-2 flex items-center gap-3 text-left text-sm font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg cursor-pointer"
+                  </Link>
+                  <Link
+                    href="/dashboard"
+                    prefetch
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={`${mobileItemClass} flex items-center gap-3`}
                   >
                     <History className="size-4" />
                     Lịch sử đặt tour
-                  </button>
-                  <button
-                    onClick={() => { navigate('/favorites'); setMobileMenuOpen(false); }}
-                    className="px-3 py-2 flex items-center gap-3 text-left text-sm font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg cursor-pointer"
+                  </Link>
+                  <Link
+                    href="/favorites"
+                    prefetch
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={`${mobileItemClass} flex items-center gap-3`}
                   >
                     <Heart className="size-4" />
                     Yêu thích
-                  </button>
+                  </Link>
                   {canAccessAdmin && (
-                    <button
-                      onClick={() => { navigate(getAdminPath()); setMobileMenuOpen(false); }}
-                      className="px-3 py-2 flex items-center gap-3 text-left text-sm font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg cursor-pointer"
+                    <Link
+                      href={getAdminPath()}
+                      prefetch
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={`${mobileItemClass} flex items-center gap-3`}
                     >
                       <Shield className="size-4" />
                       Quản trị
-                    </button>
+                    </Link>
                   )}
                   <button
+                    type="button"
                     onClick={() => { logout(); setMobileMenuOpen(false); }}
-                    className="px-3 py-2 flex items-center gap-3 text-left text-sm font-bold text-red-500 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg cursor-pointer"
+                    className={`${mobileItemClass} flex items-center gap-3 text-red-500`}
                   >
                     <LogOut className="size-4" />
                     Đăng xuất
@@ -403,18 +424,22 @@ export default function Header() {
                 </div>
               ) : (
                 <div className="flex gap-2 px-3">
-                  <button
-                    onClick={() => { navigate('/login'); setMobileMenuOpen(false); }}
-                    className="flex-1 py-2 text-center text-sm font-bold text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-750 rounded-full cursor-pointer"
+                  <Link
+                    href="/login"
+                    prefetch
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="interactive-press flex-1 py-2 text-center text-sm font-bold text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-750 rounded-full"
                   >
                     Đăng nhập
-                  </button>
-                  <button
-                    onClick={() => { navigate('/register'); setMobileMenuOpen(false); }}
-                    className="flex-1 py-2 text-center text-sm font-bold text-white bg-blue-900 dark:bg-blue-600 rounded-full cursor-pointer"
+                  </Link>
+                  <Link
+                    href="/register"
+                    prefetch
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="interactive-press flex-1 py-2 text-center text-sm font-bold text-white bg-blue-900 dark:bg-blue-600 rounded-full"
                   >
                     Đăng ký
-                  </button>
+                  </Link>
                 </div>
               )}
             </div>

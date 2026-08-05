@@ -8,6 +8,7 @@ import { ChatMessageItem } from '@/components/Chat-message'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { PanelSkeleton } from '@/components/ux/PageSkeleton'
 import { useAuth } from '@/contexts/AuthContext'
 import { useChatScroll } from '@/hooks/use-chat-scroll'
 import { useCustomerSupportSession } from '@/hooks/use-support-session'
@@ -174,9 +175,8 @@ export function SupportChatWidget() {
 
           <div ref={containerRef} className="flex-1 space-y-1 overflow-y-auto bg-slate-50 p-3 dark:bg-slate-950">
             {sessionLoading || isLoadingHistory ? (
-              <div className="flex h-full items-center justify-center gap-2 text-sm text-slate-500 dark:text-slate-400">
-                <Loader2 className="size-4 animate-spin" />
-                Đang tải hội thoại...
+              <div className="p-2">
+                <PanelSkeleton rows={4} />
               </div>
             ) : messages.length === 0 ? (
               <div className="flex h-full items-center justify-center px-4 text-center text-sm text-slate-500 dark:text-slate-400">
