@@ -348,24 +348,28 @@ export default function HotelPage() {
 
   useEffect(() => {
     async function fetchStats() {
-      const supabase = createClient();
-      const { data } = await supabase.from('hotel_reviews').select('hotel_id, rating');
-      if (data) {
-        const stats: Record<string, { totalRating: number, count: number }> = {};
-        data.forEach((r: any) => {
-          if (!stats[r.hotel_id]) stats[r.hotel_id] = { totalRating: 0, count: 0 };
-          stats[r.hotel_id].totalRating += r.rating;
-          stats[r.hotel_id].count += 1;
-        });
-        
-        const finalStats: Record<string, { rating: number, count: number }> = {};
-        Object.keys(stats).forEach(id => {
-          finalStats[id] = {
-            rating: stats[id].totalRating / stats[id].count,
-            count: stats[id].count
-          };
-        });
-        setReviewStats(finalStats);
+      try {
+        const supabase = createClient();
+        const { data } = await supabase.from('hotel_reviews').select('hotel_id, rating');
+        if (data) {
+          const stats: Record<string, { totalRating: number, count: number }> = {};
+          data.forEach((r: any) => {
+            if (!stats[r.hotel_id]) stats[r.hotel_id] = { totalRating: 0, count: 0 };
+            stats[r.hotel_id].totalRating += r.rating;
+            stats[r.hotel_id].count += 1;
+          });
+
+          const finalStats: Record<string, { rating: number, count: number }> = {};
+          Object.keys(stats).forEach(id => {
+            finalStats[id] = {
+              rating: stats[id].totalRating / stats[id].count,
+              count: stats[id].count
+            };
+          });
+          setReviewStats(finalStats);
+        }
+      } catch {
+        // Missing Supabase env or network — page still works without review stats
       }
     }
     fetchStats();
@@ -913,7 +917,7 @@ export default function HotelPage() {
                             }
                             setShowConfirmModal(true);
                           }}
-                          className={`w-full py-2.5 rounded-lg text-xs font-black shadow-md transition-all cursor-pointer ${hasSelectedRooms
+                          className={`interactive-press w-full py-2.5 rounded-lg text-xs font-black shadow-md transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 ${hasSelectedRooms
                               ? 'bg-blue-600 text-white hover:bg-blue-700'
                               : 'bg-[#85a8e6] text-white cursor-not-allowed opacity-100'
                             }`}
@@ -1101,7 +1105,7 @@ export default function HotelPage() {
 
               <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
                 <div className="text-left max-w-3xl mb-10">
-                  <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-white leading-tight drop-shadow-md font-serif">
+                  <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-white leading-tight drop-shadow-md font-sans">
                     Tìm Kiếm Khách Sạn <br />
                     Đẳng Cấp 5 Sao
                   </h1>
@@ -1483,7 +1487,7 @@ export default function HotelPage() {
                               </div>
                               <button
                                 onClick={() => openRoomModal(hotel)}
-                                className="shrink-0 rounded-lg bg-blue-700 px-8 py-3 text-sm font-black text-white hover:bg-blue-800 transition-colors"
+                                className="interactive-press shrink-0 rounded-lg bg-blue-700 px-8 py-3 text-sm font-black text-white hover:bg-blue-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
                               >
                                 Chọn phòng
                               </button>

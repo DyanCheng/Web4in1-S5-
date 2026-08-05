@@ -1,5 +1,12 @@
 import type { NextConfig } from "next";
+import { loadEnvConfig } from "@next/env";
+import path from "path";
 import { normalizeBackendUrl } from "./src/lib/backendUrl";
+
+// Load env from frontend/ then parent (Web4in1-S5-/.env) for local builds
+const frontendDir = __dirname;
+loadEnvConfig(frontendDir);
+loadEnvConfig(path.join(frontendDir, ".."));
 
 const backendUrl = normalizeBackendUrl(
   process.env.BACKEND_INTERNAL_URL ||
@@ -7,14 +14,17 @@ const backendUrl = normalizeBackendUrl(
     process.env.NEXT_PUBLIC_BACKEND_URL
 );
 
+const supabaseUrl =
+  process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || "";
+const supabasePublishableKey =
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
+  process.env.SUPABASE_KEY ||
+  "";
+
 const nextConfig: NextConfig = {
   env: {
-    NEXT_PUBLIC_SUPABASE_URL:
-      process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL ?? "",
-    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:
-      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
-      process.env.SUPABASE_KEY ??
-      "",
+    NEXT_PUBLIC_SUPABASE_URL: supabaseUrl,
+    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: supabasePublishableKey,
   },
 
   async rewrites() {

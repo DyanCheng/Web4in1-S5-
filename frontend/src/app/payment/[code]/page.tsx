@@ -2,9 +2,10 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Check, Loader2, QrCode, RefreshCw, Clock } from 'lucide-react';
+import { Check, QrCode, RefreshCw, Clock } from 'lucide-react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import { PageSkeleton } from '@/components/ux/PageSkeleton';
 import { useTheme } from '@/contexts/ThemeContext';
 
 import { apiUrl } from '@/lib/backendUrl';
@@ -108,11 +109,7 @@ export default function PaymentPage() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="size-8 animate-spin text-blue-600" />
-      </div>
-    );
+    return <PageSkeleton variant="form" />;
   }
 
   if (error || !payment) {
@@ -149,7 +146,7 @@ export default function PaymentPage() {
               <QrCode className="size-10 text-blue-600" />
             </div>
           )}
-          <h1 className="text-3xl font-black font-serif mb-2">
+          <h1 className="text-3xl font-black font-sans mb-2">
             {isPaid ? 'Thanh toán thành công!' : isPendingApproval ? 'Đang chờ Admin duyệt đơn' : 'Quét mã QR để thanh toán'}
           </h1>
           <p className="text-slate-500 dark:text-slate-400 font-semibold">

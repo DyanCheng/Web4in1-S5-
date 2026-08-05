@@ -32,7 +32,7 @@ public class PaymentDbService
 
         return null;
     }
-
+    //Tạo đơn thanh toán trong cơ sở dữ liệu
     public async Task<JsonElement> CreateOrderPaymentAsync(
         string paymentCode,
         long? userId,

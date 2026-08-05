@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { useAuth } from '@/contexts/AuthContext';
+import { PanelSkeleton } from '@/components/ux/PageSkeleton';
 
 interface ReviewModalProps {
   isOpen: boolean;
@@ -34,8 +35,6 @@ export default function ReviewModal({ isOpen, onClose, hotel, onReviewAdded }: R
   const [rating, setRating] = useState(5);
   const [content, setContent] = useState('');
 
-  const supabase = createClient();
-
   useEffect(() => {
     if (user) {
       setUserName(user.name || user.email || '');
@@ -50,21 +49,22 @@ export default function ReviewModal({ isOpen, onClose, hotel, onReviewAdded }: R
   }, [isOpen, hotel, user]);
 
   const checkBookingStatus = async () => {
-    if (!user) {
+    if (!user || !hotel) {
       setHasBooking(false);
       return;
     }
-    
+
+    const supabase = createClient();
     // Check if user has a confirmed booking for this hotel
     const { data, error } = await supabase
       .from('hotel_bookings')
       .select('booking_status, payment_status')
       .eq('hotel_id', hotel.id)
       .eq('user_id', user.id);
-      
+
     if (data && !error) {
       const validStatuses = ['confirmed', 'completed', 'paid', 'success'];
-      const hasValid = data.some((b: any) => 
+      const hasValid = data.some((b: any) =>
         validStatuses.includes(b.booking_status?.toLowerCase()) ||
         validStatuses.includes(b.payment_status?.toLowerCase())
       );
@@ -76,7 +76,9 @@ export default function ReviewModal({ isOpen, onClose, hotel, onReviewAdded }: R
   };
 
   const fetchReviews = async () => {
+    if (!hotel) return;
     setLoading(true);
+    const supabase = createClient();
     const { data, error } = await supabase
       .from('hotel_reviews')
       .select('*')
@@ -91,7 +93,7 @@ export default function ReviewModal({ isOpen, onClose, hotel, onReviewAdded }: R
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!userName.trim() || !content.trim()) return;
+    if (!hotel || !userName.trim() || !content.trim()) return;
     if (!hasBooking) {
       alert("Bạn cần đặt phòng thành công mới được đánh giá.");
       return;
@@ -105,6 +107,7 @@ export default function ReviewModal({ isOpen, onClose, hotel, onReviewAdded }: R
       content,
     };
 
+    const supabase = createClient();
     const { data, error } = await supabase
       .from('hotel_reviews')
       .insert([newReview])
@@ -127,8 +130,8 @@ export default function ReviewModal({ isOpen, onClose, hotel, onReviewAdded }: R
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-0">
-      <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-slate-50 shadow-2xl dark:bg-slate-900 sm:h-[600px]">
+      <div className="modal-overlay-enter absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="modal-panel-enter relative flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-slate-50 shadow-2xl dark:bg-slate-900 sm:h-[600px]">
         {/* Header */}
         <div className="flex shrink-0 items-center justify-between border-b border-slate-200 bg-white px-6 py-4 dark:border-slate-800 dark:bg-slate-950">
           <div>
@@ -158,7 +161,7 @@ export default function ReviewModal({ isOpen, onClose, hotel, onReviewAdded }: R
               </h3>
               
               {loading ? (
-                <div className="text-sm font-semibold text-slate-500">Đang tải...</div>
+                <PanelSkeleton rows={4} />
               ) : reviews.length === 0 ? (
                 <div className="text-sm font-semibold text-slate-500">Chưa có đánh giá nào từ cộng đồng. Hãy là người đầu tiên!</div>
               ) : (

@@ -9,7 +9,6 @@ import { QrCode, Tag, Loader2 } from 'lucide-react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useTheme } from '@/contexts/ThemeContext';
-
 import { submitUnifiedCheckout, getCartLineTotal } from '@/lib/checkoutApi';
 
 
@@ -99,7 +98,7 @@ export default function CheckoutPage() {
           <span className="inline-block px-4 py-1.5 text-xs font-extrabold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 rounded-full border border-blue-100/30 uppercase tracking-widest mb-3">
             Xác nhận đặt tour
           </span>
-          <h1 className="text-3xl sm:text-4xl font-extrabold font-serif leading-tight text-slate-900 dark:text-white">
+          <h1 className="text-3xl sm:text-4xl font-extrabold font-sans leading-tight text-slate-900 dark:text-white">
             Thanh Toán & Liên Hệ
           </h1>
         </div>
@@ -111,7 +110,7 @@ export default function CheckoutPage() {
 
               {/* Contact Information */}
               <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 border border-slate-100/40 dark:border-slate-800/40 shadow-sm text-left">
-                <h2 className="text-xl font-extrabold text-slate-900 dark:text-white mb-6 font-serif">Thông tin liên hệ hành trình</h2>
+                <h2 className="text-xl font-extrabold text-slate-900 dark:text-white mb-6 font-sans">Thông tin liên hệ hành trình</h2>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <div>
@@ -140,6 +139,9 @@ export default function CheckoutPage() {
                       type="tel"
                       value={formData.phone}
                       onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      minLength={10}
+                      maxLength={15}
+                      pattern="^[0-9]{10,15}$"
                       className="w-full px-4 py-3 border border-slate-150 dark:border-slate-800 bg-transparent rounded-2xl outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 text-slate-855 dark:text-slate-100 font-bold text-sm transition-all"
                       required
                     />
@@ -162,7 +164,7 @@ export default function CheckoutPage() {
 
               {/* Payment Method */}
               <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 border border-slate-100/40 dark:border-slate-800/40 shadow-sm text-left">
-                <h2 className="text-xl font-extrabold text-slate-900 dark:text-white mb-6 font-serif">Phương thức thanh toán</h2>
+                <h2 className="text-xl font-extrabold text-slate-900 dark:text-white mb-6 font-sans">Phương thức thanh toán</h2>
 
                 <div className="grid grid-cols-1 gap-4 mb-4">
                   <button
@@ -189,7 +191,7 @@ export default function CheckoutPage() {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full py-4 bg-blue-900 hover:bg-blue-955 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-2xl transition-all text-base font-bold cursor-pointer disabled:bg-blue-400 dark:disabled:bg-blue-800 flex items-center justify-center gap-2 shadow-md"
+                className="interactive-press w-full py-4 bg-blue-900 hover:bg-blue-955 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-2xl transition-all text-base font-bold cursor-pointer disabled:bg-blue-400 dark:disabled:bg-blue-800 flex items-center justify-center gap-2 shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
               >
                 {isSubmitting ? (
                   <>
@@ -206,7 +208,7 @@ export default function CheckoutPage() {
           {/* Summary Column */}
           <div className="lg:col-span-1 text-left">
             <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 sticky top-24 shadow-sm border border-slate-100/40 dark:border-slate-800/40">
-              <h2 className="text-xl font-extrabold text-slate-900 dark:text-white mb-6 font-serif">Tóm tắt hành trình</h2>
+              <h2 className="text-xl font-extrabold text-slate-900 dark:text-white mb-6 font-sans">Tóm tắt hành trình</h2>
 
               <div className="space-y-4 mb-6">
                 {items.map((item) => (

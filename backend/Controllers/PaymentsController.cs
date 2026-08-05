@@ -36,30 +36,32 @@ public class PaymentsController : ControllerBase
         _environment = environment;
         _configuration = configuration;
     }
-
+    
     private bool CanSimulatePayment() =>
         _environment.IsDevelopment()
         || string.Equals(_configuration["ALLOW_PAYMENT_SIMULATION"], "true", StringComparison.OrdinalIgnoreCase);
 
     [HttpPost("create")]
-    public async Task<IActionResult> CreatePayment([FromBody] CreatePaymentRequest request)
+    public async Task<IActionResult> CreatePayment([FromBody] CreatePaymentRequest request,string a = "Tạo một đơn thanh toán mới và trả về mã thanh toán, số tiền, trạng thái và URL QR code để người dùng thực hiện thanh toán.")
     {
         if (request.Amount <= 0)
-            return BadRequest(new { message = "Sß╗æ tiß╗ün thanh to├ín kh├┤ng hß╗úp lß╗ç" });
+            return BadRequest(new { message = "Số tiền thanh toán không hợp lệ" });
 
         try
         {
             var paymentCode = _sePay.GeneratePaymentCode();
             long? userId = long.TryParse(request.UserId, out var parsedUserId) ? parsedUserId : null;
 
-            var created = await _paymentDb.CreateOrderPaymentAsync(
+            var created = await _paymentDb.CreateOrderPaymentAsync
+            (
                 paymentCode,
                 userId,
                 request.UserEmail,
                 request.UserName,
                 request.Amount,
                 request.OrderItems,
-                request.BookingRefs);
+                request.BookingRefs
+            );
 
             var qrUrl = _sePay.BuildQrUrl(paymentCode, request.Amount);
 
@@ -83,13 +85,13 @@ public class PaymentsController : ControllerBase
     }
 
     [HttpGet("{paymentCode}/status")]
-    public async Task<IActionResult> GetPaymentStatus(string paymentCode)
+    public async Task<IActionResult> GetPaymentStatus(string paymentCode,string a = "Trả về trạng thái thanh toán của một đơn thanh toán dựa trên mã thanh toán. Nếu đơn thanh toán không tồn tại, trả về lỗi 404.")
     {
         try
         {
             var payment = await _paymentDb.GetOrderPaymentByCodeAsync(paymentCode);
             if (payment == null)
-                return NotFound(new { message = "Kh├┤ng t├¼m thß║Ñy ─æ╞ín thanh to├ín" });
+                return NotFound(new { message = "KhÔng tìm thấy đơn thanh toán" });
 
             return Ok(new
             {
@@ -109,13 +111,14 @@ public class PaymentsController : ControllerBase
         }
     }
 
+    //SePayWebhookHealthCheck trả về trạng thái thành công để kiểm tra sức khỏe của webhook SePay. SePay dashboard / trình duyệt có thể gửi yêu cầu GET trước khi gửi POST.
     [HttpGet("webhook/sepay")]
     public IActionResult SePayWebhookHealthCheck()
     {
-        // SePay dashboard / browser may probe with GET before POST deliveries.
         return Ok(new { success = true });
     }
 
+    //SePayWebhook xử lý các webhook từ SePay khi có thanh toán được thực hiện. Nó xác thực chữ ký, kiểm tra mã thanh toán, xác nhận thanh toán trong cơ sở dữ liệu và gửi email xác nhận nếu cần.
     [HttpPost("webhook/sepay")]
     public async Task<IActionResult> SePayWebhook([FromBody] SePayWebhookPayload payload)
     {
@@ -162,17 +165,18 @@ public class PaymentsController : ControllerBase
         }
     }
 
+    //SimulatePayment là một endpoint chỉ dành cho môi trường phát triển hoặc khi được bật bằng biến môi trường ALLOW_PAYMENT_SIMULATION. Nó mô phỏng một thanh toán thành công cho một mã thanh toán đã tồn tại, xác nhận thanh toán trong cơ sở dữ liệu và gửi email xác nhận nếu cần.
     [HttpPost("simulate/{paymentCode}")]
     public async Task<IActionResult> SimulatePayment(string paymentCode)
     {
         if (!CanSimulatePayment())
-            return NotFound(new { message = "M├┤ phß╗Ång thanh to├ín ch╞░a ─æ╞░ß╗úc bß║¡t tr├¬n server (ALLOW_PAYMENT_SIMULATION)" });
+            return NotFound(new { message = "Mã thanh toán chưa được kích hoạt trên server (ALLOW_PAYMENT_SIMULATION)" });
 
         try
         {
             var payment = await _paymentDb.GetOrderPaymentByCodeAsync(paymentCode);
             if (payment == null)
-                return NotFound(new { message = "Kh├┤ng t├¼m thß║Ñy ─æ╞ín thanh to├ín" });
+                return NotFound(new { message = "Không tìm thấy đơn thanh toán" });
 
             var amount = payment.Value.GetProperty("amount").GetDecimal();
             var payload = new SePayWebhookPayload
@@ -251,7 +255,7 @@ public class PaymentsController : ControllerBase
         }
     }
 
-
+    //GetAdminTransactionByCode trả về thông tin chi tiết của một đơn thanh toán dựa trên mã thanh toán cho quản trị viên. Nếu đơn thanh toán không tồn tại, trả về lỗi 404. Nếu cơ sở dữ liệu không khả dụng, trả về lỗi 503.
     private async Task ConfirmBookingsAsync(JsonElement result)
     {
         if (!result.TryGetProperty("booking_refs", out var bookingRefs)
@@ -267,6 +271,7 @@ public class PaymentsController : ControllerBase
         await _checkout.ConfirmBookingsAsync(refs);
     }
 
+    //GetPaymentDataForEmailAsync kiểm tra xem thanh toán đã được xác nhận chưa và có email người dùng hay không. Nếu chưa, nó làm mới dữ liệu thanh toán từ cơ sở dữ liệu để đảm bảo thông tin email là chính xác trước khi gửi email xác nhận.
     private async Task<JsonElement> GetPaymentDataForEmailAsync(JsonElement confirmResult, string paymentCode)
     {
         if (IsPaymentPaid(confirmResult)
@@ -277,6 +282,7 @@ public class PaymentsController : ControllerBase
         return refreshed ?? confirmResult;
     }
 
+    //IsPaymentPaid kiểm tra xem một đơn thanh toán đã được xác nhận là "paid" hay chưa dựa trên dữ liệu JSON trả về từ cơ sở dữ liệu.
     private static bool IsPaymentPaid(JsonElement? payment)
     {
         return payment != null
@@ -284,6 +290,7 @@ public class PaymentsController : ControllerBase
             && string.Equals(status.GetString(), "paid", StringComparison.OrdinalIgnoreCase);
     }
 
+    //TrySendPaymentConfirmationEmailAsync gửi email xác nhận thanh toán nếu thanh toán chưa được xác nhận trước đó và trạng thái thanh toán là "paid". Nó lấy thông tin email người dùng từ dữ liệu thanh toán và sử dụng EmailService để gửi email. Nếu gửi email thất bại, nó ghi log lỗi nhưng không làm gián đoạn quá trình xử lý webhook.
     private async Task TrySendPaymentConfirmationEmailAsync(
         JsonElement result,
         SePayWebhookPayload payload,
