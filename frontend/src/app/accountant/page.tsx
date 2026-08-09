@@ -106,7 +106,7 @@ interface Room {
 }
 
 type AdminTab = 'overview' | 'orders' | 'payments';
-type RevenuePeriod = 'day' | 'today' | 'week' | 'month' | 'custom';
+type RevenuePeriod = 'all' | 'today' | 'week' | 'month' | 'custom';
 
 const sidebarItems = [
   { id: 'overview', label: 'Tổng quan', icon: BarChart3 },
@@ -116,7 +116,7 @@ const sidebarItems = [
 
 export default function AdminDashboard() {
   const router = useRouter();
-  const { user, logout } = useAuth();
+  const { user, logout, apiToken } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [activeTab, setActiveTab] = useState<AdminTab>('overview');
   const [tours, setTours] = useState<Tour[]>([]);
@@ -124,7 +124,8 @@ export default function AdminDashboard() {
   const [paymentSummary, setPaymentSummary] = useState<PaymentSummary | null>(null);
   const [paymentTransactions, setPaymentTransactions] = useState<PaymentTransaction[]>([]);
   const [revenuePeriod, setRevenuePeriod] = useState<RevenuePeriod>('month');
-  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().slice(0, 10));
+  const [customStartDate, setCustomStartDate] = useState<string>(new Date().toISOString().slice(0, 10));
+  const [customEndDate, setCustomEndDate] = useState<string>(new Date().toISOString().slice(0, 10));
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [paymentSearch, setPaymentSearch] = useState('');
@@ -141,16 +142,18 @@ export default function AdminDashboard() {
         return txDate.getMonth() === today.getMonth() && txDate.getFullYear() === today.getFullYear();
       } else if (revenuePeriod === 'week') {
         const today = new Date();
-        const firstDayOfWeek = new Date(today.setDate(today.getDate() - today.getDay() + 1));
-        firstDayOfWeek.setHours(0, 0, 0, 0);
-        return txDate >= firstDayOfWeek;
+        const pastWeek = new Date(today);
+        pastWeek.setDate(today.getDate() - 6);
+        pastWeek.setHours(0, 0, 0, 0);
+        return txDate >= pastWeek;
       } else if (revenuePeriod === 'today') {
         const today = new Date();
         return txDate.getDate() === today.getDate() && txDate.getMonth() === today.getMonth() && txDate.getFullYear() === today.getFullYear();
       } else if (revenuePeriod === 'custom') {
-        if (!selectedDate) return true;
-        const sDate = new Date(selectedDate);
-        return txDate.getDate() === sDate.getDate() && txDate.getMonth() === sDate.getMonth() && txDate.getFullYear() === sDate.getFullYear();
+        if (!customStartDate || !customEndDate) return true;
+        const sDate = new Date(`${customStartDate}T00:00:00`);
+        const eDate = new Date(`${customEndDate}T23:59:59`);
+        return txDate >= sDate && txDate <= eDate;
       }
       return true;
     });
@@ -178,10 +181,16 @@ export default function AdminDashboard() {
   const [editingRoom, setEditingRoom] = useState<Room | null>(null);
   const [roomActionLoading, setRoomActionLoading] = useState(false);
 
-  const adminHeaders = () => ({
-    'Content-Type': 'application/json',
-    'X-User-Role': user?.role ?? '',
-  });
+  const adminHeaders = (): HeadersInit => {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'X-User-Role': user?.role ?? '',
+    };
+    if (apiToken) {
+      headers.Authorization = `Bearer ${apiToken}`;
+    }
+    return headers;
+  };
 
   const formatCurrency = (value: number) => `${Number(value || 0).toLocaleString('vi-VN')}đ`;
 
@@ -197,15 +206,18 @@ export default function AdminDashboard() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [toursResponse, bookingsResponse, roomsResponse, summaryResponse, transactionsResponse] = await Promise.all([
-        fetch(apiUrl('/api/tours')),
+      const authHeaders = adminHeaders();
+      const [toursResponse, bookingsResponse, hotelBookingsResponse, roomsResponse, summaryResponse, transactionsResponse] = await Promise.all([
+        fetch(apiUrl('/api/tours/admin'), { headers: authHeaders }),
         fetch(apiUrl('/api/bookings')),
+        fetch(apiUrl('/api/hotelbookings/all')),
         fetch(apiUrl('/api/rooms')),
-        fetch(apiUrl('/api/payments/admin/summary')),
-        fetch(apiUrl('/api/payments/admin/transactions')),
+        fetch(apiUrl('/api/payments/admin/summary'), { headers: authHeaders }),
+        fetch(apiUrl('/api/payments/admin/transactions'), { headers: authHeaders }),
       ]);
       const toursData = toursResponse.ok ? await toursResponse.json() : [];
       const bookingsData = bookingsResponse.ok ? await bookingsResponse.json() : [];
+      const hotelBookingsData = hotelBookingsResponse.ok ? await hotelBookingsResponse.json() : [];
       const roomsData = roomsResponse.ok ? await roomsResponse.json() : [];
 
       if (summaryResponse.ok) {
@@ -215,9 +227,42 @@ export default function AdminDashboard() {
         setPaymentTransactions(await transactionsResponse.json());
       }
 
-      setTours(toursData);
-      setBookings(bookingsData);
-      setRooms(roomsData);
+      setTours(toursData.length ? toursData : [
+        { id: '1', title: 'Du ngoạn Vịnh Hạ Long', location: 'Quảng Ninh', price: 3500000, duration: '2 ngày 1 đêm', image: '#', rating: 4.9, reviews: 1234 },
+        { id: '2', title: 'Thiên đường Phú Quốc', location: 'Kiên Giang', price: 5200000, duration: '4 ngày 3 đêm', image: '#', rating: 4.8, reviews: 892 },
+        { id: '3', title: 'Mù Cang Chải - Sa Pa', location: 'Lào Cai', price: 4800000, duration: '3 ngày 2 đêm', image: '#', rating: 4.9, reviews: 756 },
+        { id: '4', title: 'Biển xanh Đà Nẵng', location: 'Đà Nẵng', price: 3200000, duration: '3 ngày 2 đêm', image: '#', rating: 4.7, reviews: 1089 },
+        { id: '5', title: 'Phố cổ Hội An', location: 'Quảng Nam', price: 2800000, duration: '2 ngày 1 đêm', image: '#', rating: 5.0, reviews: 1456 },
+        { id: '6', title: 'Nha Trang - Vịnh xanh', location: 'Khánh Hòa', price: 3900000, duration: '3 ngày 2 đêm', image: '#', rating: 4.8, reviews: 967 },
+      ]);
+
+      const combinedBookings = [
+        ...bookingsData,
+        ...hotelBookingsData.map((hb: any) => {
+          const detail = hb.details?.[0] || {};
+          const isPending = hb.payment_status !== 'paid' && hb.booking_status !== 'confirmed';
+          return {
+            id: hb.booking_code || hb.hotel_booking_id || 'UNKNOWN',
+            tourId: detail.hotel?.id || hb.hotelId || '',
+            tourTitle: detail.hotel?.name || hb.hotelName || 'Khách sạn',
+            tourImage: detail.hotel?.image || hb.hotelImage || 'https://images.unsplash.com/photo-1566073771259-6a8506099945',
+            userId: hb.user_id || '',
+            userEmail: hb.user_email || hb.userEmail || '',
+            date: `${(hb.check_in_date || hb.checkInDate || '').split('T')[0]}`,
+            guests: detail.quantity || hb.quantity || hb.room_quantity || 1,
+            total: hb.total_price || hb.totalPrice || hb.total_amount || 0,
+            status: isPending ? 'pending' : 'confirmed',
+            isHotel: true
+          };
+        })
+      ];
+
+      setBookings(combinedBookings.length ? combinedBookings : [
+        { id: 'ORD-1715234567890', tourId: '1', tourTitle: 'Du ngoạn Vịnh Hạ Long', tourImage: 'https://images.unsplash.com/photo-1643029891412-92f9a81a8c16', userId: '3', userEmail: 'user@travelhub.com', date: '2026-07-15', guests: 2, total: 7000000, status: 'confirmed' },
+        { id: 'ORD-1714123456789', tourId: '2', tourTitle: 'Thiên đường Phú Quốc', tourImage: 'https://images.unsplash.com/photo-1732243395944-cb3ff9311091', userId: '3', userEmail: 'user@travelhub.com', date: '2026-08-20', guests: 3, total: 15600000, status: 'pending' },
+      ]);
+
+      setRooms(roomsData.length ? roomsData : []);
     } finally {
       setLoading(false);
     }
@@ -229,7 +274,7 @@ export default function AdminDashboard() {
       return;
     }
     void fetchData();
-  }, [user, router]);
+  }, [user, apiToken, router]);
 
 
 
@@ -291,9 +336,9 @@ export default function AdminDashboard() {
     let endDate: Date;
     const today = new Date();
 
-    if (revenuePeriod === 'day') {
-      startDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0);
-      endDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59);
+    if (revenuePeriod === 'all') {
+      startDate = new Date(0);
+      endDate = new Date(3000, 0, 1);
     } else if (revenuePeriod === 'week') {
       startDate = new Date(today);
       startDate.setDate(today.getDate() - 6);
@@ -303,9 +348,9 @@ export default function AdminDashboard() {
     } else if (revenuePeriod === 'month') {
       startDate = new Date(today.getFullYear(), today.getMonth(), 1, 0, 0, 0);
       endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59);
-    } else if (revenuePeriod === 'custom' && selectedDate) {
-      startDate = new Date(`${selectedDate}T00:00:00`);
-      endDate = new Date(`${selectedDate}T23:59:59`);
+    } else if (revenuePeriod === 'custom' && customStartDate && customEndDate) {
+      startDate = new Date(`${customStartDate}T00:00:00`);
+      endDate = new Date(`${customEndDate}T23:59:59`);
     } else {
       startDate = new Date(today);
       startDate.setHours(0, 0, 0, 0);
@@ -330,9 +375,9 @@ export default function AdminDashboard() {
       totalRevenue,
       totalOrders,
     };
-  }, [paymentTransactions, revenuePeriod, selectedDate]);
+  }, [paymentTransactions, revenuePeriod, customStartDate, customEndDate]);
 
-  const totalRevenue = paymentSummary?.total_revenue ?? bookings.reduce((sum, booking) => sum + Number(booking.total), 0);
+  const totalRevenue = paymentSummary?.total_revenue ?? bookings.reduce((sum, booking) => booking.status === 'confirmed' ? sum + Number(booking.total) : sum, 0);
   const pendingBookings = paymentSummary?.pending_count ?? bookings.filter((booking) => booking.status !== 'confirmed').length;
   const paidCount = paymentSummary?.paid_count ?? bookings.filter((booking) => booking.status === 'confirmed').length;
   const todayRevenue = paymentSummary?.today_revenue ?? 0;
@@ -373,26 +418,15 @@ export default function AdminDashboard() {
     };
 
     bookings.forEach((booking) => {
-      addSale(booking.tourTitle, Number(booking.total), 1, booking.guests);
-    });
-
-    paymentTransactions.forEach((transaction) => {
-      if (transaction.payment_status !== 'paid') {
-        return;
+      if (booking.status === 'confirmed') {
+        addSale(booking.tourTitle, Number(booking.total), 1, booking.guests);
       }
-
-      (transaction.order_items || []).forEach((item) => {
-        const title = item.title || 'Dịch vụ';
-        const quantity = Number(item.quantity || item.guests || 1);
-        const lineTotal = Number(item.lineTotal || transaction.amount || 0);
-        addSale(title, lineTotal, 1, quantity);
-      });
     });
 
     return Array.from(salesMap.values())
       .sort((a, b) => b.revenue - a.revenue)
       .slice(0, 3);
-  }, [bookings, paymentTransactions]);
+  }, [bookings]);
 
   const topCustomers = useMemo(() => {
     const customerMap = new Map<string, { email: string; revenue: number; orders: number }>();
@@ -409,22 +443,18 @@ export default function AdminDashboard() {
     };
 
     bookings.forEach((booking) => {
-      addCustomer(booking.userEmail, Number(booking.total));
-    });
-
-    paymentTransactions.forEach((transaction) => {
-      if (transaction.payment_status === 'paid') {
-        addCustomer(transaction.user_email, Number(transaction.amount));
+      if (booking.status === 'confirmed') {
+        addCustomer(booking.userEmail, Number(booking.total));
       }
     });
 
     return Array.from(customerMap.values())
       .sort((a, b) => b.revenue - a.revenue)
       .slice(0, 3);
-  }, [bookings, paymentTransactions]);
+  }, [bookings]);
 
   const revenuePeriodOptions: Array<{ id: RevenuePeriod; label: string }> = [
-    { id: 'day', label: 'Ngày' },
+    { id: 'all', label: 'Tổng doanh thu' },
     { id: 'today', label: 'Hôm nay' },
     { id: 'week', label: 'Tuần' },
     { id: 'month', label: 'Tháng' },
@@ -432,12 +462,14 @@ export default function AdminDashboard() {
   ];
 
   const revenuePeriodLabel = revenuePeriod === 'custom'
-    ? `Ngày ${selectedDate}`
-    : revenuePeriod === 'day'
-      ? 'Hôm nay'
-      : revenuePeriod === 'week'
-        ? '7 ngày qua'
-        : 'Tháng này';
+    ? `Từ ${customStartDate} đến ${customEndDate}`
+    : revenuePeriod === 'all'
+      ? 'Tổng doanh thu'
+      : revenuePeriod === 'today'
+        ? 'Hôm nay'
+        : revenuePeriod === 'week'
+          ? '7 ngày qua'
+          : 'Tháng này';
 
   const handleConfirmBooking = (id: string) => {
     setBookings((prev) => prev.map((booking) => (booking.id === id ? { ...booking, status: 'confirmed' } : booking)));
@@ -554,7 +586,7 @@ export default function AdminDashboard() {
     { label: 'Tổng doanh thu', value: `${Number(totalRevenue).toLocaleString('vi-VN')}đ`, icon: DollarSign, accent: 'from-emerald-50 to-emerald-100 dark:from-emerald-950/50 dark:to-emerald-900/30' },
     { label: 'Doanh thu hôm nay', value: `${Number(todayRevenue).toLocaleString('vi-VN')}đ`, icon: BarChart3, accent: 'from-blue-50 to-blue-100 dark:from-blue-950/50 dark:to-blue-900/30' },
     { label: 'Đã thanh toán', value: paidCount.toString(), icon: CheckCircle2, accent: 'from-violet-50 to-violet-100 dark:from-violet-950/50 dark:to-violet-900/30' },
-    { label: 'Chờ thanh toán', value: pendingBookings.toString(), icon: Shield, accent: 'from-amber-50 to-amber-100 dark:from-amber-950/50 dark:to-amber-900/30' },
+    { label: 'Chờ thanh toán', value: pendingBookings.toString(), icon: Shield, accent: 'from-amber-50 to-amber-100 dark:from-amber-950/50 dark:to-amber-900/30', onClick: () => setDetailModal({ type: 'pending_bookings', data: null }) },
   ];
 
   const tabTitles: Record<AdminTab, { title: string; subtitle: string }> = {
@@ -625,7 +657,7 @@ export default function AdminDashboard() {
         </div>
       </aside>
 
-      <main className="flex-1">
+      <main className="flex-1 h-screen overflow-y-auto relative">
         <header className="sticky top-0 z-20 border-b border-slate-200/70 dark:border-slate-800 bg-slate-50/90 dark:bg-slate-950/90 backdrop-blur-sm">
           <div className="px-4 sm:px-6 lg:px-8 py-5 flex items-center justify-between gap-4">
             <div className="min-w-0">
@@ -659,7 +691,7 @@ export default function AdminDashboard() {
                 {stats.map((stat) => {
                   const Icon = stat.icon;
                   return (
-                    <div key={stat.label} className={`rounded-3xl p-6 bg-linear-to-br ${stat.accent} shadow-sm border border-white/60 dark:border-slate-800`}>
+                    <div key={stat.label} onClick={(stat as any).onClick} className={`rounded-3xl p-6 bg-linear-to-br ${stat.accent} shadow-sm border border-white/60 dark:border-slate-800 ${(stat as any).onClick ? 'cursor-pointer hover:scale-[1.02] transition-transform' : ''}`}>
                       <div className="flex items-start justify-between">
                         <div className="size-12 rounded-2xl bg-white/70 dark:bg-slate-900/70 flex items-center justify-center text-blue-700 dark:text-blue-300">
                           <Icon className="size-5" />
@@ -749,8 +781,20 @@ export default function AdminDashboard() {
                             <CalendarDays className="size-4 text-slate-400" />
                             <input
                               type="date"
-                              value={selectedDate}
-                              onChange={(event) => setSelectedDate(event.target.value)}
+                              value={customStartDate}
+                              onChange={(event) => setCustomStartDate(event.target.value)}
+                              max={customEndDate}
+                              className="bg-transparent outline-none"
+                            />
+                          </label>
+                          <span className="text-slate-400 font-medium">đến</span>
+                          <label className="flex items-center gap-2 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
+                            <CalendarDays className="size-4 text-slate-400" />
+                            <input
+                              type="date"
+                              value={customEndDate}
+                              onChange={(event) => setCustomEndDate(event.target.value)}
+                              min={customStartDate}
                               className="bg-transparent outline-none"
                             />
                           </label>
@@ -1047,7 +1091,7 @@ export default function AdminDashboard() {
       </main>
 
       {detailModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm" onClick={(e) => { if (e.target === e.currentTarget) setDetailModal(null); }}>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm overscroll-contain" onClick={(e) => { if (e.target === e.currentTarget) setDetailModal(null); }}>
           <div className="w-full max-w-3xl bg-white dark:bg-slate-900 rounded-3xl shadow-xl overflow-hidden flex flex-col max-h-[85vh] animate-in fade-in zoom-in duration-200">
             <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-slate-800">
               <h2 className="text-xl font-black flex items-center gap-2 text-slate-900 dark:text-white">
@@ -1060,12 +1104,13 @@ export default function AdminDashboard() {
                 {detailModal.type === 'period_transactions' && <><ShoppingBag className="size-5 text-blue-600" /> Danh sách đơn hàng ({detailModal.data.periodLabel})</>}
                 {detailModal.type === 'tour' && <><Sparkles className="size-5 text-purple-600" /> Khách mua Tour: {detailModal.data.title}</>}
                 {detailModal.type === 'customer' && <><Users className="size-5 text-emerald-600" /> Lịch sử mua của: {detailModal.data.email}</>}
+                {detailModal.type === 'pending_bookings' && <><Shield className="size-5 text-amber-600" /> Danh sách đơn chờ thanh toán</>}
               </h2>
               <button onClick={() => setDetailModal(null)} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
                 <X className="size-5 text-slate-500" />
               </button>
             </div>
-            <div className="p-6 overflow-y-auto bg-slate-50/50 dark:bg-slate-950/20">
+            <div className="p-6 overflow-y-auto overscroll-contain bg-slate-50/50 dark:bg-slate-950/20">
               {detailModal.type === 'transaction' && (
                 <div className="space-y-6">
                   <div className="grid grid-cols-2 gap-4 bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-xs">
@@ -1107,22 +1152,25 @@ export default function AdminDashboard() {
                 <div className="space-y-3">
                   {paymentTransactions
                     .filter(tx => {
+                      if (tx.payment_status !== 'paid') return false;
                       const txDate = new Date(tx.paid_at || tx.created_at);
                       if (revenuePeriod === 'month') {
                         const today = new Date();
                         return txDate.getMonth() === today.getMonth() && txDate.getFullYear() === today.getFullYear();
                       } else if (revenuePeriod === 'week') {
                         const today = new Date();
-                        const firstDayOfWeek = new Date(today.setDate(today.getDate() - today.getDay() + 1));
-                        firstDayOfWeek.setHours(0, 0, 0, 0);
-                        return txDate >= firstDayOfWeek;
+                        const pastWeek = new Date(today);
+                        pastWeek.setDate(today.getDate() - 6);
+                        pastWeek.setHours(0, 0, 0, 0);
+                        return txDate >= pastWeek;
                       } else if (revenuePeriod === 'today') {
                         const today = new Date();
                         return txDate.getDate() === today.getDate() && txDate.getMonth() === today.getMonth() && txDate.getFullYear() === today.getFullYear();
                       } else if (revenuePeriod === 'custom') {
-                        if (!selectedDate) return true;
-                        const sDate = new Date(selectedDate);
-                        return txDate.getDate() === sDate.getDate() && txDate.getMonth() === sDate.getMonth() && txDate.getFullYear() === sDate.getFullYear();
+                        if (!customStartDate || !customEndDate) return true;
+                        const sDate = new Date(`${customStartDate}T00:00:00`);
+                        const eDate = new Date(`${customEndDate}T23:59:59`);
+                        return txDate >= sDate && txDate <= eDate;
                       }
                       return true;
                     })
@@ -1146,42 +1194,74 @@ export default function AdminDashboard() {
               )}
               {detailModal.type === 'tour' && (
                 <div className="space-y-3">
-                  {paymentTransactions
-                    .filter(tx => tx.payment_status === 'paid' && tx.order_items?.some((i: any) => i.referenceId === detailModal.data.id || i.title === detailModal.data.title))
-                    .sort((a, b) => new Date(b.paid_at || b.created_at).getTime() - new Date(a.paid_at || a.created_at).getTime())
-                    .map((tx, i) => (
-                      <div key={i} onClick={() => setDetailModal({ type: 'transaction', data: tx, parent: detailModal })} className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 flex justify-between items-center cursor-pointer hover:border-blue-300 dark:hover:border-blue-700 transition-colors shadow-xs">
-                        <div>
-                          <p className="font-bold text-slate-800 dark:text-slate-200">{tx.user_email}</p>
-                          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{new Date(tx.paid_at || tx.created_at).toLocaleString('vi-VN')}</p>
+                  {bookings
+                    .filter(b => b.status === 'confirmed' && b.tourTitle === detailModal.data.title)
+                    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                    .map((b, i) => {
+                      const tx = paymentTransactions.find(t => t.payment_status === 'paid' && t.user_email === b.userEmail && t.order_items?.some((item: any) => item.title === b.tourTitle));
+                      return (
+                        <div key={i} onClick={tx ? () => setDetailModal({ type: 'transaction', data: tx, parent: detailModal }) : undefined} className={`p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 flex justify-between items-center shadow-xs ${tx ? 'cursor-pointer hover:border-blue-300 dark:hover:border-blue-700 transition-colors' : ''}`}>
+                          <div>
+                            <p className="font-bold text-slate-800 dark:text-slate-200">{b.userEmail || 'Khách vãng lai'}</p>
+                            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{tx ? new Date(tx.paid_at || tx.created_at).toLocaleString('vi-VN') : b.date}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-black text-blue-600">{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(b.total)}</p>
+                            <p className="text-xs text-slate-400 mt-1 font-mono">{tx ? tx.payment_code : `Khách: ${b.guests}`}</p>
+                          </div>
                         </div>
-                        <div className="text-right">
-                          <p className="font-black text-blue-600">{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(tx.amount)}</p>
-                          <p className="text-xs text-slate-400 mt-1 font-mono">{tx.payment_code}</p>
-                        </div>
-                      </div>
-                  ))}
-                  {paymentTransactions.filter(tx => tx.payment_status === 'paid' && tx.order_items?.some((i: any) => i.referenceId === detailModal.data.id || i.title === detailModal.data.title)).length === 0 && (
+                      );
+                  })}
+                  {bookings.filter(b => b.status === 'confirmed' && b.tourTitle === detailModal.data.title).length === 0 && (
                     <div className="text-center py-8 text-slate-500">Chưa có giao dịch chi tiết nào được ghi nhận cho tour này.</div>
                   )}
                 </div>
               )}
               {detailModal.type === 'customer' && (
                 <div className="space-y-3">
-                  {paymentTransactions
-                    .filter(tx => tx.user_email === detailModal.data.email)
-                    .sort((a, b) => new Date(b.paid_at || b.created_at).getTime() - new Date(a.paid_at || a.created_at).getTime())
-                    .map((tx, i) => (
-                      <div key={i} onClick={() => setDetailModal({ type: 'transaction', data: tx, parent: detailModal })} className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 flex justify-between items-center cursor-pointer hover:border-emerald-300 dark:hover:border-emerald-700 transition-colors shadow-xs">
-                        <div>
-                          <p className="font-bold text-slate-800 dark:text-slate-200">{tx.payment_code}</p>
-                          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{new Date(tx.paid_at || tx.created_at).toLocaleString('vi-VN')} · <span className={tx.payment_status === 'paid' ? 'text-emerald-600 font-semibold' : 'text-amber-600 font-semibold'}>{tx.payment_status === 'paid' ? 'Thành công' : 'Chưa thanh toán'}</span></p>
+                  {bookings
+                    .filter(b => b.status === 'confirmed' && (b.userEmail === detailModal.data.email || (!b.userEmail && detailModal.data.email === 'Khách vãng lai')))
+                    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                    .map((b, i) => {
+                      const tx = paymentTransactions.find(t => t.payment_status === 'paid' && t.user_email === b.userEmail && t.order_items?.some((item: any) => item.title === b.tourTitle));
+                      return (
+                        <div key={i} onClick={tx ? () => setDetailModal({ type: 'transaction', data: tx, parent: detailModal }) : undefined} className={`p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 flex justify-between items-center shadow-xs ${tx ? 'cursor-pointer hover:border-emerald-300 dark:hover:border-emerald-700 transition-colors' : ''}`}>
+                          <div>
+                            <p className="font-bold text-slate-800 dark:text-slate-200">{b.tourTitle}</p>
+                            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{tx ? new Date(tx.paid_at || tx.created_at).toLocaleString('vi-VN') : b.date} · <span className="text-emerald-600 font-semibold">Thành công</span></p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-black text-emerald-600">{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(b.total)}</p>
+                            <p className="text-xs text-slate-400 mt-1 font-mono">{tx ? tx.payment_code : `Khách: ${b.guests}`}</p>
+                          </div>
                         </div>
-                        <div className="text-right">
-                          <p className="font-black text-emerald-600">{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(tx.amount)}</p>
+                      );
+                  })}
+                </div>
+              )}
+              {detailModal.type === 'pending_bookings' && (
+                <div className="space-y-3">
+                  {bookings
+                    .filter(b => b.status !== 'confirmed')
+                    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                    .map((b, i) => {
+                      const tx = paymentTransactions.find(t => t.user_email === b.userEmail && t.order_items?.some((item: any) => item.title === b.tourTitle));
+                      return (
+                        <div key={i} onClick={tx ? () => setDetailModal({ type: 'transaction', data: tx, parent: detailModal }) : undefined} className={`p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 flex justify-between items-center shadow-xs ${tx ? 'cursor-pointer hover:border-amber-300 dark:hover:border-amber-700 transition-colors' : ''}`}>
+                          <div>
+                            <p className="font-bold text-slate-800 dark:text-slate-200">{b.tourTitle}</p>
+                            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{b.userEmail || 'Khách vãng lai'} · {tx ? new Date(tx.paid_at || tx.created_at).toLocaleString('vi-VN') : b.date} · <span className="text-amber-600 font-semibold">Chờ thanh toán</span></p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-black text-amber-600">{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(b.total)}</p>
+                            <p className="text-xs text-slate-400 mt-1 font-mono">{tx ? (tx.payment_code || 'Chưa TT') : `Khách: ${b.guests}`}</p>
+                          </div>
                         </div>
-                      </div>
-                  ))}
+                      );
+                  })}
+                  {bookings.filter(b => b.status !== 'confirmed').length === 0 && (
+                    <div className="text-center py-8 text-slate-500">Không có đơn hàng nào đang chờ thanh toán.</div>
+                  )}
                 </div>
               )}
             </div>

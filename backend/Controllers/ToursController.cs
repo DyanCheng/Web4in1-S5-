@@ -27,7 +27,7 @@ namespace Backend.Controllers
         }
 
         [HttpGet("admin")]
-        [Authorize(Roles = "admin")]
+        [Authorize(Roles = "admin,accountant")]
         public async Task<IActionResult> GetAllAdmin([FromQuery] string? destination)
         {
             var tours = await _tourDb.GetAllToursAdminAsync(destination);
@@ -47,7 +47,7 @@ namespace Backend.Controllers
         }
 
         [HttpPost]
-        [Authorize(Roles = "admin")]
+        [Authorize(Roles = "admin,accountant")]
         public async Task<IActionResult> Create([FromBody] TourRequest request)
         {
 
@@ -62,7 +62,7 @@ namespace Backend.Controllers
         }
 
         [HttpPut("{id}")]
-        [Authorize(Roles = "admin")]
+        [Authorize(Roles = "admin,accountant")]
         public async Task<IActionResult> Update(string id, [FromBody] TourRequest request)
         {
 
@@ -77,7 +77,7 @@ namespace Backend.Controllers
         }
 
         [HttpDelete("{id}")]
-        [Authorize(Roles = "admin")]
+        [Authorize(Roles = "admin,accountant")]
         public async Task<IActionResult> Delete(string id)
         {
 
@@ -89,7 +89,7 @@ namespace Backend.Controllers
         }
 
         [HttpPatch("{id}/toggle-status")]
-        [Authorize(Roles = "admin")]
+        [Authorize(Roles = "admin,accountant")]
         public async Task<IActionResult> ToggleStatus(string id)
         {
             var success = await _tourDb.ToggleTourStatusAsync(id);
