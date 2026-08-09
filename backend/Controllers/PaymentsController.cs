@@ -416,7 +416,7 @@ public class PaymentsController : ControllerBase
     }
 
     [HttpPost("{code}/approve")]
-    [Authorize(Roles = "admin")]
+    [Authorize(Roles = "admin,accountant")]
     public async Task<IActionResult> ApprovePayment(string code)
     {
         try
@@ -431,7 +431,7 @@ public class PaymentsController : ControllerBase
     }
 
     [HttpGet("admin/summary")]
-    [Authorize(Roles = "admin")]
+    [Authorize(Roles = "admin,accountant")]
     public async Task<IActionResult> GetAdminSummary()
     {
         try
@@ -446,7 +446,7 @@ public class PaymentsController : ControllerBase
     }
 
     [HttpGet("admin/transactions")]
-    [Authorize(Roles = "admin")]
+    [Authorize(Roles = "admin,accountant")]
     public async Task<IActionResult> GetAdminTransactions()
     {
         try
