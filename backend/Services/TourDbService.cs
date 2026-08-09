@@ -146,7 +146,11 @@ namespace Backend.Services
                     p_included = request.Included ?? new List<string>(),
                     p_excluded = request.Excluded ?? new List<string>(),
                     p_rating = request.Rating,
-                    p_reviews = request.Reviews
+                    p_reviews = request.Reviews,
+                    p_duration_days = request.DurationDays > 0 ? request.DurationDays : 1,
+                    p_duration_nights = request.DurationNights >= 0 ? request.DurationNights : Math.Max(request.DurationDays - 1, 0),
+                    p_child_price = request.ChildPrice,
+                    p_itinerary = request.Itinerary ?? new List<TourItineraryDay>()
                 });
 
                 if (response == null) return null;
@@ -178,7 +182,11 @@ namespace Backend.Services
                     p_included = request.Included ?? new List<string>(),
                     p_excluded = request.Excluded ?? new List<string>(),
                     p_rating = request.Rating,
-                    p_reviews = request.Reviews
+                    p_reviews = request.Reviews,
+                    p_duration_days = request.DurationDays > 0 ? request.DurationDays : 1,
+                    p_duration_nights = request.DurationNights >= 0 ? request.DurationNights : Math.Max(request.DurationDays - 1, 0),
+                    p_child_price = request.ChildPrice,
+                    p_itinerary = request.Itinerary ?? new List<TourItineraryDay>()
                 });
 
                 if (response == null) return null;
@@ -263,13 +271,16 @@ namespace Backend.Services
 
             try
             {
+                var adults = request.Adults > 0 ? request.Adults : Math.Max(request.Guests, 1);
+                var children = Math.Max(request.Children, 0);
                 var response = await PostRpcAsync("create_booking", new
                 {
                     p_tour_id = parsedTourId,
                     p_user_id = request.UserId,
                     p_user_email = request.UserEmail,
                     p_date = request.Date,
-                    p_guests = request.Guests,
+                    p_adults = adults,
+                    p_children = children,
                     p_quantity = request.Quantity
                 });
 

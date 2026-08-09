@@ -148,6 +148,8 @@ namespace Backend.Controllers
         public string UserEmail { get; set; } = string.Empty;
         public string Date { get; set; } = string.Empty;
         public int Guests { get; set; }
+        public int Adults { get; set; }
+        public int Children { get; set; }
         public int Quantity { get; set; } = 1;
         public string TourTitle { get; set; } = string.Empty;
         public string TourImage { get; set; } = string.Empty;

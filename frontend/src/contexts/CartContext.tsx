@@ -23,6 +23,15 @@ export interface CartItem {
   metadata?: {
     seatNumber?: string;
     route?: string;
+    childPrice?: number;
+    children?: number;
+    totalNights?: number;
+    hotelId?: string;
+    hotelName?: string;
+    roomId?: string;
+    roomName?: string;
+    checkOutDate?: string;
+    departureAddress?: string;
   };
 }
 

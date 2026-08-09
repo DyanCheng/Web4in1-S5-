@@ -84,6 +84,8 @@ export default function CheckoutPage() {
           date: item.date,
           metadata: {
             ...item.metadata,
+            children: item.children ?? item.metadata?.children,
+            childPrice: item.metadata?.childPrice,
             ...(item.serviceType === 'tour' ? { departureAddress: formData.address } : {}),
           },
         })),
@@ -228,7 +230,11 @@ export default function CheckoutPage() {
                     </div>
                     <div className="flex-1">
                       <h4 className="text-sm font-extrabold text-slate-900 dark:text-white mb-1 line-clamp-1">{item.title}</h4>
-                      <p className="text-xs text-slate-400 dark:text-slate-400 font-bold mb-1">x{item.quantity} Tour</p>
+                      <p className="text-xs text-slate-400 dark:text-slate-400 font-bold mb-1">
+                        {item.serviceType === 'tour' || !item.serviceType
+                          ? `${item.guests} người lớn${(item.children ?? item.metadata?.children ?? 0) > 0 ? `, ${item.children ?? item.metadata?.children} trẻ em` : ''}`
+                          : `x${item.quantity}`}
+                      </p>
                       <p className="text-sm text-blue-900 dark:text-blue-400 font-black">{getCartLineTotal(item).toLocaleString('vi-VN')}đ</p>
                     </div>
                   </div>

@@ -105,7 +105,10 @@ namespace Backend.Controllers
         public string Title { get; set; } = string.Empty;
         public string Location { get; set; } = string.Empty;
         public decimal Price { get; set; }
+        public decimal ChildPrice { get; set; }
         public string Duration { get; set; } = string.Empty;
+        public int DurationDays { get; set; } = 1;
+        public int DurationNights { get; set; }
         public string Image { get; set; } = string.Empty;
         public double Rating { get; set; }
         public int Reviews { get; set; }
@@ -113,5 +116,6 @@ namespace Backend.Controllers
         public List<string>? Highlights { get; set; }
         public List<string>? Included { get; set; }
         public List<string>? Excluded { get; set; }
+        public List<TourItineraryDay>? Itinerary { get; set; }
     }
 }

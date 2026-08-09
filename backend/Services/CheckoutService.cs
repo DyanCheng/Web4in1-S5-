@@ -187,6 +187,8 @@ public class CheckoutService
             UserEmail = request.UserEmail,
             Date = item.Date,
             Guests = item.Guests,
+            Adults = item.Guests,
+            Children = item.Metadata?.Children ?? 0,
             Quantity = item.Quantity,
             TourTitle = item.Title,
             TourImage = item.Image,
@@ -199,7 +201,12 @@ public class CheckoutService
         {
             BookingRef = booking.Id,
             LineTotal = booking.Total,
-            OrderItem = BuildOrderItem("tour", item, booking.Id, booking.Total, new { departureAddress = item.Metadata?.DepartureAddress }),
+            OrderItem = BuildOrderItem("tour", item, booking.Id, booking.Total, new {
+                departureAddress = item.Metadata?.DepartureAddress,
+                adults = item.Guests,
+                children = item.Metadata?.Children ?? 0,
+                childPrice = item.Metadata?.ChildPrice,
+            }),
         };
     }
 
@@ -281,6 +288,10 @@ public class CheckoutService
         {
             "hotel" => item.Price * item.Quantity * (item.Metadata?.TotalNights ?? 1),
             "flight" or "insurance" or "vehicle" or "bus" => item.Price * item.Quantity,
+            "tour" => (
+                item.Price * Math.Max(item.Guests, 1)
+                + (item.Metadata?.ChildPrice ?? 0) * Math.Max(item.Metadata?.Children ?? 0, 0)
+            ) * Math.Max(item.Quantity, 1),
             _ => item.Price * item.Quantity * Math.Max(item.Guests, 1),
         };
     }
@@ -345,6 +356,7 @@ public class CheckoutItemMetadata
     public string? RoomName { get; set; }
     public string? CheckOutDate { get; set; }
     public int? Children { get; set; }
+    public decimal? ChildPrice { get; set; }
     public int? TotalNights { get; set; }
     public string? DepartureAddress { get; set; }
 }

@@ -17,6 +17,13 @@ const menuItemClass =
 const mobileItemClass =
   'interactive-press px-3 py-2 text-left text-sm font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40';
 
+const ROLE_BADGE: Record<string, { label: string; className: string }> = {
+  user: { label: 'Khách hàng', className: 'text-zinc-600 bg-zinc-100' },
+  admin: { label: 'Adminstrator', className: 'text-red-600 bg-red-100' },
+  employee: { label: 'Nhân viên', className: 'text-yellow-600 bg-yellow-100' },
+  accountant: { label: 'Kế toán', className: 'text-blue-600 bg-blue-100' },
+};
+
 export default function Header() {
   const pathname = usePathname();
   const { user, logout } = useAuth();
@@ -33,6 +40,8 @@ export default function Header() {
     user?.role === 'hotel_owner' ||
     user?.role === 'employee' ||
     user?.role === 'accountant';
+
+  const roleBadge = user ? ROLE_BADGE[user.role] : undefined;
 
   const getAdminPath = () => {
     if (user?.role === 'admin') return '/admin';
@@ -171,7 +180,7 @@ export default function Header() {
               <div ref={userMenuRef} className="relative hidden sm:block w-full">
                 <button
                   type="button"
-                  onClick={() => setUserMenuOpen(!userMenuOpen)} 
+                  onClick={() => setUserMenuOpen(!userMenuOpen)}
                   className="interactive-press relative flex items-center gap-1 pl-1 pr-2 py-1 rounded-full cursor-pointer before:absolute before:inset-0 before:rounded-full before:bg-white/30 before:opacity-0 before:transition-opacity hover:before:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
                   aria-expanded={userMenuOpen}
                   aria-haspopup="menu"
@@ -187,6 +196,14 @@ export default function Header() {
                       {getInitials(user.name)}
                     </div>
                   )}
+                  <div className="flex flex-col items-start min-w-0 px-2">
+                    <div className="UserNameHeader py-0.5 text-sm font-bold truncate max-w-[9rem]">{user.name}</div>
+                    {roleBadge && (
+                      <div className={`UserRoleHeader rounded-md px-2 py-0.5 text-xs font-medium ${roleBadge.className}`}>
+                        {roleBadge.label}
+                      </div>
+                    )}
+                  </div>
                 </button>
 
                 {userMenuOpen && (
@@ -198,9 +215,20 @@ export default function Header() {
                       <div className="w-3 h-3 bg-white dark:bg-slate-800 border-l border-t border-slate-100 dark:border-slate-700 rotate-45 mx-auto mt-1" />
                     </div>
 
-                    <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-700">
-                      <p className="text-sm font-bold text-slate-900 dark:text-white truncate">{user.name}</p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">{user.email}</p>
+                    <div className="flex flex-col items-center px-4 py-3 border-b border-slate-100 dark:border-slate-700">
+                      {user.avatar ? (
+                        <img
+                          src={user.avatar}
+                          alt={user.name}
+                          className="w-16 h-16 rounded-full object-cover border-2 border-blue-500 shadow-sm"
+                        />
+                      ) : (
+                        <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white text-lg font-bold border-2 border-blue-500 shadow-sm select-none">
+                          {getInitials(user.name)}
+                        </div>
+                      )}
+                      <p className="mt-3 text-sm font-bold text-slate-900 dark:text-white truncate max-w-full">{user.name}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 truncate max-w-full mt-0.5">{user.email}</p>
                     </div>
 
                     <div className="p-1.5">

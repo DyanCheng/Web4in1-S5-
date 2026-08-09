@@ -20,6 +20,7 @@ export interface CheckoutItemPayload {
     roomName?: string;
     checkOutDate?: string;
     children?: number;
+    childPrice?: number;
     totalNights?: number;
     departureAddress?: string;
   };
@@ -50,6 +51,12 @@ export function getCartLineTotal(item: {
   price: number;
   quantity: number;
   guests: number;
+  children?: number;
+  metadata?: {
+    childPrice?: number;
+    children?: number;
+    totalNights?: number;
+  };
 }): number {
   const serviceType = item.serviceType ?? 'tour';
 
@@ -57,7 +64,10 @@ export function getCartLineTotal(item: {
     return item.price * item.quantity;
   }
 
-  return item.price * item.quantity * Math.max(item.guests, 1);
+  const adults = Math.max(item.guests, 1);
+  const children = Math.max(item.children ?? item.metadata?.children ?? 0, 0);
+  const childPrice = item.metadata?.childPrice ?? 0;
+  return (item.price * adults + childPrice * children) * Math.max(item.quantity, 1);
 }
 
 export async function submitUnifiedCheckout(payload: CheckoutPayload): Promise<CheckoutResponse> {
