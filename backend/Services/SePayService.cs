@@ -33,7 +33,9 @@ public class SePayService
             ["acc"] = _bankAccount,
             ["bank"] = _bankName ?? "Vietcombank",
             ["amount"] = ((long)Math.Round(amount, 0)).ToString(),
-            ["des"] = paymentCode
+            // SePay/VietQR: des must be letters/digits only (no spaces/accents)
+            ["des"] = paymentCode.Trim(),
+            ["template"] = "QR"
         };
 
         return "https://qr.sepay.vn/img?" + string.Join("&", query.Select(kv =>
@@ -73,13 +75,19 @@ public class SePayService
     //Trích xuất mã thanh toán từ code hoặc nội dung
     public string? ExtractPaymentCode(string? code, string? content)
     {
-        if (!string.IsNullOrWhiteSpace(code))
-            return code.Trim();
+        var prefix = _paymentCodePrefix ?? "CMCTOUR";
+        var pattern = $@"{Regex.Escape(prefix)}[A-Z0-9]+";
 
-        if (string.IsNullOrWhiteSpace(content) || string.IsNullOrWhiteSpace(_paymentCodePrefix))
+        if (!string.IsNullOrWhiteSpace(code))
+        {
+            var fromCode = Regex.Match(code.Trim(), pattern, RegexOptions.IgnoreCase);
+            if (fromCode.Success)
+                return fromCode.Value.ToUpperInvariant();
+        }
+
+        if (string.IsNullOrWhiteSpace(content))
             return null;
 
-        var pattern = $@"{Regex.Escape(_paymentCodePrefix)}[A-Z0-9]+";
         var match = Regex.Match(content, pattern, RegexOptions.IgnoreCase);
         return match.Success ? match.Value.ToUpperInvariant() : null;
     }

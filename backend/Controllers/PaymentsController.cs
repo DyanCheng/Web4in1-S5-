@@ -41,6 +41,42 @@ public class PaymentsController : ControllerBase
         _environment.IsDevelopment()
         || string.Equals(_configuration["ALLOW_PAYMENT_SIMULATION"], "true", StringComparison.OrdinalIgnoreCase);
 
+    /// <summary>
+    /// order_payments timestamps are UTC wall-clock without timezone.
+    /// Always emit ISO-8601 with Z so browsers in UTC+7 don't treat them as local.
+    /// </summary>
+    private static string? ToUtcIso(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw))
+            return null;
+
+        if (DateTimeOffset.TryParse(
+                raw,
+                System.Globalization.CultureInfo.InvariantCulture,
+                System.Globalization.DateTimeStyles.AssumeUniversal | System.Globalization.DateTimeStyles.AdjustToUniversal,
+                out var dto))
+        {
+            return dto.UtcDateTime.ToString("yyyy-MM-dd'T'HH:mm:ss.fffffff'Z'");
+        }
+
+        return raw;
+    }
+
+    private static string UtcExpiresAtIso(string? createdAtIso, int minutes = 5)
+    {
+        if (!string.IsNullOrWhiteSpace(createdAtIso)
+            && DateTimeOffset.TryParse(
+                createdAtIso,
+                System.Globalization.CultureInfo.InvariantCulture,
+                System.Globalization.DateTimeStyles.AssumeUniversal | System.Globalization.DateTimeStyles.AdjustToUniversal,
+                out var created))
+        {
+            return created.UtcDateTime.AddMinutes(minutes).ToString("yyyy-MM-dd'T'HH:mm:ss.fffffff'Z'");
+        }
+
+        return DateTime.UtcNow.AddMinutes(minutes).ToString("yyyy-MM-dd'T'HH:mm:ss.fffffff'Z'");
+    }
+
     [HttpPost("create")]
     public async Task<IActionResult> CreatePayment([FromBody] CreatePaymentRequest request,string a = "Tạo một đơn thanh toán mới và trả về mã thanh toán, số tiền, trạng thái và URL QR code để người dùng thực hiện thanh toán.")
     {
@@ -64,6 +100,14 @@ public class PaymentsController : ControllerBase
             );
 
             var qrUrl = _sePay.BuildQrUrl(paymentCode, request.Amount);
+            var createdAt = ToUtcIso(
+                created.TryGetProperty("created_at", out var createdProp) && createdProp.ValueKind != JsonValueKind.Null
+                    ? createdProp.GetString()
+                    : null) ?? DateTime.UtcNow.ToString("yyyy-MM-dd'T'HH:mm:ss.fffffff'Z'");
+            var expiresAt = ToUtcIso(
+                created.TryGetProperty("expires_at", out var expiresProp) && expiresProp.ValueKind != JsonValueKind.Null
+                    ? expiresProp.GetString()
+                    : null) ?? UtcExpiresAtIso(createdAt);
 
             return Ok(new
             {
@@ -71,6 +115,8 @@ public class PaymentsController : ControllerBase
                 amount = request.Amount,
                 status = "pending",
                 qrUrl,
+                createdAt,
+                expiresAt,
                 orderPaymentId = created.GetProperty("order_payment_id").GetInt64()
             });
         }
@@ -89,25 +135,130 @@ public class PaymentsController : ControllerBase
     {
         try
         {
-            var payment = await _paymentDb.GetOrderPaymentByCodeAsync(paymentCode);
+            // Auto-expire unpaid payment codes older than 5 minutes
+            JsonElement? payment = null;
+            try
+            {
+                payment = await _paymentDb.ExpireOrderPaymentAsync(paymentCode);
+            }
+            catch (PaymentException ex)
+            {
+                _logger.LogWarning(ex, "expire_order_payment failed for {PaymentCode}, falling back to get", paymentCode);
+                payment = await _paymentDb.GetOrderPaymentByCodeAsync(paymentCode);
+            }
+
             if (payment == null)
-                return NotFound(new { message = "KhÔng tìm thấy đơn thanh toán" });
+                return NotFound(new { message = "Không tìm thấy đơn thanh toán" });
+
+            var p = payment.Value;
+            var status = p.TryGetProperty("payment_status", out var statusProp)
+                ? statusProp.GetString()
+                : p.TryGetProperty("status", out var statusAlt) ? statusAlt.GetString() : null;
+
+            string? createdAt = ToUtcIso(
+                p.TryGetProperty("created_at", out var createdAtProp) && createdAtProp.ValueKind != JsonValueKind.Null
+                    ? createdAtProp.GetString()
+                    : null);
+            string? expiresAt = ToUtcIso(
+                p.TryGetProperty("expires_at", out var expiresAtProp) && expiresAtProp.ValueKind != JsonValueKind.Null
+                    ? expiresAtProp.GetString()
+                    : null);
+
+            if (string.IsNullOrWhiteSpace(expiresAt))
+                expiresAt = UtcExpiresAtIso(createdAt);
+
+            // Fallback if expire RPC returned slim payload without order_items
+            if (!p.TryGetProperty("order_items", out _) || !p.TryGetProperty("booking_refs", out _))
+            {
+                var full = await _paymentDb.GetOrderPaymentByCodeAsync(paymentCode);
+                if (full != null)
+                    p = full.Value;
+            }
+
+            var amount = p.TryGetProperty("amount", out var amountProp) ? amountProp.GetDecimal() : 0m;
+            var resolvedStatus = status ?? p.GetProperty("payment_status").GetString();
+            string? qrUrl = null;
+            if (!string.Equals(resolvedStatus, "expired", StringComparison.OrdinalIgnoreCase)
+                && !string.Equals(resolvedStatus, "paid", StringComparison.OrdinalIgnoreCase)
+                && amount > 0)
+            {
+                try
+                {
+                    qrUrl = _sePay.BuildQrUrl(paymentCode, amount);
+                }
+                catch (InvalidOperationException ex)
+                {
+                    _logger.LogWarning(ex, "Unable to build QR URL for {PaymentCode}", paymentCode);
+                }
+            }
 
             return Ok(new
             {
-                paymentCode = payment.Value.GetProperty("payment_code").GetString(),
-                amount = payment.Value.GetProperty("amount").GetDecimal(),
-                status = payment.Value.GetProperty("payment_status").GetString(),
-                paidAt = payment.Value.TryGetProperty("paid_at", out var paidAt) && paidAt.ValueKind != JsonValueKind.Null
+                paymentCode = p.TryGetProperty("payment_code", out var codeProp) ? codeProp.GetString() : paymentCode,
+                amount,
+                status = resolvedStatus,
+                paidAt = p.TryGetProperty("paid_at", out var paidAt) && paidAt.ValueKind != JsonValueKind.Null
                     ? paidAt.GetString()
                     : null,
-                orderItems = payment.Value.GetProperty("order_items"),
-                bookingRefs = payment.Value.GetProperty("booking_refs")
+                createdAt,
+                expiresAt,
+                qrUrl,
+                orderItems = p.TryGetProperty("order_items", out var items) ? items : (object?)null,
+                bookingRefs = p.TryGetProperty("booking_refs", out var refs) ? refs : (object?)null
             });
         }
         catch (InvalidOperationException ex)
         {
             return StatusCode(503, new { message = ex.Message });
+        }
+        catch (PaymentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpGet("user/{email}")]
+    public async Task<IActionResult> GetUserPayments(string email)
+    {
+        try
+        {
+            var payments = await _paymentDb.ListUserOrderPaymentsAsync(email, null);
+            return Ok(JsonSerializer.Deserialize<object>(payments.GetRawText()));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return StatusCode(503, new { message = ex.Message });
+        }
+        catch (PaymentException ex)
+        {
+            _logger.LogWarning(ex, "list_user_order_payments failed for {Email}", email);
+            return StatusCode(502, new { message = ex.Message });
+        }
+    }
+
+    [HttpPost("{paymentCode}/expire")]
+    public async Task<IActionResult> ExpirePayment(string paymentCode)
+    {
+        try
+        {
+            var result = await _paymentDb.ExpireOrderPaymentAsync(paymentCode);
+            if (result == null)
+                return NotFound(new { message = "Không tìm thấy đơn thanh toán" });
+
+            return Ok(new
+            {
+                paymentCode,
+                status = result.Value.TryGetProperty("payment_status", out var s) ? s.GetString() : null,
+                expired = result.Value.TryGetProperty("expired", out var e) && e.ValueKind == JsonValueKind.True,
+                expiresAt = ToUtcIso(
+                    result.Value.TryGetProperty("expires_at", out var exp) && exp.ValueKind != JsonValueKind.Null
+                        ? exp.GetString()
+                        : null),
+            });
+        }
+        catch (PaymentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
         }
     }
 
@@ -144,7 +295,25 @@ public class PaymentsController : ControllerBase
 
         try
         {
-            var existing = await _paymentDb.GetOrderPaymentByCodeAsync(paymentCode);
+            JsonElement? existing = null;
+            try
+            {
+                existing = await _paymentDb.ExpireOrderPaymentAsync(paymentCode);
+            }
+            catch (PaymentException ex)
+            {
+                _logger.LogWarning(ex, "expire_order_payment failed during webhook for {PaymentCode}", paymentCode);
+                existing = await _paymentDb.GetOrderPaymentByCodeAsync(paymentCode);
+            }
+
+            if (existing != null
+                && existing.Value.TryGetProperty("payment_status", out var existingStatus)
+                && string.Equals(existingStatus.GetString(), "expired", StringComparison.OrdinalIgnoreCase))
+            {
+                _logger.LogWarning("SePay webhook ignored: payment {PaymentCode} expired", paymentCode);
+                return Ok(new { success = true, expired = true });
+            }
+
             var wasAlreadyPaid = IsPaymentPaid(existing);
 
             var result = await _paymentDb.ConfirmOrderPaymentAsync(
@@ -152,9 +321,25 @@ public class PaymentsController : ControllerBase
                 payload.Id,
                 payload.TransferAmount,
                 payload);
+
+            // Never email on duplicate / already-paid confirm responses
+            var isDuplicate = result.TryGetProperty("duplicate", out var dup) && dup.ValueKind == JsonValueKind.True;
+            var isAlreadyPaidFlag = result.TryGetProperty("already_paid", out var ap) && ap.ValueKind == JsonValueKind.True;
+            if (isDuplicate || isAlreadyPaidFlag || wasAlreadyPaid)
+            {
+                _logger.LogInformation("Skip confirm side-effects for {PaymentCode}: duplicate/already paid", paymentCode);
+                return Ok(new { success = true });
+            }
+
+            if (!IsPaymentPaid(result))
+            {
+                _logger.LogWarning("SePay webhook did not mark {PaymentCode} as paid", paymentCode);
+                return Ok(new { success = true });
+            }
+
             await ConfirmBookingsAsync(result);
             var emailData = await GetPaymentDataForEmailAsync(result, paymentCode);
-            await TrySendPaymentConfirmationEmailAsync(emailData, payload, wasAlreadyPaid, paymentCode);
+            await TrySendPaymentConfirmationEmailAsync(emailData, payload, wasAlreadyPaid: false, paymentCode);
 
             return Ok(new { success = true });
         }
@@ -174,9 +359,27 @@ public class PaymentsController : ControllerBase
 
         try
         {
-            var payment = await _paymentDb.GetOrderPaymentByCodeAsync(paymentCode);
+            JsonElement? payment = null;
+            try
+            {
+                payment = await _paymentDb.ExpireOrderPaymentAsync(paymentCode);
+            }
+            catch (PaymentException)
+            {
+                payment = await _paymentDb.GetOrderPaymentByCodeAsync(paymentCode);
+            }
+
             if (payment == null)
                 return NotFound(new { message = "Không tìm thấy đơn thanh toán" });
+
+            var status = payment.Value.TryGetProperty("payment_status", out var st)
+                ? st.GetString()
+                : null;
+            if (string.Equals(status, "expired", StringComparison.OrdinalIgnoreCase))
+                return BadRequest(new { message = "Mã thanh toán đã hết hạn. Vui lòng tạo thanh toán mới." });
+
+            if (string.Equals(status, "paid", StringComparison.OrdinalIgnoreCase))
+                return Ok(new { success = true, simulated = true, alreadyPaid = true });
 
             var amount = payment.Value.GetProperty("amount").GetDecimal();
             var payload = new SePayWebhookPayload
@@ -191,12 +394,14 @@ public class PaymentsController : ControllerBase
                 Description = "Simulated payment",
                 TransactionDate = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
             };
-            var wasAlreadyPaid = IsPaymentPaid(payment);
             var result = await _paymentDb.ConfirmOrderPaymentAsync(paymentCode, payload.Id, amount, payload);
+
+            if (!IsPaymentPaid(result))
+                return BadRequest(new { message = "Mô phỏng thanh toán thất bại" });
 
             await ConfirmBookingsAsync(result);
             var emailData = await GetPaymentDataForEmailAsync(result, paymentCode);
-            await TrySendPaymentConfirmationEmailAsync(emailData, payload, wasAlreadyPaid, paymentCode);
+            await TrySendPaymentConfirmationEmailAsync(emailData, payload, wasAlreadyPaid: false, paymentCode);
 
             return Ok(new { success = true, simulated = true });
         }
@@ -311,11 +516,17 @@ public class PaymentsController : ControllerBase
         }
 
         if (!result.TryGetProperty("user_email", out var emailProp))
+        {
+            _logger.LogWarning("Skip email for {PaymentCode}: missing user_email", paymentCode);
             return;
+        }
 
-        var email = emailProp.GetString();
-        if (string.IsNullOrWhiteSpace(email))
+        var email = emailProp.GetString()?.Trim();
+        if (string.IsNullOrWhiteSpace(email) || !email.Contains('@'))
+        {
+            _logger.LogWarning("Skip email for {PaymentCode}: invalid user_email '{Email}'", paymentCode, email);
             return;
+        }
 
         var amount = result.TryGetProperty("amount", out var amountProp)
             ? amountProp.GetDecimal()

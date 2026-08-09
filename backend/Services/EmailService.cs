@@ -27,10 +27,27 @@ public class EmailService
         _smtpPort = int.TryParse(configuration["SMTP_PORT"], out var port) ? port : 587;
         _smtpUsername = configuration["SMTP_USERNAME"]?.Trim();
         _smtpPassword = configuration["SMTP_PASSWORD"]?.Replace(" ", "");
-        _fromEmail = configuration["SMTP_FROM_EMAIL"] ?? _smtpUsername;
+        // Gmail rejects / rewrites From when it doesn't match the authenticated account
+        var configuredFrom = configuration["SMTP_FROM_EMAIL"]?.Trim();
+        _fromEmail = !string.IsNullOrWhiteSpace(_smtpUsername)
+            && !string.IsNullOrWhiteSpace(configuredFrom)
+            && !string.Equals(configuredFrom, _smtpUsername, StringComparison.OrdinalIgnoreCase)
+            && _smtpHost?.Contains("gmail", StringComparison.OrdinalIgnoreCase) == true
+                ? _smtpUsername
+                : (configuredFrom ?? _smtpUsername);
         _fromName = configuration["SMTP_FROM_NAME"] ?? "CMC Tour";
         _isDevelopment = environment.IsDevelopment();
         _logger = logger;
+
+        if (!string.IsNullOrWhiteSpace(configuredFrom)
+            && !string.IsNullOrWhiteSpace(_smtpUsername)
+            && !string.Equals(configuredFrom, _smtpUsername, StringComparison.OrdinalIgnoreCase)
+            && _smtpHost?.Contains("gmail", StringComparison.OrdinalIgnoreCase) == true)
+        {
+            _logger.LogWarning(
+                "SMTP_FROM_EMAIL ({From}) differs from SMTP_USERNAME ({User}); using SMTP_USERNAME as From for Gmail compatibility",
+                configuredFrom, _smtpUsername);
+        }
     }
 
     public bool IsConfigured =>
@@ -55,7 +72,12 @@ public class EmailService
 
         var message = new MimeMessage();
         message.From.Add(new MailboxAddress(_fromName, _fromEmail!));
-        message.To.Add(new MailboxAddress(data.ToName ?? data.ToEmail, data.ToEmail));
+        message.To.Clear();
+        message.To.Add(new MailboxAddress(
+            string.IsNullOrWhiteSpace(data.ToName) ? data.ToEmail : data.ToName.Trim(),
+            data.ToEmail.Trim()));
+        // Ensure Gmail/SMTP cannot silently rewrite recipient via Reply-To confusion
+        message.ReplyTo.Clear();
         message.Subject = $"Xác nhận thanh toán thành công - {data.PaymentCode}";
 
         var body = new BodyBuilder
@@ -78,7 +100,9 @@ public class EmailService
         await client.SendAsync(message);
         await client.DisconnectAsync(true);
 
-        _logger.LogInformation("Payment confirmation email sent to {Email} for {PaymentCode}", data.ToEmail, data.PaymentCode);
+        _logger.LogInformation(
+            "Payment confirmation email sent To={Email} From={From} for {PaymentCode}",
+            data.ToEmail, _fromEmail, data.PaymentCode);
     }
 
     private static string BuildPaymentConfirmationHtml(PaymentConfirmationEmail data)

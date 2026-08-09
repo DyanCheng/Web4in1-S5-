@@ -25,6 +25,30 @@ namespace Backend.Controllers
             return Ok(userBookings);
         }
 
+        [HttpGet("{bookingCode}")]
+        public async Task<IActionResult> GetByCode(string bookingCode, [FromQuery] string? email = null)
+        {
+            if (string.IsNullOrWhiteSpace(email))
+                return BadRequest(new { message = "Thiếu email người dùng" });
+
+            var userBookings = await _hotelDb.GetUserBookingsAsync(email);
+            if (userBookings == null || userBookings.Value.ValueKind != System.Text.Json.JsonValueKind.Array)
+                return NotFound(new { message = "Không tìm thấy đơn đặt khách sạn" });
+
+            foreach (var item in userBookings.Value.EnumerateArray())
+            {
+                var code = item.TryGetProperty("booking_code", out var c1) ? c1.GetString()
+                    : item.TryGetProperty("bookingCode", out var c2) ? c2.GetString()
+                    : item.TryGetProperty("id", out var c3) ? c3.GetString()
+                    : null;
+
+                if (string.Equals(code, bookingCode, StringComparison.OrdinalIgnoreCase))
+                    return Ok(System.Text.Json.JsonSerializer.Deserialize<object>(item.GetRawText()));
+            }
+
+            return NotFound(new { message = "Không tìm thấy đơn đặt khách sạn" });
+        }
+
         [HttpGet("all")]
         public async Task<IActionResult> GetAll()
         {

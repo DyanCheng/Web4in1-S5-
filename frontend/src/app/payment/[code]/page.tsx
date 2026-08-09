@@ -1,22 +1,67 @@
 "use client";
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Check, QrCode, RefreshCw, Clock } from 'lucide-react';
+import { Check, QrCode, RefreshCw, Clock, XCircle } from 'lucide-react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { PageSkeleton } from '@/components/ux/PageSkeleton';
 import { useTheme } from '@/contexts/ThemeContext';
-
 import { apiUrl } from '@/lib/backendUrl';
-
 
 interface PaymentStatus {
   paymentCode: string;
   amount: number;
   status: string;
   paidAt?: string | null;
+  createdAt?: string | null;
+  expiresAt?: string | null;
+  qrUrl?: string | null;
   orderItems?: Array<{ title?: string; price?: number; quantity?: number }>;
+}
+
+/** Payment code validity window — must match backend expire_order_payment */
+const PAYMENT_CODE_TTL_MS = 5 * 60_000;
+
+/** DB stores UTC timestamps without offset; treat naive values as UTC. */
+function parseUtcMs(value: string): number {
+  const trimmed = value.trim();
+  if (!trimmed) return Number.NaN;
+  if (/([zZ]|[+-]\d{2}:?\d{2})$/.test(trimmed)) {
+    return new Date(trimmed).getTime();
+  }
+  const normalized = trimmed.includes('T') ? trimmed : trimmed.replace(' ', 'T');
+  return new Date(`${normalized}Z`).getTime();
+}
+
+function resolveExpiresAt(data: PaymentStatus): number | null {
+  if (data.expiresAt) {
+    const t = parseUtcMs(data.expiresAt);
+    if (!Number.isNaN(t)) return t;
+  }
+  if (data.createdAt) {
+    const t = parseUtcMs(data.createdAt);
+    if (!Number.isNaN(t)) return t + PAYMENT_CODE_TTL_MS;
+  }
+  return null;
+}
+
+function resolveQrUrl(data: PaymentStatus, paymentCode: string): string {
+  if (data.qrUrl) return data.qrUrl;
+
+  const storedQr = typeof window !== 'undefined'
+    ? sessionStorage.getItem(`payment_qr_${paymentCode}`)
+    : null;
+  if (storedQr) return storedQr;
+
+  if (data.amount && data.status !== 'expired' && data.status !== 'paid') {
+    const bankAccount = process.env.NEXT_PUBLIC_SEPAY_BANK_ACCOUNT;
+    const bankName = process.env.NEXT_PUBLIC_SEPAY_BANK_NAME || 'MBBank';
+    if (bankAccount) {
+      return `https://qr.sepay.vn/img?acc=${encodeURIComponent(bankAccount)}&bank=${encodeURIComponent(bankName)}&amount=${Math.round(data.amount)}&des=${encodeURIComponent(paymentCode)}&template=QR`;
+    }
+  }
+  return '';
 }
 
 export default function PaymentPage() {
@@ -29,11 +74,11 @@ export default function PaymentPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [simulating, setSimulating] = useState(false);
+  const [expiresAtMs, setExpiresAtMs] = useState<number | null>(null);
+  const [nowMs, setNowMs] = useState(Date.now());
 
   const fetchStatus = useCallback(async () => {
-
     const response = await fetch(apiUrl(`/api/payments/${paymentCode}/status`));
-
     if (!response.ok) {
       throw new Error('Không tìm thấy đơn thanh toán');
     }
@@ -43,19 +88,16 @@ export default function PaymentPage() {
   useEffect(() => {
     const init = async () => {
       try {
-        const storedQr = sessionStorage.getItem(`payment_qr_${paymentCode}`);
-        if (storedQr) setQrUrl(storedQr);
-
         const data = await fetchStatus();
         setPayment(data);
+        setExpiresAtMs(resolveExpiresAt(data));
 
-        if (!storedQr && data.amount) {
-          const bankAccount = process.env.NEXT_PUBLIC_SEPAY_BANK_ACCOUNT;
-          const bankName = process.env.NEXT_PUBLIC_SEPAY_BANK_NAME || 'Vietcombank';
-          if (bankAccount) {
-            const url = `https://qr.sepay.vn/img?acc=${encodeURIComponent(bankAccount)}&bank=${encodeURIComponent(bankName)}&amount=${Math.round(data.amount)}&des=${encodeURIComponent(paymentCode)}`;
-            setQrUrl(url);
-          }
+        const url = resolveQrUrl(data, paymentCode);
+        setQrUrl(url);
+        if (url && data.status !== 'expired' && data.status !== 'paid') {
+          sessionStorage.setItem(`payment_qr_${paymentCode}`, url);
+        } else {
+          sessionStorage.removeItem(`payment_qr_${paymentCode}`);
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Không thể tải thông tin thanh toán');
@@ -68,14 +110,27 @@ export default function PaymentPage() {
   }, [paymentCode, fetchStatus]);
 
   useEffect(() => {
-    if (!payment || payment.status === 'paid') return;
+    const timer = setInterval(() => setNowMs(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const isExpiredClient =
+    payment?.status === 'expired' ||
+    (expiresAtMs != null && nowMs >= expiresAtMs && payment?.status !== 'paid');
+
+  useEffect(() => {
+    if (!payment || payment.status === 'paid' || payment.status === 'expired') return;
 
     const interval = setInterval(async () => {
       try {
         const data = await fetchStatus();
         setPayment(data);
-        if (data.status === 'paid') {
+        setExpiresAtMs(resolveExpiresAt(data));
+        const url = resolveQrUrl(data, paymentCode);
+        if (url) setQrUrl(url);
+        if (data.status === 'paid' || data.status === 'expired') {
           clearInterval(interval);
+          sessionStorage.removeItem(`payment_qr_${paymentCode}`);
         }
       } catch {
         // ignore polling errors
@@ -83,13 +138,37 @@ export default function PaymentPage() {
     }, 3000);
 
     return () => clearInterval(interval);
-  }, [payment, fetchStatus]);
+  }, [payment, fetchStatus, paymentCode]);
+
+  // Nudge server to expire when local countdown hits 0 (do not force UI expired if server still pending)
+  useEffect(() => {
+    if (!isExpiredClient || !payment || payment.status === 'expired' || payment.status === 'paid') return;
+    void fetch(apiUrl(`/api/payments/${paymentCode}/expire`), { method: 'POST' })
+      .then(() => fetchStatus())
+      .then((data) => {
+        setPayment(data);
+        setExpiresAtMs(resolveExpiresAt(data));
+        if (data.status === 'expired' || data.status === 'paid') {
+          sessionStorage.removeItem(`payment_qr_${paymentCode}`);
+        }
+      })
+      .catch(() => {
+        // Keep polling; only the server may mark the payment code expired
+      });
+  }, [isExpiredClient, payment, paymentCode, fetchStatus]);
+
+  const remainingLabel = useMemo(() => {
+    if (!expiresAtMs || payment?.status === 'paid') return null;
+    const left = Math.max(0, expiresAtMs - nowMs);
+    const m = Math.floor(left / 60000);
+    const s = Math.floor((left % 60000) / 1000);
+    return `${m}:${String(s).padStart(2, '0')}`;
+  }, [expiresAtMs, nowMs, payment?.status]);
 
   const handleSimulate = async () => {
     setSimulating(true);
     setError('');
     try {
-
       const response = await fetch(apiUrl(`/api/payments/simulate/${paymentCode}`), { method: 'POST' });
       if (!response.ok) {
         const err = await response.json().catch(() => ({}));
@@ -97,7 +176,6 @@ export default function PaymentPage() {
           ? 'Mô phỏng thanh toán chưa bật trên Railway. Thêm ALLOW_PAYMENT_SIMULATION=true và redeploy backend.'
           : 'Không thể mô phỏng thanh toán';
         throw new Error(err.message || fallback);
-
       }
       const data = await fetchStatus();
       setPayment(data);
@@ -112,7 +190,7 @@ export default function PaymentPage() {
     return <PageSkeleton variant="form" />;
   }
 
-  if (error || !payment) {
+  if ((error && !payment) || !payment) {
     return (
       <div className={`min-h-screen ${theme === 'dark' ? 'dark bg-slate-950 text-white' : 'bg-slate-50 text-slate-900 dark:text-slate-50'}`}>
         <Header />
@@ -125,7 +203,8 @@ export default function PaymentPage() {
   }
 
   const isPaid = payment.status === 'paid';
-  const isPendingApproval = payment.status === 'pending_approval';
+  const isPendingApproval = payment.status === 'pending_approval' && !isExpiredClient;
+  const isExpired = payment.status === 'expired' || isExpiredClient;
 
   return (
     <div className={`min-h-screen flex flex-col ${theme === 'dark' ? 'dark bg-slate-950 text-white' : 'bg-slate-50 text-slate-900 dark:text-slate-50'}`}>
@@ -137,6 +216,10 @@ export default function PaymentPage() {
             <div className="inline-flex items-center justify-center w-20 h-20 bg-emerald-50 dark:bg-emerald-950/40 rounded-full mb-4">
               <Check className="size-10 text-emerald-500" />
             </div>
+          ) : isExpired ? (
+            <div className="inline-flex items-center justify-center w-20 h-20 bg-red-50 dark:bg-red-950/40 rounded-full mb-4">
+              <XCircle className="size-10 text-red-500" />
+            </div>
           ) : isPendingApproval ? (
             <div className="inline-flex items-center justify-center w-20 h-20 bg-amber-50 dark:bg-amber-950/40 rounded-full mb-4">
               <Clock className="size-10 text-amber-500" />
@@ -147,10 +230,16 @@ export default function PaymentPage() {
             </div>
           )}
           <h1 className="text-3xl font-black font-sans mb-2">
-            {isPaid ? 'Thanh toán thành công!' : isPendingApproval ? 'Đang chờ Admin duyệt đơn' : 'Quét mã QR để thanh toán'}
+            {isPaid
+              ? 'Thanh toán thành công!'
+              : isExpired
+                ? 'Mã thanh toán đã hết hạn'
+                : isPendingApproval
+                  ? 'Đang chờ Admin duyệt đơn'
+                  : 'Quét mã QR để thanh toán'}
           </h1>
           <p className="text-slate-500 dark:text-slate-400 font-semibold">
-            Mã thanh toán: <span className="font-black text-blue-600">{payment.paymentCode}</span>
+            Mã thanh toán: <span className={`font-black ${isExpired ? 'text-red-500 line-through' : 'text-blue-600'}`}>{payment.paymentCode}</span>
           </p>
         </div>
 
@@ -163,16 +252,45 @@ export default function PaymentPage() {
           </div>
           <div className="flex justify-between text-sm font-bold">
             <span className="text-slate-500 dark:text-slate-400">Trạng thái</span>
-            <span className={isPaid ? 'text-emerald-500' : isPendingApproval ? 'text-amber-500' : 'text-blue-500'}>
-              {isPaid ? 'Đã thanh toán' : isPendingApproval ? 'Đang chờ duyệt' : 'Đang chờ thanh toán'}
+            <span className={isPaid ? 'text-emerald-500' : isExpired ? 'text-red-500' : isPendingApproval ? 'text-amber-500' : 'text-blue-500'}>
+              {isPaid ? 'Đã thanh toán' : isExpired ? 'Hết hạn' : isPendingApproval ? 'Đang chờ duyệt' : 'Đang chờ thanh toán'}
             </span>
           </div>
+
+          {!isPaid && !isExpired && remainingLabel && (
+            <div className="flex justify-between text-sm font-bold">
+              <span className="text-slate-500 dark:text-slate-400">Mã thanh toán còn hiệu lực</span>
+              <span className="text-amber-600 font-black tabular-nums">{remainingLabel}</span>
+            </div>
+          )}
+
+          {error && (
+            <p className="text-sm font-semibold text-red-500 text-center">{error}</p>
+          )}
+
+          {isExpired && (
+            <div className="flex flex-col items-center gap-4 pt-4">
+              <div className="p-4 bg-red-50 dark:bg-red-950/30 rounded-2xl border border-red-100 dark:border-red-900/50 w-full">
+                <p className="text-sm text-red-800 dark:text-red-200 text-center">
+                  Mã thanh toán <strong>{payment.paymentCode}</strong> chỉ có hiệu lực trong 5 phút và đã hết hạn.
+                  Chuyển khoản với mã này sẽ không được hệ thống xác nhận.
+                  Vui lòng tạo lại đơn từ giỏ hàng / checkout để nhận mã mới.
+                </p>
+              </div>
+              <button
+                onClick={() => router.push('/tours')}
+                className="w-full py-3 bg-blue-900 dark:bg-blue-600 text-white rounded-2xl font-bold text-sm"
+              >
+                Quay lại giỏ hàng
+              </button>
+            </div>
+          )}
 
           {isPendingApproval && (
             <div className="flex flex-col items-center gap-4 pt-4">
               <div className="p-4 bg-amber-50 dark:bg-amber-950/30 rounded-2xl border border-amber-100 dark:border-amber-900/50">
                 <p className="text-sm text-amber-800 dark:text-amber-200 text-center">
-                  Đơn đặt của bạn đã được ghi nhận và đang chờ bộ phận quản trị duyệt. 
+                  Đơn đặt của bạn đã được ghi nhận và đang chờ bộ phận quản trị duyệt.
                   Bạn có thể giữ nguyên trang này, hoặc lưu lại URL để kiểm tra tiến độ sau.
                 </p>
               </div>
@@ -183,12 +301,27 @@ export default function PaymentPage() {
             </div>
           )}
 
-          {!isPaid && !isPendingApproval && qrUrl && (
+          {!isPaid && !isPendingApproval && !isExpired && (
             <div className="flex flex-col items-center gap-4 pt-4">
-              <img src={qrUrl} alt="SePay QR Code" className="w-64 h-64 rounded-2xl border border-slate-200 dark:border-slate-700" />
+              {qrUrl ? (
+                <div className="bg-white p-3 border border-slate-200 dark:border-slate-700 rounded-xl">
+                  <img
+                    src={qrUrl}
+                    alt="SePay QR Code"
+                    width={256}
+                    height={256}
+                    className="w-64 h-64 object-contain"
+                    referrerPolicy="no-referrer"
+                  />
+                </div>
+              ) : (
+                <p className="text-sm font-semibold text-red-500 text-center">
+                  Không tạo được mã QR. Kiểm tra cấu hình SEPAY_BANK_ACCOUNT trên máy chủ.
+                </p>
+              )}
               <p className="text-xs text-slate-500 dark:text-slate-400 text-center max-w-sm">
-                Quét mã QR bằng app ngân hàng. Nội dung chuyển khoản phải chứa mã <strong>{payment.paymentCode}</strong>.
-                Hệ thống sẽ tự động xác nhận sau khi nhận tiền.
+                Quét mã QR bằng app ngân hàng. Nội dung chuyển khoản phải chứa mã thanh toán <strong>{payment.paymentCode}</strong>.
+                Mã này có hiệu lực <strong>5 phút</strong> — hết hạn thì cần tạo đơn mới. Hệ thống tự xác nhận sau khi nhận tiền.
               </p>
               <div className="flex items-center gap-2 text-xs text-slate-400">
                 <RefreshCw className="size-3.5 animate-spin" />

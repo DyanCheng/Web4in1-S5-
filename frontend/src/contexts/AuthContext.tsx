@@ -13,12 +13,17 @@ import { apiUrl, parseJsonResponse } from '@/lib/backendUrl'
 import { isStaleRealtimeToken } from '@/lib/supabase/realtime-auth'
 import { toast } from 'sonner'
 
-interface User {
+export interface User {
   id: string
   email: string
   name: string
   role: 'user' | 'admin' | 'hotel_owner' | 'employee' | 'accountant'
   avatar?: string
+  phone?: string | null
+  dateOfBirth?: string | null
+  gender?: string | null
+  authProvider?: 'local' | 'google' | string
+  canChangePassword?: boolean
 }
 
 interface AuthContextType {
@@ -32,6 +37,15 @@ interface AuthContextType {
   register: (email: string, password: string, name: string) => Promise<void>
   logout: () => void
   updateUser: (data: Partial<User>) => void
+  refreshProfile: () => Promise<User | null>
+  updateProfile: (data: {
+    fullName?: string
+    phone?: string
+    dateOfBirth?: string
+    gender?: string
+  }) => Promise<User>
+  changePassword: (currentPassword: string, newPassword: string) => Promise<void>
+  uploadAvatar: (dataUrl: string) => Promise<string>
   refreshRealtimeToken: () => Promise<string | null>
   isAuthenticated: boolean
   isLoading: boolean
@@ -43,6 +57,11 @@ interface AuthResponse {
   name: string
   role: User['role']
   avatar?: string
+  phone?: string | null
+  dateOfBirth?: string | null
+  gender?: string | null
+  authProvider?: string
+  canChangePassword?: boolean
   accessToken?: string | null
   apiToken?: string | null
   tokenExpiresAt?: number | null
@@ -80,7 +99,19 @@ function toUser(data: AuthResponse): User {
     name: data.name,
     role: data.role,
     avatar: data.avatar,
+    phone: data.phone ?? null,
+    dateOfBirth: data.dateOfBirth ?? null,
+    gender: data.gender ?? null,
+    authProvider: data.authProvider ?? 'local',
+    canChangePassword: data.canChangePassword ?? data.authProvider !== 'google',
   }
+}
+
+function authHeaders(apiToken: string | null, json = true): HeadersInit {
+  const headers: Record<string, string> = {}
+  if (json) headers['Content-Type'] = 'application/json'
+  if (apiToken) headers.Authorization = `Bearer ${apiToken}`
+  return headers
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -110,41 +141,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(session))
   }, [])
 
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY)
-      if (!stored) return
-
-      const parsed = JSON.parse(stored) as StoredSession | User
-      let sessionUser: User | null = null;
-      if ('user' in parsed) {
-        sessionUser = parsed.user;
-        persistSession(parsed)
-      } else {
-        sessionUser = parsed as User;
-        persistSession({ user: parsed })
-      }
-
-      if (sessionUser) {
-        // Verify user status on load
-        fetch(`/api/auth/me?userId=${sessionUser.id}`)
-          .then(res => res.json())
-          .then(data => {
-            if (data.status === 'banned') {
-              persistSession(null)
-              toast.error('Tài khoản của bạn đã bị khóa')
-              window.location.href = '/login'
-            }
-          })
-          .catch(console.error)
-      }
-    } catch {
-      localStorage.removeItem(STORAGE_KEY)
-    } finally {
-      setIsLoading(false)
-    }
-  }, [persistSession])
-
   const applyAuthResponse = useCallback(
     (data: AuthResponse) => {
       const userData = toUser(data)
@@ -159,6 +155,75 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
     [persistSession]
   )
+
+  const refreshProfile = useCallback(async (): Promise<User | null> => {
+    const stored = localStorage.getItem(STORAGE_KEY)
+    if (!stored) return null
+    const parsed = JSON.parse(stored) as StoredSession
+    const token = parsed.apiToken
+    if (!token) return parsed.user ?? null
+
+    try {
+      const response = await fetch(apiUrl('/api/auth/me'), {
+        headers: authHeaders(token, false),
+      })
+      if (!response.ok) return parsed.user ?? null
+      const data = await parseJsonResponse<AuthResponse>(response)
+      const nextUser = toUser(data)
+      persistSession({
+        user: nextUser,
+        accessToken: parsed.accessToken ?? null,
+        apiToken: parsed.apiToken ?? null,
+        tokenExpiresAt: parsed.tokenExpiresAt ?? null,
+        realtimeConfigured: parsed.realtimeConfigured ?? false,
+      })
+      return nextUser
+    } catch {
+      return parsed.user ?? null
+    }
+  }, [persistSession])
+
+  useEffect(() => {
+    const boot = async () => {
+      try {
+        const stored = localStorage.getItem(STORAGE_KEY)
+        if (!stored) return
+
+        const parsed = JSON.parse(stored) as StoredSession | User
+        let session: StoredSession
+        if ('user' in parsed) {
+          session = parsed
+          persistSession(parsed)
+        } else {
+          session = { user: parsed }
+          persistSession(session)
+        }
+
+        // Verify ban status (Next.js route)
+        fetch(`/api/auth/me?userId=${session.user.id}`)
+          .then((res) => res.json())
+          .then((data) => {
+            if (data.status === 'banned') {
+              persistSession(null)
+              toast.error('Tài khoản của bạn đã bị khóa')
+              window.location.href = '/login'
+            }
+          })
+          .catch(console.error)
+
+        // Hydrate profile fields from backend when JWT exists
+        if (session.apiToken) {
+          await refreshProfile()
+        }
+      } catch {
+        localStorage.removeItem(STORAGE_KEY)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    void boot()
+  }, [persistSession, refreshProfile])
 
   const login = async (
     email: string,
@@ -178,11 +243,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       )
     }
 
-    let data: AuthResponse;
+    let data: AuthResponse
     try {
       data = await readAuthResponse(response, 'Đăng nhập thất bại')
     } catch (error: any) {
-      // Login failed. Check if it's because the account is banned
       const statusRes = await fetch(`/api/auth/me?email=${encodeURIComponent(email)}`)
       if (statusRes.ok) {
         const statusData = await statusRes.json()
@@ -190,10 +254,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           throw new Error('Tài khoản của bạn đã bị khóa')
         }
       }
-      throw error;
+      throw error
     }
-    
-    // Check status right after login just in case
+
     const statusRes = await fetch(`/api/auth/me?userId=${data.id}`)
     if (statusRes.ok) {
       const statusData = await statusRes.json()
@@ -221,7 +284,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const data = await readAuthResponse(response, 'Đăng nhập Google thất bại')
 
-    // Check status right after Google login
     const statusRes = await fetch(`/api/auth/me?userId=${data.id}`)
     if (statusRes.ok) {
       const statusData = await statusRes.json()
@@ -266,6 +328,85 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })
   }
 
+  const updateProfile = async (data: {
+    fullName?: string
+    phone?: string
+    dateOfBirth?: string
+    gender?: string
+  }): Promise<User> => {
+    if (!apiToken) throw new Error('Vui lòng đăng nhập lại')
+
+    const response = await fetch(apiUrl('/api/auth/profile'), {
+      method: 'PATCH',
+      headers: authHeaders(apiToken),
+      body: JSON.stringify({
+        fullName: data.fullName,
+        phone: data.phone,
+        dateOfBirth: data.dateOfBirth,
+        gender: data.gender,
+      }),
+    })
+    const result = await parseJsonResponse<AuthResponse>(response)
+    if (!response.ok) throw new Error(result.message || 'Cập nhật hồ sơ thất bại')
+
+    const nextUser = toUser(result)
+    persistSession({
+      user: nextUser,
+      accessToken,
+      apiToken,
+      tokenExpiresAt,
+      realtimeConfigured,
+    })
+    return nextUser
+  }
+
+  const changePassword = async (currentPassword: string, newPassword: string) => {
+    if (!apiToken) throw new Error('Vui lòng đăng nhập lại')
+    const response = await fetch(apiUrl('/api/auth/change-password'), {
+      method: 'POST',
+      headers: authHeaders(apiToken),
+      body: JSON.stringify({ currentPassword, newPassword }),
+    })
+    const result = await parseJsonResponse<{ message?: string }>(response)
+    if (!response.ok) throw new Error(result.message || 'Đổi mật khẩu thất bại')
+  }
+
+  const uploadAvatar = async (dataUrl: string): Promise<string> => {
+    if (!apiToken) throw new Error('Vui lòng đăng nhập lại')
+    const response = await fetch(apiUrl('/api/auth/avatar'), {
+      method: 'POST',
+      headers: authHeaders(apiToken),
+      body: JSON.stringify({ dataUrl }),
+    })
+    const result = await parseJsonResponse<{
+      avatar?: string
+      avatarUrl?: string
+      message?: string
+      profile?: AuthResponse
+    }>(response)
+    if (!response.ok) throw new Error(result.message || 'Cập nhật ảnh thất bại')
+
+    const avatar = result.avatar || result.avatarUrl || ''
+    if (result.profile) {
+      persistSession({
+        user: toUser(result.profile),
+        accessToken,
+        apiToken,
+        tokenExpiresAt,
+        realtimeConfigured,
+      })
+    } else if (user) {
+      persistSession({
+        user: { ...user, avatar },
+        accessToken,
+        apiToken,
+        tokenExpiresAt,
+        realtimeConfigured,
+      })
+    }
+    return avatar
+  }
+
   const refreshRealtimeToken = useCallback(async (): Promise<string | null> => {
     if (!user) return null
 
@@ -288,15 +429,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     persistSession({
       user,
       accessToken: data.accessToken,
-      apiToken, // keep existing apiToken
+      apiToken,
       tokenExpiresAt: data.tokenExpiresAt ?? null,
       realtimeConfigured: true,
     })
 
     return data.accessToken
-  }, [user, accessToken, tokenExpiresAt, realtimeConfigured, persistSession])
+  }, [user, apiToken, persistSession])
 
-  // Tự refresh token Realtime khi phát hiện JWT cũ (HS256) hoặc hết hạn
   useEffect(() => {
     if (!user || !isStaleRealtimeToken(accessToken)) return
 
@@ -304,12 +444,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       persistSession({
         user,
         accessToken: null,
-        apiToken, // retain apiToken even if realtime token fails
+        apiToken,
         tokenExpiresAt: null,
         realtimeConfigured: false,
       })
     })
-  }, [user, accessToken, refreshRealtimeToken, persistSession])
+  }, [user, accessToken, apiToken, refreshRealtimeToken, persistSession])
 
   return (
     <AuthContext.Provider
@@ -324,6 +464,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         register,
         logout,
         updateUser,
+        refreshProfile,
+        updateProfile,
+        changePassword,
+        uploadAvatar,
         refreshRealtimeToken,
         isAuthenticated: !!user,
         isLoading,

@@ -580,14 +580,16 @@ BEGIN
 END;
 $$;
 
--- DELETE BOOKING
+-- REQUEST CANCEL BOOKING (pending admin, ≥ 2 days before start)
+-- See migration dashboard_cancel_vouchers_payment_expiry:
+--   request_cancel_booking, accept_cancel_booking, expire_order_payment,
+--   list_user_order_payments, list_active_coupons
 CREATE OR REPLACE FUNCTION public.delete_booking(p_booking_code text)
 RETURNS json
 LANGUAGE plpgsql
 AS $$
 BEGIN
-  UPDATE public.bookings SET booking_status = 'cancelled' WHERE booking_code = p_booking_code;
-  RETURN json_build_object('success', true, 'message', 'Đã yêu cầu hủy đơn. Bộ phận kế toán sẽ tiến hành hoàn tiền (nếu có) trong 3-5 ngày làm việc.');
+  RETURN public.request_cancel_booking(p_booking_code);
 END;
 $$;
 
@@ -625,6 +627,9 @@ GRANT EXECUTE ON FUNCTION public.get_bookings() TO anon, authenticated, service_
 GRANT EXECUTE ON FUNCTION public.get_user_bookings(text) TO anon, authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.create_booking(bigint, text, text, text, int, int) TO anon, authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.delete_booking(text) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.request_cancel_booking(text) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.accept_cancel_booking(text) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.expire_order_payment(text) TO anon, authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.confirm_booking(text) TO anon, authenticated, service_role;
 
 -- 5. Chat System Tables

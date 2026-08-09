@@ -61,6 +61,21 @@ public class PaymentDbService
         return await PostRpcAsync("get_order_payment_by_code", new { p_payment_code = paymentCode });
     }
 
+    public async Task<JsonElement?> ExpireOrderPaymentAsync(string paymentCode)
+    {
+        return await PostRpcAsync("expire_order_payment", new { p_payment_code = paymentCode });
+    }
+
+    public async Task<JsonElement> ListUserOrderPaymentsAsync(string? userEmail, long? userId)
+    {
+        var response = await PostRpcAsync("list_user_order_payments", new
+        {
+            p_user_email = userEmail,
+            p_user_id = userId
+        });
+        return response ?? JsonDocument.Parse("[]").RootElement;
+    }
+
     public async Task<JsonElement> ConfirmOrderPaymentAsync(
         string paymentCode,
         long sepayTransactionId,
