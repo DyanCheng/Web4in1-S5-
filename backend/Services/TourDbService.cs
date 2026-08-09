@@ -287,7 +287,7 @@ namespace Backend.Services
         {
             try
             {
-                await PostRpcAsync("delete_booking", new { p_booking_code = id });
+                await RequestCancelBookingAsync(id);
                 return true;
             }
             catch (Exception ex)
@@ -295,6 +295,16 @@ namespace Backend.Services
                 Console.WriteLine($"Error in DeleteBookingAsync: {ex.Message}");
                 return false;
             }
+        }
+
+        public async Task<JsonElement?> RequestCancelBookingAsync(string id)
+        {
+            return await PostRpcAsync("request_cancel_booking", new { p_booking_code = id });
+        }
+
+        public async Task<JsonElement?> AcceptCancelBookingAsync(string id)
+        {
+            return await PostRpcAsync("accept_cancel_booking", new { p_booking_code = id });
         }
 
         public async Task<bool> ConfirmBookingAsync(string id)

@@ -29,5 +29,7 @@
 GRANT EXECUTE ON FUNCTION public.create_order_payment TO anon, authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.get_order_payment_by_code TO anon, authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.confirm_order_payment TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.expire_order_payment TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.list_user_order_payments TO anon, authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.list_order_payments_admin TO anon, authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.get_payment_admin_summary TO anon, authenticated, service_role;

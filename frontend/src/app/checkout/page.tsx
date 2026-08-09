@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useCart } from '@/contexts/CartContext';
@@ -33,6 +33,16 @@ export default function CheckoutPage() {
   });
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Keep contact email/name in sync with the logged-in account (unless user already edited)
+  useEffect(() => {
+    if (!user) return;
+    setFormData((prev) => ({
+      ...prev,
+      fullName: prev.fullName.trim() ? prev.fullName : (user.name || ''),
+      email: prev.email.trim() ? prev.email : (user.email || ''),
+    }));
+  }, [user]);
 
   const hasTour = items.some(item => item.serviceType === 'tour' || !item.serviceType);
 

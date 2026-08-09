@@ -28,12 +28,15 @@ const nextConfig: NextConfig = {
   },
 
   async rewrites() {
-    // Browser gọi /api/* cùng origin → Next proxy tới backend (tránh CORS)
-    return [      {
-        source: "/api/:path*",
-        destination: `${backendUrl}/api/:path*`,
-      },
-    ];
+    // Browser gọi /api/* cùng origin → Next ưu tiên route nội bộ, sau đó fallback tới backend
+    return {
+      fallback: [
+        {
+          source: "/api/:path*",
+          destination: `${backendUrl}/api/:path*`,
+        },
+      ],
+    };
   },
 
   // Image optimization

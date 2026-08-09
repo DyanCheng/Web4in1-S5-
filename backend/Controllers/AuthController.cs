@@ -154,6 +154,136 @@ public class AuthController : ControllerBase
         }
     }
 
+    [HttpGet("me")]
+    [Microsoft.AspNetCore.Authorization.Authorize]
+    public async Task<IActionResult> Me()
+    {
+        var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+            ?? User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
+        if (string.IsNullOrWhiteSpace(userId))
+            return Unauthorized(new { message = "Chưa đăng nhập" });
+
+        try
+        {
+            var user = await _authDb.GetProfileAsync(userId);
+            if (user == null)
+                return NotFound(new { message = "Không tìm thấy người dùng" });
+            return Ok(ToProfileResponse(user));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return StatusCode(503, new { message = ex.Message });
+        }
+    }
+
+    [HttpPatch("profile")]
+    [Microsoft.AspNetCore.Authorization.Authorize]
+    public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileRequest request)
+    {
+        var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+            ?? User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
+        if (string.IsNullOrWhiteSpace(userId))
+            return Unauthorized(new { message = "Chưa đăng nhập" });
+
+        try
+        {
+            DateOnly? dob = null;
+            if (!string.IsNullOrWhiteSpace(request.DateOfBirth)
+                && DateOnly.TryParse(request.DateOfBirth, out var parsedDob))
+                dob = parsedDob;
+
+            var user = await _authDb.UpdateProfileAsync(
+                userId,
+                request.FullName ?? request.Name,
+                request.Phone,
+                dob,
+                request.Gender);
+
+            return Ok(ToProfileResponse(user));
+        }
+        catch (AuthException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return StatusCode(503, new { message = ex.Message });
+        }
+    }
+
+    [HttpPost("change-password")]
+    [Microsoft.AspNetCore.Authorization.Authorize]
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
+    {
+        var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+            ?? User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
+        if (string.IsNullOrWhiteSpace(userId))
+            return Unauthorized(new { message = "Chưa đăng nhập" });
+
+        try
+        {
+            await _authDb.ChangePasswordAsync(userId, request.CurrentPassword, request.NewPassword);
+            return Ok(new { message = "Đổi mật khẩu thành công" });
+        }
+        catch (AuthException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return StatusCode(503, new { message = ex.Message });
+        }
+    }
+
+    [HttpPost("avatar")]
+    [Microsoft.AspNetCore.Authorization.Authorize]
+    [RequestSizeLimit(6_000_000)]
+    public async Task<IActionResult> UploadAvatar([FromBody] AvatarBase64Request body)
+    {
+        var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+            ?? User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
+        if (string.IsNullOrWhiteSpace(userId))
+            return Unauthorized(new { message = "Chưa đăng nhập" });
+
+        if (string.IsNullOrWhiteSpace(body.DataUrl))
+            return BadRequest(new { message = "Thiếu dữ liệu ảnh" });
+
+        try
+        {
+            var dataUrl = body.DataUrl;
+            var comma = dataUrl.IndexOf(',');
+            if (comma < 0)
+                return BadRequest(new { message = "Định dạng ảnh không hợp lệ" });
+
+            var meta = dataUrl[..comma];
+            var contentType = meta.Contains("image/png") ? "image/png"
+                : meta.Contains("image/webp") ? "image/webp"
+                : "image/jpeg";
+            var bytes = Convert.FromBase64String(dataUrl[(comma + 1)..]);
+
+            var avatarUrl = await _authDb.UpdateAvatarAsync(userId, bytes, contentType);
+            var user = await _authDb.GetProfileAsync(userId);
+            return Ok(new
+            {
+                avatar = avatarUrl,
+                avatarUrl,
+                profile = user == null ? null : ToProfileResponse(user)
+            });
+        }
+        catch (AuthException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return StatusCode(503, new { message = ex.Message });
+        }
+        catch (FormatException)
+        {
+            return BadRequest(new { message = "Định dạng ảnh không hợp lệ" });
+        }
+    }
+
     [HttpPost("realtime-token")]
     public async Task<IActionResult> RefreshRealtimeToken([FromBody] RealtimeTokenRequest request)
     {
@@ -195,6 +325,8 @@ public class AuthController : ControllerBase
 
     private async Task<object> BuildAuthResponseAsync(AuthResult user, string? password = null)
     {
+        await _authDb.EnrichProfileAsync(user);
+
         var token = await _realtimeAuth.IssueTokenAsync(
             user.Email,
             user.Id,
@@ -203,6 +335,7 @@ public class AuthController : ControllerBase
             password);
 
         var apiToken = GenerateApiToken(user);
+        var profile = ToProfileResponse(user);
 
         return new
         {
@@ -211,12 +344,32 @@ public class AuthController : ControllerBase
             name = user.Name,
             role = user.Role,
             avatar = user.Avatar,
+            phone = user.Phone,
+            dateOfBirth = user.DateOfBirth?.ToString("yyyy-MM-dd"),
+            gender = user.Gender,
+            authProvider = user.AuthProvider,
+            canChangePassword = user.CanChangePassword,
             accessToken = token?.AccessToken,
             apiToken = apiToken,
             tokenExpiresAt = token?.ExpiresAt,
             realtimeConfigured = token != null,
+            profile,
         };
     }
+
+    private static object ToProfileResponse(AuthResult user) => new
+    {
+        id = user.Id,
+        email = user.Email,
+        name = user.Name,
+        role = user.Role,
+        avatar = user.Avatar,
+        phone = user.Phone,
+        dateOfBirth = user.DateOfBirth?.ToString("yyyy-MM-dd"),
+        gender = user.Gender,
+        authProvider = user.AuthProvider,
+        canChangePassword = user.CanChangePassword,
+    };
 
     private string GenerateApiToken(AuthResult user)
     {
@@ -286,4 +439,24 @@ public class RealtimeTokenRequest
     public string Id { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public string? Password { get; set; }
+}
+
+public class UpdateProfileRequest
+{
+    public string? FullName { get; set; }
+    public string? Name { get; set; }
+    public string? Phone { get; set; }
+    public string? DateOfBirth { get; set; }
+    public string? Gender { get; set; }
+}
+
+public class ChangePasswordRequest
+{
+    public string CurrentPassword { get; set; } = string.Empty;
+    public string NewPassword { get; set; } = string.Empty;
+}
+
+public class AvatarBase64Request
+{
+    public string? DataUrl { get; set; }
 }

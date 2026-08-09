@@ -50,16 +50,63 @@ namespace Backend.Controllers
             }
         }
 
+        /// <summary>
+        /// Customer cancel request → cancel_pending (requires ≥ 2 days before tour start).
+        /// </summary>
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(string id)
         {
-            var success = await _tourDb.DeleteBookingAsync(id);
-            if (!success)
+            try
             {
-                return NotFound(new { message = "Không tìm thấy đơn hàng này" });
-            }
+                var result = await _tourDb.RequestCancelBookingAsync(id);
+                if (result == null)
+                    return NotFound(new { message = "Không tìm thấy đơn hàng này" });
 
-            return Ok(new { message = "Đã hủy đơn đặt tour thành công" });
+                return Ok(new
+                {
+                    message = result.Value.TryGetProperty("message", out var msg)
+                        ? msg.GetString()
+                        : "Đã gửi yêu cầu hủy. Chờ quản trị viên duyệt.",
+                    status = result.Value.TryGetProperty("status", out var status)
+                        ? status.GetString()
+                        : "cancel_pending",
+                });
+            }
+            catch (Exception ex)
+            {
+                var message = ExtractRpcMessage(ex.Message) ?? "Không thể hủy đơn đặt tour";
+                if (message.Contains("Không tìm thấy", StringComparison.OrdinalIgnoreCase))
+                    return NotFound(new { message });
+                return BadRequest(new { message });
+            }
+        }
+
+        [HttpPost("{id}/cancel")]
+        public async Task<IActionResult> RequestCancel(string id) => await Delete(id);
+
+        [HttpPost("{id}/accept-cancel")]
+        [Microsoft.AspNetCore.Authorization.Authorize(Roles = "admin")]
+        public async Task<IActionResult> AcceptCancel(string id)
+        {
+            try
+            {
+                var result = await _tourDb.AcceptCancelBookingAsync(id);
+                if (result == null)
+                    return NotFound(new { message = "Không tìm thấy đơn hàng này" });
+
+                return Ok(new
+                {
+                    message = result.Value.TryGetProperty("message", out var msg)
+                        ? msg.GetString()
+                        : "Đã duyệt hủy đơn đặt tour",
+                    status = "cancelled",
+                });
+            }
+            catch (Exception ex)
+            {
+                var message = ExtractRpcMessage(ex.Message) ?? "Không thể duyệt hủy";
+                return BadRequest(new { message });
+            }
         }
 
         [HttpPost("{id}/confirm")]
@@ -72,6 +119,25 @@ namespace Backend.Controllers
             }
 
             return Ok(new { message = "Đã duyệt đơn đặt tour thành công" });
+        }
+
+        private static string? ExtractRpcMessage(string raw)
+        {
+            try
+            {
+                var jsonStart = raw.IndexOf('{');
+                if (jsonStart >= 0)
+                {
+                    using var doc = System.Text.Json.JsonDocument.Parse(raw[jsonStart..]);
+                    if (doc.RootElement.TryGetProperty("message", out var message))
+                        return message.GetString();
+                }
+            }
+            catch { }
+
+            const string marker = "failed: ";
+            var idx = raw.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
+            return idx >= 0 ? raw[(idx + marker.Length)..].Trim() : raw;
         }
     }
 

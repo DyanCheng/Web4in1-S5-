@@ -723,7 +723,9 @@ export default function HomePage() {
                           ))}
                         </div>
                         <button 
-                          className="absolute top-[130px] md:top-[150px] -left-5 -translate-y-1/2 bg-white/95 backdrop-blur-xl dark:bg-slate-800/95 border border-slate-200 dark:border-slate-700 shadow-2xl p-3.5 rounded-full hidden md:group-hover:flex hover:bg-slate-50 hover:scale-110 transition-all z-10 cursor-pointer text-blue-600 group/btn"
+                          type="button"
+                          aria-label="Cuộn tour trước"
+                          className="absolute top-[130px] md:top-[150px] -left-5 -translate-y-1/2 bg-white/95 backdrop-blur-xl dark:bg-slate-800/95 border border-slate-200 dark:border-slate-700 shadow-2xl p-3.5 rounded-full hidden md:flex md:opacity-0 md:pointer-events-none md:group-hover/section:opacity-100 md:group-hover/section:pointer-events-auto hover:bg-slate-50 hover:scale-110 transition-all z-10 cursor-pointer text-blue-600 group/btn"
                           onClick={(e) => {
                             e.preventDefault();
                             const container = document.getElementById(`carousel-${section.id}`);
@@ -733,7 +735,9 @@ export default function HomePage() {
                           <ArrowLeft className="size-5 md:size-6 group-hover/btn:-translate-x-1 transition-transform" />
                         </button>
                         <button 
-                          className="absolute top-[130px] md:top-[150px] -right-5 -translate-y-1/2 bg-white/95 backdrop-blur-xl dark:bg-slate-800/95 border border-slate-200 dark:border-slate-700 shadow-2xl p-3.5 rounded-full hidden md:group-hover:flex hover:bg-slate-50 hover:scale-110 transition-all z-10 cursor-pointer text-blue-600 group/btn"
+                          type="button"
+                          aria-label="Cuộn tour tiếp"
+                          className="absolute top-[130px] md:top-[150px] -right-5 -translate-y-1/2 bg-white/95 backdrop-blur-xl dark:bg-slate-800/95 border border-slate-200 dark:border-slate-700 shadow-2xl p-3.5 rounded-full hidden md:flex md:opacity-0 md:pointer-events-none md:group-hover/section:opacity-100 md:group-hover/section:pointer-events-auto hover:bg-slate-50 hover:scale-110 transition-all z-10 cursor-pointer text-blue-600 group/btn"
                           onClick={(e) => {
                             e.preventDefault();
                             const container = document.getElementById(`carousel-${section.id}`);

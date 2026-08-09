@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { MapPin, Calendar, Users, Star, Clock, CheckCircle, X, Heart, Share2, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import PaylineButton from '@/components/PaylineButton';
 import { PageSkeleton } from '@/components/ux/PageSkeleton';
 import { useTheme } from '@/contexts/ThemeContext';
 
@@ -538,6 +539,7 @@ export default function TourDetailPage() {
   }
 
   return (
+    
     <div className={`min-h-screen bg-slate-50/50 dark:bg-slate-950 font-sans transition-colors duration-300 flex flex-col ${theme === 'dark' ? 'dark text-white' : 'text-slate-900 dark:text-slate-50'}`}>
       <Header />
 
@@ -885,9 +887,7 @@ export default function TourDetailPage() {
                 </div>
               </div>
 
-              <button onClick={handleBooking} className="interactive-press w-full py-3.5 bg-blue-900 hover:bg-blue-950 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-2xl transition-all mb-3 font-bold text-sm shadow-md cursor-pointer text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40">
-                Thanh Toán Ngay
-              </button>
+              <PaylineButton onClick={handleBooking} />
               <p className="text-[10px] text-center text-slate-400 dark:text-slate-400 font-bold tracking-wide uppercase">
                 Hỗ trợ hủy miễn phí trước 7 ngày
               </p>

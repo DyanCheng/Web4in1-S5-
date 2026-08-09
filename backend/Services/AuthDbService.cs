@@ -88,13 +88,403 @@ public class AuthDbService
         if (!long.TryParse(id, out var userId))
             return null;
 
+        AuthResult? user;
         if (!string.IsNullOrWhiteSpace(_connectionString))
-            return await GetUserByIdAndEmailViaDatabaseAsync(userId, email);
+            user = await GetUserByIdAndEmailViaDatabaseAsync(userId, email);
+        else if (!string.IsNullOrWhiteSpace(_supabaseUrl) && !string.IsNullOrWhiteSpace(_supabaseKey))
+            user = await GetUserByIdAndEmailViaSupabaseAsync(userId, email);
+        else
+            throw new InvalidOperationException("Configure ConnectionStrings:DefaultConnection or SUPABASE_URL + SUPABASE_KEY.");
 
-        if (!string.IsNullOrWhiteSpace(_supabaseUrl) && !string.IsNullOrWhiteSpace(_supabaseKey))
-            return await GetUserByIdAndEmailViaSupabaseAsync(userId, email);
+        if (user != null)
+            await EnrichProfileAsync(user);
+        return user;
+    }
+
+    public async Task<AuthResult?> GetProfileAsync(string id)
+    {
+        if (!long.TryParse(id, out var userId))
+            return null;
+
+        if (!string.IsNullOrWhiteSpace(_connectionString))
+        {
+            await using var conn = new NpgsqlConnection(_connectionString);
+            await conn.OpenAsync();
+            var user = await GetUserByIdAsync(conn, userId);
+            await EnrichProfileViaDatabaseAsync(conn, user);
+            return user;
+        }
+
+        if (!string.IsNullOrWhiteSpace(_supabaseUrl) && !string.IsNullOrWhiteSpace(SupabaseRestKey))
+        {
+            var email = await GetEmailByIdViaSupabaseAsync(userId);
+            if (string.IsNullOrWhiteSpace(email))
+                return null;
+            var user = await GetUserByIdAndEmailViaSupabaseAsync(userId, email);
+            if (user != null)
+                await EnrichProfileViaSupabaseAsync(user);
+            return user;
+        }
 
         throw new InvalidOperationException("Configure ConnectionStrings:DefaultConnection or SUPABASE_URL + SUPABASE_KEY.");
+    }
+
+    public async Task<AuthResult> UpdateProfileAsync(string id, string? fullName, string? phone, DateOnly? dateOfBirth, string? gender)
+    {
+        if (!long.TryParse(id, out var userId))
+            throw new AuthException("Người dùng không hợp lệ");
+
+        if (!string.IsNullOrWhiteSpace(gender)
+            && gender is not ("male" or "female" or "other"))
+            throw new AuthException("Giới tính không hợp lệ");
+
+        if (!string.IsNullOrWhiteSpace(_connectionString))
+        {
+            await using var conn = new NpgsqlConnection(_connectionString);
+            await conn.OpenAsync();
+
+            await using var cmd = new NpgsqlCommand(
+                """
+                UPDATE public.users
+                SET full_name = COALESCE(NULLIF(@name, ''), full_name),
+                    phone = COALESCE(@phone, phone),
+                    date_of_birth = COALESCE(@dob, date_of_birth),
+                    gender = COALESCE(@gender, gender),
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE user_id = @userId
+                """, conn);
+            cmd.Parameters.AddWithValue("userId", userId);
+            cmd.Parameters.AddWithValue("name", (object?)fullName?.Trim() ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("phone", string.IsNullOrWhiteSpace(phone) ? DBNull.Value : phone.Trim());
+            cmd.Parameters.AddWithValue("dob", dateOfBirth.HasValue ? dateOfBirth.Value : DBNull.Value);
+            cmd.Parameters.AddWithValue("gender", string.IsNullOrWhiteSpace(gender) ? DBNull.Value : gender.Trim());
+            var rows = await cmd.ExecuteNonQueryAsync();
+            if (rows == 0)
+                throw new AuthException("Không tìm thấy người dùng");
+
+            var user = await GetUserByIdAsync(conn, userId);
+            await EnrichProfileViaDatabaseAsync(conn, user);
+            return user;
+        }
+
+        if (!string.IsNullOrWhiteSpace(_supabaseUrl) && !string.IsNullOrWhiteSpace(SupabaseRestKey))
+        {
+            var patch = new Dictionary<string, object?>();
+            if (!string.IsNullOrWhiteSpace(fullName))
+                patch["full_name"] = fullName.Trim();
+            if (phone != null)
+                patch["phone"] = string.IsNullOrWhiteSpace(phone) ? null : phone.Trim();
+            if (dateOfBirth.HasValue)
+                patch["date_of_birth"] = dateOfBirth.Value.ToString("yyyy-MM-dd");
+            if (!string.IsNullOrWhiteSpace(gender))
+                patch["gender"] = gender.Trim();
+            patch["updated_at"] = DateTime.UtcNow.ToString("o");
+
+            using var request = new HttpRequestMessage(
+                HttpMethod.Patch,
+                $"{_supabaseUrl!.TrimEnd('/')}/rest/v1/users?user_id=eq.{userId}")
+            {
+                Content = JsonContent.Create(patch)
+            };
+            request.Headers.Add("apikey", SupabaseRestKey);
+            request.Headers.Add("Authorization", $"Bearer {SupabaseRestKey}");
+            request.Headers.Add("Prefer", "return=representation");
+
+            var response = await _http.SendAsync(request);
+            var content = await response.Content.ReadAsStringAsync();
+            if (!response.IsSuccessStatusCode)
+                throw new AuthException(ParseSupabaseError(content));
+
+            var profile = await GetProfileAsync(id);
+            return profile ?? throw new AuthException("Không tìm thấy người dùng");
+        }
+
+        throw new InvalidOperationException("Configure ConnectionStrings:DefaultConnection or SUPABASE_URL + SUPABASE_KEY.");
+    }
+
+    public async Task ChangePasswordAsync(string id, string currentPassword, string newPassword)
+    {
+        if (!long.TryParse(id, out var userId))
+            throw new AuthException("Người dùng không hợp lệ");
+        if (string.IsNullOrWhiteSpace(newPassword) || newPassword.Length < 6)
+            throw new AuthException("Mật khẩu mới phải có ít nhất 6 ký tự");
+
+        if (!string.IsNullOrWhiteSpace(_connectionString))
+        {
+            await using var conn = new NpgsqlConnection(_connectionString);
+            await conn.OpenAsync();
+
+            await using var cmd = new NpgsqlCommand(
+                """
+                SELECT password_hash FROM public.user_auth
+                WHERE user_id = @userId AND provider = 'local'
+                LIMIT 1
+                """, conn);
+            cmd.Parameters.AddWithValue("userId", userId);
+            var hashObj = await cmd.ExecuteScalarAsync();
+            if (hashObj == null || hashObj == DBNull.Value)
+                throw new AuthException("Tài khoản Google không thể đổi mật khẩu tại đây");
+
+            var hash = Convert.ToString(hashObj);
+            if (string.IsNullOrEmpty(hash) || !BCrypt.Net.BCrypt.Verify(currentPassword, hash))
+                throw new AuthException("Mật khẩu hiện tại không chính xác");
+
+            var newHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
+            await using var updateCmd = new NpgsqlCommand(
+                """
+                UPDATE public.user_auth
+                SET password_hash = @hash
+                WHERE user_id = @userId AND provider = 'local'
+                """, conn);
+            updateCmd.Parameters.AddWithValue("hash", newHash);
+            updateCmd.Parameters.AddWithValue("userId", userId);
+            await updateCmd.ExecuteNonQueryAsync();
+            return;
+        }
+
+        if (!string.IsNullOrWhiteSpace(_supabaseUrl) && !string.IsNullOrWhiteSpace(SupabaseRestKey))
+        {
+            // Verify via login_user RPC then patch password_hash through service role
+            var email = await GetEmailByIdViaSupabaseAsync(userId)
+                ?? throw new AuthException("Không tìm thấy người dùng");
+
+            var loginCheck = await PostRpcAsync("login_user", new { p_email = email, p_password = currentPassword });
+            if (loginCheck == null)
+                throw new AuthException("Mật khẩu hiện tại không chính xác");
+
+            var authReq = new HttpRequestMessage(
+                HttpMethod.Get,
+                $"{_supabaseUrl!.TrimEnd('/')}/rest/v1/user_auth?user_id=eq.{userId}&provider=eq.local&select=auth_id,password_hash&limit=1");
+            authReq.Headers.Add("apikey", SupabaseRestKey);
+            authReq.Headers.Add("Authorization", $"Bearer {SupabaseRestKey}");
+            var authRes = await _http.SendAsync(authReq);
+            var authContent = await authRes.Content.ReadAsStringAsync();
+            if (!authRes.IsSuccessStatusCode)
+                throw new AuthException("Không thể đổi mật khẩu");
+
+            using var authDoc = JsonDocument.Parse(authContent);
+            if (authDoc.RootElement.GetArrayLength() == 0)
+                throw new AuthException("Tài khoản Google không thể đổi mật khẩu tại đây");
+
+            // Prefer DB path; for REST-only, call a small RPC if available. Fallback: reject with guidance.
+            throw new AuthException("Đổi mật khẩu yêu cầu kết nối database trực tiếp. Vui lòng thử lại sau.");
+        }
+
+        throw new InvalidOperationException("Configure ConnectionStrings:DefaultConnection or SUPABASE_URL + SUPABASE_KEY.");
+    }
+
+    public async Task<string> UpdateAvatarAsync(string id, byte[] imageBytes, string contentType)
+    {
+        if (!long.TryParse(id, out var userId))
+            throw new AuthException("Người dùng không hợp lệ");
+        if (imageBytes.Length == 0)
+            throw new AuthException("Ảnh không hợp lệ");
+        if (imageBytes.Length > 5 * 1024 * 1024)
+            throw new AuthException("Ảnh tối đa 5MB");
+
+        var ext = contentType.Contains("png", StringComparison.OrdinalIgnoreCase) ? "png"
+            : contentType.Contains("webp", StringComparison.OrdinalIgnoreCase) ? "webp"
+            : "jpg";
+        var objectPath = $"{userId}/{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}.{ext}";
+        string avatarUrl;
+
+        var apiKey = SupabaseRestKey;
+        if (!string.IsNullOrWhiteSpace(_supabaseUrl) && !string.IsNullOrWhiteSpace(apiKey))
+        {
+            using var upload = new HttpRequestMessage(
+                HttpMethod.Post,
+                $"{_supabaseUrl!.TrimEnd('/')}/storage/v1/object/avt-t/{objectPath}")
+            {
+                Content = new ByteArrayContent(imageBytes)
+            };
+            upload.Content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(
+                string.IsNullOrWhiteSpace(contentType) ? "image/jpeg" : contentType);
+            upload.Headers.Add("apikey", apiKey);
+            upload.Headers.Add("Authorization", $"Bearer {apiKey}");
+            upload.Headers.Add("x-upsert", "true");
+
+            var uploadRes = await _http.SendAsync(upload);
+            var uploadBody = await uploadRes.Content.ReadAsStringAsync();
+            if (!uploadRes.IsSuccessStatusCode)
+                throw new AuthException($"Không thể tải ảnh lên: {ParseSupabaseError(uploadBody)}");
+
+            avatarUrl = $"{_supabaseUrl!.TrimEnd('/')}/storage/v1/object/public/avt-t/{objectPath}";
+        }
+        else
+        {
+            throw new AuthException("Chưa cấu hình Supabase Storage để lưu ảnh đại diện");
+        }
+
+        if (!string.IsNullOrWhiteSpace(_connectionString))
+        {
+            await using var conn = new NpgsqlConnection(_connectionString);
+            await conn.OpenAsync();
+            await using var cmd = new NpgsqlCommand(
+                "UPDATE public.users SET avatar_url = @url, updated_at = CURRENT_TIMESTAMP WHERE user_id = @userId",
+                conn);
+            cmd.Parameters.AddWithValue("url", avatarUrl);
+            cmd.Parameters.AddWithValue("userId", userId);
+            await cmd.ExecuteNonQueryAsync();
+        }
+        else if (!string.IsNullOrWhiteSpace(_supabaseUrl) && !string.IsNullOrWhiteSpace(apiKey))
+        {
+            using var patch = new HttpRequestMessage(
+                HttpMethod.Patch,
+                $"{_supabaseUrl!.TrimEnd('/')}/rest/v1/users?user_id=eq.{userId}")
+            {
+                Content = JsonContent.Create(new { avatar_url = avatarUrl, updated_at = DateTime.UtcNow.ToString("o") })
+            };
+            patch.Headers.Add("apikey", apiKey);
+            patch.Headers.Add("Authorization", $"Bearer {apiKey}");
+            var patchRes = await _http.SendAsync(patch);
+            if (!patchRes.IsSuccessStatusCode)
+            {
+                var body = await patchRes.Content.ReadAsStringAsync();
+                throw new AuthException(ParseSupabaseError(body));
+            }
+        }
+
+        return avatarUrl;
+    }
+
+    public async Task EnrichProfileAsync(AuthResult user)
+    {
+        if (!long.TryParse(user.Id, out var userId))
+            return;
+
+        if (!string.IsNullOrWhiteSpace(_connectionString))
+        {
+            await using var conn = new NpgsqlConnection(_connectionString);
+            await conn.OpenAsync();
+            await EnrichProfileViaDatabaseAsync(conn, user);
+            return;
+        }
+
+        if (!string.IsNullOrWhiteSpace(_supabaseUrl) && !string.IsNullOrWhiteSpace(SupabaseRestKey))
+            await EnrichProfileViaSupabaseAsync(user);
+    }
+
+    private async Task EnrichProfileViaDatabaseAsync(NpgsqlConnection conn, AuthResult user)
+    {
+        if (!long.TryParse(user.Id, out var userId))
+            return;
+
+        await using (var cmd = new NpgsqlCommand(
+            """
+            SELECT phone, date_of_birth, gender, avatar_url
+            FROM public.users WHERE user_id = @userId LIMIT 1
+            """, conn))
+        {
+            cmd.Parameters.AddWithValue("userId", userId);
+            await using var reader = await cmd.ExecuteReaderAsync();
+            if (await reader.ReadAsync())
+            {
+                user.Phone = reader.IsDBNull(0) ? null : reader.GetString(0);
+                user.DateOfBirth = reader.IsDBNull(1) ? null : DateOnly.FromDateTime(reader.GetDateTime(1));
+                user.Gender = reader.IsDBNull(2) ? null : reader.GetString(2);
+                if (!reader.IsDBNull(3))
+                    user.Avatar = reader.GetString(3);
+            }
+        }
+
+        await using var authCmd = new NpgsqlCommand(
+            """
+            SELECT
+              BOOL_OR(provider = 'local' AND password_hash IS NOT NULL) AS has_local,
+              BOOL_OR(provider = 'google') AS has_google
+            FROM public.user_auth
+            WHERE user_id = @userId
+            """, conn);
+        authCmd.Parameters.AddWithValue("userId", userId);
+        await using var authReader = await authCmd.ExecuteReaderAsync();
+        if (await authReader.ReadAsync())
+        {
+            var hasLocal = !authReader.IsDBNull(0) && authReader.GetBoolean(0);
+            var hasGoogle = !authReader.IsDBNull(1) && authReader.GetBoolean(1);
+            user.CanChangePassword = hasLocal;
+            user.AuthProvider = hasLocal ? "local" : hasGoogle ? "google" : "local";
+        }
+    }
+
+    private async Task EnrichProfileViaSupabaseAsync(AuthResult user)
+    {
+        if (!long.TryParse(user.Id, out var userId) || string.IsNullOrWhiteSpace(SupabaseRestKey))
+            return;
+
+        var userReq = new HttpRequestMessage(
+            HttpMethod.Get,
+            $"{_supabaseUrl!.TrimEnd('/')}/rest/v1/users?user_id=eq.{userId}&select=phone,date_of_birth,gender,avatar_url&limit=1");
+        userReq.Headers.Add("apikey", SupabaseRestKey);
+        userReq.Headers.Add("Authorization", $"Bearer {SupabaseRestKey}");
+        var userRes = await _http.SendAsync(userReq);
+        if (userRes.IsSuccessStatusCode)
+        {
+            await using var stream = await userRes.Content.ReadAsStreamAsync();
+            using var doc = await JsonDocument.ParseAsync(stream);
+            if (doc.RootElement.ValueKind == JsonValueKind.Array && doc.RootElement.GetArrayLength() > 0)
+            {
+                var row = doc.RootElement[0];
+                user.Phone = row.TryGetProperty("phone", out var phone) && phone.ValueKind != JsonValueKind.Null
+                    ? phone.GetString() : null;
+                if (row.TryGetProperty("date_of_birth", out var dob) && dob.ValueKind == JsonValueKind.String
+                    && DateOnly.TryParse(dob.GetString(), out var parsedDob))
+                    user.DateOfBirth = parsedDob;
+                user.Gender = row.TryGetProperty("gender", out var gender) && gender.ValueKind != JsonValueKind.Null
+                    ? gender.GetString() : null;
+                if (row.TryGetProperty("avatar_url", out var avatar) && avatar.ValueKind == JsonValueKind.String)
+                    user.Avatar = avatar.GetString();
+            }
+        }
+
+        var authReq = new HttpRequestMessage(
+            HttpMethod.Get,
+            $"{_supabaseUrl!.TrimEnd('/')}/rest/v1/user_auth?user_id=eq.{userId}&select=provider,password_hash");
+        authReq.Headers.Add("apikey", SupabaseRestKey);
+        authReq.Headers.Add("Authorization", $"Bearer {SupabaseRestKey}");
+        var authRes = await _http.SendAsync(authReq);
+        if (!authRes.IsSuccessStatusCode)
+            return;
+
+        await using var authStream = await authRes.Content.ReadAsStreamAsync();
+        using var authDoc = await JsonDocument.ParseAsync(authStream);
+        var hasLocal = false;
+        var hasGoogle = false;
+        if (authDoc.RootElement.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var row in authDoc.RootElement.EnumerateArray())
+            {
+                var provider = row.TryGetProperty("provider", out var p) ? p.GetString() : null;
+                if (provider == "local"
+                    && row.TryGetProperty("password_hash", out var hash)
+                    && hash.ValueKind == JsonValueKind.String
+                    && !string.IsNullOrWhiteSpace(hash.GetString()))
+                    hasLocal = true;
+                if (provider == "google")
+                    hasGoogle = true;
+            }
+        }
+
+        user.CanChangePassword = hasLocal;
+        user.AuthProvider = hasLocal ? "local" : hasGoogle ? "google" : "local";
+    }
+
+    private async Task<string?> GetEmailByIdViaSupabaseAsync(long userId)
+    {
+        if (string.IsNullOrWhiteSpace(SupabaseRestKey))
+            return null;
+        var request = new HttpRequestMessage(
+            HttpMethod.Get,
+            $"{_supabaseUrl!.TrimEnd('/')}/rest/v1/users?user_id=eq.{userId}&select=email&limit=1");
+        request.Headers.Add("apikey", SupabaseRestKey);
+        request.Headers.Add("Authorization", $"Bearer {SupabaseRestKey}");
+        var response = await _http.SendAsync(request);
+        if (!response.IsSuccessStatusCode)
+            return null;
+        await using var stream = await response.Content.ReadAsStreamAsync();
+        using var doc = await JsonDocument.ParseAsync(stream);
+        if (doc.RootElement.ValueKind != JsonValueKind.Array || doc.RootElement.GetArrayLength() == 0)
+            return null;
+        return doc.RootElement[0].GetProperty("email").GetString();
     }
 
     private async Task<AuthResult?> GetUserByIdAndEmailViaDatabaseAsync(long userId, string email)
@@ -616,6 +1006,11 @@ public class AuthResult
     public string Name { get; set; } = string.Empty;
     public string Role { get; set; } = "user";
     public string? Avatar { get; set; }
+    public string? Phone { get; set; }
+    public DateOnly? DateOfBirth { get; set; }
+    public string? Gender { get; set; }
+    public string AuthProvider { get; set; } = "local";
+    public bool CanChangePassword { get; set; } = true;
 }
 
 public class AuthException : Exception
