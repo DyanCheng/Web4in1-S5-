@@ -155,7 +155,7 @@ export default function AdminDashboard() {
   const [tourDialogOpen, setTourDialogOpen] = useState(false);
   const [editingTour, setEditingTour] = useState<Tour | null>(null);
   const [tourActionLoading, setTourActionLoading] = useState(false);
-  const [detailModal, setDetailModal] = useState<{ type: 'transaction' | 'period_transactions' | 'tour' | 'customer', data: any, parent?: any } | null>(null);
+  const [detailModal, setDetailModal] = useState<{ type: 'transaction' | 'period_transactions' | 'tour' | 'customer' | 'pending_bookings', data: any, parent?: any } | null>(null);
 
   const handleExportCSV = () => {
     const filteredTx = paymentTransactions.filter(tx => {
@@ -668,7 +668,8 @@ export default function AdminDashboard() {
     { label: 'Tổng doanh thu', value: `${Number(totalRevenue).toLocaleString('vi-VN')}đ`, icon: DollarSign, accent: 'from-emerald-50 to-emerald-100 dark:from-emerald-950/50 dark:to-emerald-900/30' },
     { label: 'Doanh thu hôm nay', value: `${Number(todayRevenue).toLocaleString('vi-VN')}đ`, icon: BarChart3, accent: 'from-blue-50 to-blue-100 dark:from-blue-950/50 dark:to-blue-900/30' },
     { label: 'Đã thanh toán', value: paidCount.toString(), icon: CheckCircle2, accent: 'from-violet-50 to-violet-100 dark:from-violet-950/50 dark:to-violet-900/30' },
-    { label: 'Chờ thanh toán', value: pendingBookings.toString(), icon: Shield, accent: 'from-amber-50 to-amber-100 dark:from-amber-950/50 dark:to-amber-900/30', onClick: () => setDetailModal({ type: 'pending_bookings', data: null }) },
+    { label: 'Chờ thanh toán', value: pendingBookings.toString(), icon: Shield, accent: 'from-amber-50 to-amber-100 dark:from-amber-950/50 dark:to-amber-900/30', 
+      onClick: () => setDetailModal({ type: 'pending_bookings', data: null }) },
   ];
 
   const tabTitles: Record<AdminTab, { title: string; subtitle: string }> = {

@@ -132,7 +132,7 @@ export default function AdminDashboard() {
   const [tourDialogOpen, setTourDialogOpen] = useState(false);
   const [editingTour, setEditingTour] = useState<Tour | null>(null);
   const [tourActionLoading, setTourActionLoading] = useState(false);
-  const [detailModal, setDetailModal] = useState<{ type: 'transaction' | 'period_transactions' | 'tour' | 'customer', data: any, parent?: any } | null>(null);
+  const [detailModal, setDetailModal] = useState<{ type: 'transaction' | 'period_transactions' | 'tour' | 'customer' | 'pending_bookings', data: any, parent?: any } | null>(null);
 
   const handleExportCSV = () => {
     const filteredTx = paymentTransactions.filter(tx => {
