@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { ImageWithFallback } from '@/components/figma/ImageWithFallback';
 import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { MapPin, Calendar, Star, Clock, CheckCircle, X, Heart, Share2, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
+import { MapPin, Calendar, Star, CheckCircle, X, Heart, Share2, ChevronDown, ChevronUp, Clock, Plane, Hotel, Utensils, Bus, Ticket, Shield, Camera, Play, List, Users } from 'lucide-react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import PaylineButton from '@/components/PaylineButton';
@@ -132,27 +132,138 @@ export default function TourDetailPage() {
   
   const itinerary: TourItineraryDay[] = useMemo(() => {
     const raw = Array.isArray(tour?.itinerary) ? tour.itinerary : [];
-    return raw.map((day: TourItineraryDay) => ({
+    const mapped = raw.map((day: TourItineraryDay) => ({
       ...day,
       activities: Array.isArray(day.activities) ? day.activities : [],
     }));
+    if (mapped.length > 0) return mapped;
+
+    // API thường trả itinerary rỗng — bịa lịch trình theo số ngày
+    const dayMatch = String(tour?.duration ?? '').match(/(\d+)\s*ngày/i);
+    const days = Math.max(Number(tour?.durationDays) || (dayMatch ? Number(dayMatch[1]) : 0) || 3, 1);
+    const loc = tour?.location || 'điểm đến';
+    const highlights = Array.isArray(tour?.highlights) ? tour.highlights : [];
+
+    return Array.from({ length: days }, (_, i) => {
+      const day = i + 1;
+      const spot = highlights[i % Math.max(highlights.length, 1)] || loc;
+      if (day === 1) {
+        return {
+          day,
+          title: `Khởi hành - ${loc}`,
+          meals: 'Trưa, Tối',
+          accommodation: `Khách sạn tại ${loc}`,
+          activities: [
+            { time: '08:00', desc: `Tập trung, làm thủ tục khởi hành đi ${loc}.` },
+            { time: '12:00', desc: 'Dùng bữa trưa, nhận phòng khách sạn nghỉ ngơi.' },
+            { time: '15:00', desc: `Tham quan điểm nổi bật đầu tiên: ${spot}.` },
+            { time: '19:00', desc: 'Dùng bữa tối đặc sản địa phương, nghỉ đêm.' },
+          ],
+        };
+      }
+      if (day === days) {
+        return {
+          day,
+          title: `${loc} - Về lại`,
+          meals: 'Sáng, Trưa',
+          accommodation: '',
+          activities: [
+            { time: '07:00', desc: 'Ăn sáng tại khách sạn, trả phòng.' },
+            { time: '09:00', desc: `Mua sắm / tham quan tự do quanh ${loc}.` },
+            { time: '13:00', desc: 'Dùng bữa trưa, ra sân bay/ga làm thủ tục về.' },
+            { time: '18:00', desc: 'Kết thúc chương trình, chia tay quý khách.' },
+          ],
+        };
+      }
+      return {
+        day,
+        title: `Khám phá ${spot}`,
+        meals: 'Sáng, Trưa, Tối',
+        accommodation: `Khách sạn tại ${loc}`,
+        activities: [
+          { time: '07:30', desc: 'Ăn sáng buffet tại khách sạn.' },
+          { time: '09:00', desc: `Tham quan ${spot} — điểm nhấn trong ngày.` },
+          { time: '12:30', desc: 'Ăn trưa, nghỉ ngơi ngắn.' },
+          { time: '14:30', desc: `Tiếp tục lịch trình tham quan và trải nghiệm tại ${loc}.` },
+          { time: '19:00', desc: 'Ăn tối, tự do khám phá về đêm (chi phí tự túc nếu có).' },
+        ],
+      };
+    });
   }, [tour]);
+  const [activeThumb, setActiveThumb] = useState(0);
+  const galleryThumbs = [1, 2, 3, 4];
+  const [expandedDays, setExpandedDays] = useState<number[]>([]);
+  const [openNoteKeys, setOpenNoteKeys] = useState<string[]>([]);
+  const [monthFilter, setMonthFilter] = useState<'all' | string>('all');
+  const [childYoung, setChildYoung] = useState(0); // 2-5 tuổi (bịa UI)
+  const [infants, setInfants] = useState(0); // <2 tuổi (bịa UI)
   const childPrice = Number(tour?.childPrice ?? 0);
+  const totalChildren = children + childYoung;
   const bookingTotal = tour
-    ? tour.price * Math.max(adults, 1) + childPrice * Math.max(children, 0)
+    ? tour.price * Math.max(adults, 1) + childPrice * Math.max(totalChildren, 0)
     : 0;
-  const [expandedDays, setExpandedDays] = useState<number[]>([1]);
+  const singleRoomSurcharge = Math.round(Number(tour?.price ?? 0) * 0.45);
+
+  const departureOptions = useMemo(() => {
+    const base = new Date();
+    base.setHours(0, 0, 0, 0);
+    const nightMatch = String(tour?.duration ?? '').match(/(\d+)\s*đêm/i);
+    const nights = nightMatch ? Number(nightMatch[1]) : Math.max(Number(tour?.durationDays ?? 3) - 1, 2);
+    return [7, 14, 21, 28, 35, 42, 49].map((offset, i) => {
+      const start = new Date(base);
+      start.setDate(start.getDate() + offset);
+      const end = new Date(start);
+      end.setDate(end.getDate() + nights);
+      const priceBump = i % 2 === 1 ? 1.1 : 1;
+      return {
+        start: start.toISOString().slice(0, 10),
+        end: end.toISOString().slice(0, 10),
+        price: Math.round(Number(tour?.price ?? 0) * priceBump),
+        contact: i % 3 === 0,
+      };
+    });
+  }, [tour?.duration, tour?.durationDays, tour?.price]);
+
+  const monthTabs = useMemo(() => {
+    const months = new Map<string, string>();
+    departureOptions.forEach((d) => {
+      const dt = new Date(d.start + 'T00:00:00');
+      const key = `${dt.getFullYear()}-${dt.getMonth()}`;
+      const label = `Tháng ${dt.getMonth() + 1} ${dt.getFullYear()}`;
+      months.set(key, label);
+    });
+    return Array.from(months.entries()).map(([key, label]) => ({ key, label }));
+  }, [departureOptions]);
+
+  const filteredDepartures = useMemo(() => {
+    if (monthFilter === 'all') return departureOptions;
+    return departureOptions.filter((d) => {
+      const dt = new Date(d.start + 'T00:00:00');
+      return `${dt.getFullYear()}-${dt.getMonth()}` === monthFilter;
+    });
+  }, [departureOptions, monthFilter]);
+
+  const toggleDay = (day: number) => {
+    setExpandedDays((prev) => (prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]));
+  };
+
+  const expandAllDays = () => setExpandedDays(itinerary.map((d) => d.day));
+  const collapseAllDays = () => setExpandedDays([]);
 
   useEffect(() => {
     if (itinerary.length > 0) {
       setExpandedDays([itinerary[0].day]);
+    } else {
+      setExpandedDays([]);
     }
   }, [itinerary]);
 
-  const toggleDay = (day: number) => {
-    setExpandedDays(prev => 
-      prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day]
-    );
+  const toggleNote = (key: string) => {
+    setOpenNoteKeys((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]));
+  };
+
+  const scrollToId = (idName: string) => {
+    document.getElementById(idName)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
   // Danh sách mặc định nếu chưa có trong LocalStorage
@@ -255,6 +366,10 @@ export default function TourDetailPage() {
     };
   }, [reviews]);
 
+  const rating10 = (parseFloat(averageRating) * 2).toFixed(1);
+  const ratingLabel =
+    parseFloat(rating10) >= 9 ? 'Tuyệt vời' : parseFloat(rating10) >= 8 ? 'Rất tốt' : parseFloat(rating10) >= 7 ? 'Tốt' : 'Khá';
+
   const handleBooking = () => {
     if (!selectedDate) {
       alert('Vui lòng chọn ngày khởi hành');
@@ -273,9 +388,9 @@ export default function TourDetailPage() {
       quantity: 1,
       date: selectedDate,
       guests: adults,
-      children,
+      children: totalChildren,
       metadata: {
-        children,
+        children: totalChildren,
         childPrice,
       },
     });
@@ -346,407 +461,653 @@ export default function TourDetailPage() {
     );
   }
 
+  const truncatedTitle = tour.title.length > 48 ? `${tour.title.slice(0, 48)}…` : tour.title;
+  const rawHighlights: string[] =
+    Array.isArray(tour.highlights) && tour.highlights.length > 0
+      ? tour.highlights
+      : [
+          `Khám phá điểm đến nổi tiếng tại ${tour.location}`,
+          `Trải nghiệm ẩm thực đặc sản ${tour.location}`,
+          `Tham quan các địa danh văn hóa hàng đầu`,
+          `Nghỉ dưỡng tại khách sạn tiêu chuẩn 3-4 sao`,
+          `Hướng dẫn viên chuyên nghiệp suốt hành trình`,
+        ];
+  const highlightDescDefaults = [
+    `Trải nghiệm đáng nhớ tại ${tour.location} với lịch trình được sắp xếp hợp lý, phù hợp mọi lứa tuổi.`,
+    `Khám phá cảnh đẹp và văn hóa đặc sắc trong hành trình ${tour.duration}, tạo nên kỷ niệm khó quên.`,
+    `Dịch vụ chuyên nghiệp, đảm bảo hành trình thoải mái và an toàn từ đầu đến cuối chuyến đi.`,
+    `Cơ hội chụp ảnh và lưu giữ khoảnh khắc đáng nhớ cùng gia đình, bạn bè.`,
+    `Phù hợp cho du lịch nghỉ dưỡng, khám phá và trải nghiệm địa phương chân thực.`,
+  ];
+  const highlightItems = rawHighlights.map((title, index) => ({
+    title,
+    desc: highlightDescDefaults[index % highlightDescDefaults.length],
+  }));
+  const includedItems: string[] =
+    tour.included?.length > 0
+      ? tour.included
+      : [
+          'Vé máy bay khứ hồi (hạng phổ thông)',
+          'Khách sạn 3-4 sao theo chương trình',
+          'Ăn sáng & các bữa theo lịch trình',
+          'Xe đưa đón tham quan theo chương trình',
+          'Vé tham quan các điểm trong lịch trình',
+          'Hướng dẫn viên tiếng Việt suốt tuyến',
+          'Bảo hiểm du lịch cơ bản',
+        ];
+  const excludedItems: string[] =
+    tour.excluded?.length > 0
+      ? tour.excluded
+      : [
+          'Chi phí cá nhân, đồ uống ngoài chương trình',
+          'Tip cho hướng dẫn viên và tài xế',
+          'Visa (nếu có)',
+          'Phụ thu phòng đơn (1 khách/1 phòng)',
+          'Các dịch vụ ngoài chương trình',
+        ];
+  const serviceIcons = [
+    { Icon: Plane, label: 'Vé máy bay' },
+    { Icon: Hotel, label: 'Khách sạn 3-4*' },
+    { Icon: Utensils, label: 'Bữa ăn' },
+    { Icon: Bus, label: 'Xe tham quan' },
+    { Icon: Ticket, label: 'Vé tham quan' },
+    { Icon: Users, label: 'HDV' },
+    { Icon: Shield, label: 'Bảo hiểm' },
+  ];
+  const noteItems = [
+    {
+      key: 'children',
+      title: 'Chính sách trẻ em',
+      lines: [
+        'Trẻ em từ 6–9 tuổi: áp dụng giá trẻ em theo chương trình.',
+        'Trẻ em 2–5 tuổi: phụ thu theo quy định, không chiếm giường riêng.',
+        'Trẻ dưới 2 tuổi: miễn phí (không chiếm ghế, không chiếm giường).',
+        'Từ 10 tuổi trở lên tính như người lớn.',
+      ],
+    },
+    {
+      key: 'cancel',
+      title: 'Chính sách hủy',
+      lines: [
+        'Hủy trước 30 ngày khởi hành: hoàn 70% giá tour.',
+        'Hủy trước 15 ngày khởi hành: hoàn 50% giá tour.',
+        'Hủy trong vòng 7 ngày: không hoàn tiền.',
+        'Giai đoạn lễ/tết có thể áp dụng chính sách riêng.',
+      ],
+    },
+    {
+      key: 'conditions',
+      title: 'Điều kiện tham gia',
+      lines: [
+        'Hộ chiếu còn hạn tối thiểu 6 tháng (tour nước ngoài).',
+        'Lịch trình có thể điều chỉnh thứ tự điểm đến theo tình hình thực tế.',
+        'Khách tự chịu trách nhiệm giấy tờ tùy thân hợp lệ.',
+        'Tuân thủ quy định an toàn và hướng dẫn của HDV trong suốt chuyến đi.',
+      ],
+    },
+  ];
+  const relatedTours = [
+    { id: `${tour.id}-r1`, title: `Tour ${tour.location} 3N2Đ tiêu chuẩn`, price: Math.round(tour.price * 0.88) },
+    { id: `${tour.id}-r2`, title: `Combo ${tour.location} cao cấp`, price: Math.round(tour.price * 1.12) },
+    { id: `${tour.id}-r3`, title: `Khám phá ${tour.location} tiết kiệm`, price: Math.round(tour.price * 0.82) },
+  ];
+  const navItems = [
+    { id: 'sec-dates', label: 'Ngày đi & giá' },
+    { id: 'sec-highlights', label: 'Điểm nổi bật' },
+    { id: 'sec-itinerary', label: 'Lịch trình' },
+    { id: 'sec-included', label: 'Bao gồm' },
+    { id: 'sec-notes', label: 'Lưu ý' },
+    { id: 'sec-reviews', label: 'Đánh giá' },
+  ];
+  const allExpanded = itinerary.length > 0 && expandedDays.length === itinerary.length;
+  const displayTotal = bookingTotal + (adults === 1 ? singleRoomSurcharge : 0);
+
   return (
-    
-    <div className={`min-h-screen bg-slate-50/50 dark:bg-slate-950 font-sans transition-colors duration-300 flex flex-col ${theme === 'dark' ? 'dark text-white' : 'text-slate-900 dark:text-slate-50'}`}>
+    <div className={`min-h-screen bg-white dark:bg-slate-950 font-sans transition-colors duration-300 flex flex-col ${theme === 'dark' ? 'dark text-white' : 'text-slate-900'}`}>
       <Header />
 
-      <div className="relative h-[52vh] min-h-[380px] max-h-[560px] w-full overflow-hidden">
-        <ImageWithFallback src={tour.image} alt={tour.title} className="w-full h-full object-cover scale-105" />
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/50 to-black/25" />
-        <div className="absolute bottom-0 left-0 right-0 p-8 sm:p-12 text-white animate-page-in">
-          <div className="max-w-7xl mx-auto text-left">
-            <span className="inline-block px-3.5 py-1.5 rounded-full text-[10px] font-black tracking-widest uppercase bg-blue-600 text-white mb-4 shadow">Hành trình di sản</span>
-            <div className="flex items-center gap-1.5 text-slate-200 mb-3 font-bold text-sm">
-              <MapPin className="size-4 text-blue-400" />
-              <span>{tour.location}</span>
-            </div>
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black font-sans leading-tight tracking-wide drop-shadow mb-6">{tour.title}</h1>
-            <div className="flex flex-wrap items-center gap-6 text-sm font-bold text-slate-100">
-              <div className="flex items-center gap-1.5">
-                <Star className="size-4.5 fill-amber-400 text-amber-400" />
-                <span>{averageRating} ({reviewCount.toLocaleString('vi-VN')} đánh giá)</span>
-              </div>
-              <div className="flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 backdrop-blur-sm">
-                <Clock className="size-4.5" />
-                <span>{tour.duration}</span>
-              </div>
-            </div>
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-4 pb-12 w-full flex-1">
+        {/* Breadcrumb */}
+        <nav className="text-left mb-3 text-xs font-bold text-slate-500 dark:text-slate-400">
+          <button type="button" onClick={() => navigate('/')} className="hover:text-blue-700 dark:hover:text-blue-400">Trang chủ</button>
+          <span className="mx-1.5">/</span>
+          <span>{tour.location}</span>
+          <span className="mx-1.5">/</span>
+          <span className="text-slate-700 dark:text-slate-300">{truncatedTitle}</span>
+        </nav>
+
+        {/* Badges row */}
+        <div className="flex flex-wrap items-center gap-2 mb-3">
+          <span className="rounded-full bg-blue-700 text-white text-[11px] font-black px-2.5 py-0.5">TO{String(tour.id).padStart(4, '0')}</span>
+          <span className="rounded-full bg-blue-700 text-white text-[11px] font-black px-2.5 py-0.5">{tour.location}</span>
+          <span className="rounded-full bg-orange-500 text-white text-[11px] font-black px-2.5 py-0.5">Ô tô, Máy bay</span>
+        </div>
+
+        {/* Title */}
+        <h1 className="text-left text-xl sm:text-2xl lg:text-[28px] font-black font-sans leading-snug mb-3">{tour.title}</h1>
+
+        {/* Meta row + price */}
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm font-bold mb-3">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 px-2.5 py-1">
+            <span className="font-black">{rating10}</span>
+            <span>{ratingLabel}</span>
+          </span>
+          <span className="text-slate-500 dark:text-slate-400 font-semibold">{reviewCount.toLocaleString('vi-VN')} đánh giá</span>
+          <span className="inline-flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
+            <Clock className="size-4 text-slate-400" />
+            {tour.duration}
+          </span>
+          <span className="inline-flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
+            <MapPin className="size-4 text-slate-400" />
+            Khởi hành từ {tour.location}
+          </span>
+          <div className="ml-auto text-right shrink-0">
+            <p className="text-2xl sm:text-3xl font-black text-orange-600 dark:text-orange-400 leading-none">{tour.price.toLocaleString('vi-VN')}đ</p>
+            <p className="text-xs font-bold text-slate-500">mỗi khách</p>
           </div>
         </div>
 
-        <div className="absolute top-6 right-6 flex gap-3">
-          <button type="button" onClick={handleFavoriteToggle} className="interactive-press size-11 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white dark:hover:bg-slate-800 transition-colors shadow-md cursor-pointer border border-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50">
-            <Heart className={`size-5.5 ${saved ? 'fill-red-500 text-red-500' : 'text-slate-700 dark:text-slate-300'}`} />
+        {/* Save / Share */}
+        <div className="flex flex-wrap gap-4 mb-5">
+          <button type="button" onClick={handleFavoriteToggle} className="inline-flex items-center gap-1.5 text-sm font-bold text-blue-700 dark:text-blue-400">
+            <Heart className={`size-4 ${saved ? 'fill-red-500 text-red-500' : ''}`} />
+            Lưu
           </button>
-          <button type="button" className="interactive-press size-11 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white dark:hover:bg-slate-800 transition-colors shadow-md cursor-pointer border border-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50">
-            <Share2 className="size-5.5 text-slate-700 dark:text-slate-300" />
+          <button type="button" className="inline-flex items-center gap-1.5 text-sm font-bold text-blue-700 dark:text-blue-400">
+            <Share2 className="size-4" />
+            Chia sẻ
           </button>
         </div>
-      </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 w-full flex-1">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-          <div className="lg:col-span-2 space-y-10">
-            <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 border border-slate-100/40 dark:border-slate-800/40 shadow-sm text-left">
-              <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-4 font-sans leading-tight">Tổng quan tour</h2>
-              <p className="text-slate-600 dark:text-slate-300 leading-relaxed text-sm font-medium mb-8">{tour.description}</p>
-              
-              <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-6 font-sans leading-tight border-t border-slate-100 dark:border-slate-800 pt-8">Lịch trình chi tiết</h2>
-              {itinerary.length === 0 ? (
-                <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">Chưa có lịch trình chi tiết cho tour này.</p>
-              ) : (
-              <div className="space-y-4">
-                {itinerary.map((dayData, index) => {
-                  const isExpanded = expandedDays.includes(dayData.day);
-                  const activities = dayData.activities ?? [];
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <div className="lg:col-span-8 text-left space-y-0">
+            <div className="relative grid grid-cols-3 gap-1 rounded-lg overflow-hidden h-[220px] sm:h-[280px] md:h-[320px] mb-4">
+              <button type="button" onClick={() => setActiveThumb(0)} className="relative col-span-2 h-full overflow-hidden">
+                <ImageWithFallback src={tour.image} alt={tour.title} className="w-full h-full object-cover" />
+                <span className="absolute top-2 left-2 rounded bg-orange-500 text-white text-[10px] font-black px-2 py-0.5 uppercase tracking-wide">Giá Tiết Kiệm</span>
+                <span className="absolute bottom-2 left-2 inline-flex items-center gap-1 rounded bg-black/60 text-white text-[11px] font-bold px-2 py-1">
+                  <Camera className="size-3.5" />
+                  11 ảnh
+                </span>
+              </button>
+              <div className="grid grid-cols-2 grid-rows-2 gap-1 h-full">
+                {galleryThumbs.map((idx, thumbIndex) => (
+                  <button key={idx} type="button" onClick={() => setActiveThumb(idx)} className="relative overflow-hidden h-full min-h-0">
+                    <ImageWithFallback src={tour.image} alt={`${tour.title} ${idx}`} className="w-full h-full object-cover" />
+                    {thumbIndex === 1 && (
+                      <span className="absolute inset-0 flex items-center justify-center bg-black/30">
+                        <span className="size-8 rounded-full bg-white/90 flex items-center justify-center">
+                          <Play className="size-4 text-slate-800 fill-slate-800 ml-0.5" />
+                        </span>
+                      </span>
+                    )}
+                    {thumbIndex === galleryThumbs.length - 1 && (
+                      <span className="absolute inset-0 flex items-center justify-center bg-black/60 text-white text-[11px] font-bold">
+                        +6 Xem ảnh
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="sticky top-16 z-20 bg-white/95 dark:bg-slate-950/95 backdrop-blur border-y border-slate-200 dark:border-slate-800 mb-6 -mx-4 px-4 sm:mx-0 sm:px-0 sm:rounded-lg sm:border">
+              <div className="flex overflow-x-auto gap-0">
+                {navItems.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => scrollToId(item.id)}
+                    className="shrink-0 px-3 sm:px-4 py-3 text-sm font-bold text-slate-600 dark:text-slate-300 hover:text-blue-700 dark:hover:text-blue-400 border-b-2 border-transparent hover:border-blue-600"
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <section id="sec-dates" className="scroll-mt-28 mb-10">
+              <div className="flex items-center gap-2 mb-1">
+                <List className="size-5 text-blue-700 dark:text-blue-400" />
+                <h2 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white font-sans">Lịch khởi hành</h2>
+              </div>
+              <p className="text-sm font-medium text-slate-500 mb-4">Chọn ngày khởi hành phù hợp với bạn</p>
+              <div className="flex flex-wrap gap-2 mb-4">
+                <button
+                  type="button"
+                  onClick={() => setMonthFilter('all')}
+                  className={`rounded-full px-3 py-1.5 text-xs font-bold transition-colors ${
+                    monthFilter === 'all'
+                      ? 'bg-blue-700 text-white'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                  }`}
+                >
+                  Tất cả
+                </button>
+                {monthTabs.map((tab) => (
+                  <button
+                    key={tab.key}
+                    type="button"
+                    onClick={() => setMonthFilter(tab.key)}
+                    className={`rounded-full px-3 py-1.5 text-xs font-bold transition-colors ${
+                      monthFilter === tab.key
+                        ? 'bg-blue-700 text-white'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+              <div className="space-y-2">
+                {filteredDepartures.map((dep) => {
+                  const startDt = new Date(dep.start + 'T00:00:00');
+                  const endDt = new Date(dep.end + 'T00:00:00');
+                  const active = selectedDate === dep.start;
+                  const weekday = startDt.toLocaleDateString('vi-VN', { weekday: 'short' });
+                  const dayMonth = startDt.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
+                  const rangeStr = `${startDt.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })} – ${endDt.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })}`;
                   return (
-                    <div key={index} className="rounded-2xl border border-slate-100 dark:border-slate-800 overflow-hidden bg-slate-50/50 dark:bg-slate-950/50">
-                      <button 
-                        onClick={() => toggleDay(dayData.day)}
-                        className="w-full flex items-center justify-between p-5 bg-white dark:bg-slate-900 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
-                      >
-                        <div className="flex items-center gap-4">
-                          <div className="flex flex-col items-center justify-center size-12 rounded-xl bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400 font-black">
-                            <span className="text-[10px] uppercase leading-none mb-0.5">Ngày</span>
-                            <span className="text-lg leading-none">{dayData.day}</span>
-                          </div>
-                          <h3 className="font-bold text-slate-900 dark:text-white text-left">{dayData.title}</h3>
-                        </div>
-                        {isExpanded ? (
-                          <ChevronUp className="size-5 text-slate-400 shrink-0" />
-                        ) : (
-                          <ChevronDown className="size-5 text-slate-400 shrink-0" />
+                    <div
+                      key={dep.start}
+                      className={`flex flex-wrap items-center gap-3 rounded-lg border px-4 py-3 transition-colors ${
+                        active
+                          ? 'border-blue-600 bg-blue-50 dark:bg-blue-950/30'
+                          : 'border-slate-200 dark:border-slate-800'
+                      }`}
+                    >
+                      <div className="shrink-0 text-center min-w-[52px]">
+                        <p className="text-[10px] font-bold text-blue-700 dark:text-blue-400 uppercase">{weekday}</p>
+                        <p className="text-lg font-black text-blue-700 dark:text-blue-400 leading-tight">{dayMonth}</p>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold text-slate-900 dark:text-white">{rangeStr}</p>
+                        {dep.contact && (
+                          <span className="inline-block mt-0.5 text-xs font-black text-red-600 dark:text-red-400">Liên hệ</span>
                         )}
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="text-sm font-black text-orange-600 dark:text-orange-400">
+                          {dep.price.toLocaleString('vi-VN')}đ
+                          <span className="text-xs font-bold text-slate-500"> / khách</span>
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedDate(dep.start)}
+                        className={`shrink-0 rounded-lg border px-4 py-1.5 text-xs font-black transition-colors ${
+                          active
+                            ? 'border-blue-700 bg-blue-700 text-white'
+                            : 'border-blue-600 text-blue-700 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30'
+                        }`}
+                      >
+                        {active ? 'Đã chọn' : 'Chọn'}
                       </button>
-                      
-                      {isExpanded && (
-                        <div className="p-6 pl-9 sm:pl-12 border-t border-slate-100 dark:border-slate-800 space-y-4">
-                          {(dayData.meals || dayData.accommodation) && (
-                            <div className="flex flex-wrap gap-3 text-xs font-bold">
-                              {dayData.meals && (
-                                <span className="rounded-lg bg-amber-50 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300 px-3 py-1.5">
-                                  Ăn: {dayData.meals}
-                                </span>
-                              )}
-                              {dayData.accommodation && (
-                                <span className="rounded-lg bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 px-3 py-1.5">
-                                  Nghỉ: {dayData.accommodation}
-                                </span>
-                              )}
-                            </div>
-                          )}
-                          {activities.length === 0 ? (
-                            <p className="text-sm font-semibold text-slate-500">Chưa có hoạt động cho ngày này.</p>
-                          ) : (
-                          <div className="relative border-l-2 border-slate-200 dark:border-slate-700 ml-4 space-y-6 pb-2">
-                            {activities.map((act, idx) => (
-                              <div key={idx} className="relative pl-6">
-                                <span className="absolute -left-[9px] top-1.5 size-4 rounded-full border-2 border-white dark:border-slate-900 bg-blue-500 shadow-sm" />
-                                {act.time && (
-                                  <div className="inline-block px-3 py-1 bg-slate-200/60 dark:bg-slate-800 rounded-lg text-xs font-black text-blue-700 dark:text-blue-400 mb-2">
-                                    {act.time}
-                                  </div>
-                                )}
-                                <p className="text-sm font-semibold text-slate-600 dark:text-slate-300 leading-relaxed">
-                                  {act.desc}
-                                </p>
-                              </div>
-                            ))}
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+
+            <section id="sec-highlights" className="scroll-mt-28 mb-10">
+              <h2 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white mb-1 font-sans">Điểm nổi bật tour</h2>
+              <p className="text-sm font-medium text-slate-500 mb-5">Những trải nghiệm chính trong hành trình.</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {highlightItems.map((item, index) => (
+                  <div
+                    key={index}
+                    className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm text-left"
+                  >
+                    <div className="flex items-start gap-3">
+                      <span className="shrink-0 size-10 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 font-black text-sm flex items-center justify-center">
+                        {String(index + 1).padStart(2, '0')}
+                      </span>
+                      <div className="min-w-0">
+                        <h3 className="font-black text-slate-900 dark:text-white text-sm sm:text-base mb-1.5 leading-snug">
+                          {item.title}
+                        </h3>
+                        <p className="text-sm font-medium text-slate-600 dark:text-slate-300 leading-relaxed">{item.desc}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {matchedLocations.length > 0 && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-5">
+                  {matchedLocations.map((loc) => (
+                    <div key={loc.location_id} className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800">
+                      <div className="flex items-center gap-2 mb-1">
+                        <MapPin className="size-4 text-blue-600" />
+                        <h4 className="font-bold text-sm">{loc.location_name}</h4>
+                      </div>
+                      <p className="text-xs text-slate-500 mb-1">{loc.address}</p>
+                      <p className="text-sm text-slate-600 dark:text-slate-300 font-medium">{loc.description}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+
+            <section id="sec-itinerary" className="scroll-mt-28 mb-10">
+              <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+                <div>
+                  <h2 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white font-sans">Lịch trình</h2>
+                  <p className="text-sm font-medium text-slate-500">Hoạt động chính từng ngày.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => (allExpanded ? collapseAllDays() : expandAllDays())}
+                  className="text-sm font-bold text-blue-700 dark:text-blue-400"
+                >
+                  {allExpanded ? 'Thu gọn' : 'Mở tất cả'}
+                </button>
+              </div>
+
+              {itinerary.length === 0 ? (
+                <p className="text-sm font-semibold text-slate-500">Chưa có lịch trình chi tiết.</p>
+              ) : (
+                <div className="space-y-3">
+                  {itinerary.map((dayData) => {
+                    const activities = dayData.activities ?? [];
+                    const open = expandedDays.includes(dayData.day);
+                    return (
+                      <div key={dayData.day} className="border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden">
+                        <button
+                          type="button"
+                          onClick={() => toggleDay(dayData.day)}
+                          className="w-full flex items-center gap-3 p-3 sm:p-4 text-left hover:bg-slate-50 dark:hover:bg-slate-900/50"
+                        >
+                          <ImageWithFallback
+                            src={tour.image}
+                            alt={`Ngày ${dayData.day}`}
+                            className="size-14 sm:size-16 rounded object-cover shrink-0"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-black text-blue-700 dark:text-blue-400 mb-0.5">Ngày {dayData.day}</p>
+                            <h3 className="font-bold text-slate-900 dark:text-white text-sm sm:text-base truncate">{dayData.title}</h3>
+                            {(dayData.meals || dayData.accommodation) && (
+                              <p className="text-xs font-semibold text-slate-500 mt-0.5 truncate">
+                                {[dayData.meals && `Ăn: ${dayData.meals}`, dayData.accommodation && `Nghỉ: ${dayData.accommodation}`]
+                                  .filter(Boolean)
+                                  .join(' · ')}
+                              </p>
+                            )}
                           </div>
-                          )}
+                          {open ? <ChevronUp className="size-5 text-slate-400 shrink-0" /> : <ChevronDown className="size-5 text-slate-400 shrink-0" />}
+                        </button>
+
+                        {open && (
+                          <div className="px-4 pb-4 pt-1 border-t border-slate-100 dark:border-slate-800 space-y-3">
+                            <h4 className="text-xs font-black uppercase tracking-wide text-slate-400">Hoạt động</h4>
+                            {activities.length === 0 ? (
+                              <p className="text-sm font-semibold text-slate-500">Chưa có hoạt động cho ngày này.</p>
+                            ) : (
+                              <div className="space-y-3">
+                                {activities.map((act, idx) => (
+                                  <div key={idx} className="text-sm">
+                                    {act.time && <span className="font-black text-blue-700 dark:text-blue-400 mr-2">{act.time}</span>}
+                                    <span className="font-semibold text-slate-600 dark:text-slate-300 leading-relaxed">{act.desc}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            <ImageWithFallback src={tour.image} alt={dayData.title} className="w-full h-40 object-cover rounded-lg" />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
+
+            <section id="sec-included" className="scroll-mt-28 mb-10">
+              <h2 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white mb-1 font-sans">Bao gồm & chưa bao gồm</h2>
+              <p className="text-sm font-medium text-slate-500 mb-5">Các dịch vụ chính trong giá tour.</p>
+              <div className="flex flex-wrap gap-4 sm:gap-6 mb-6 pb-5 border-b border-slate-100 dark:border-slate-800">
+                {serviceIcons.map(({ Icon, label }) => (
+                  <div key={label} className="flex flex-col items-center gap-1.5 min-w-[64px]">
+                    <div className="size-10 rounded-full bg-blue-50 dark:bg-blue-950/40 flex items-center justify-center">
+                      <Icon className="size-5 text-blue-700 dark:text-blue-400" />
+                    </div>
+                    <span className="text-[10px] sm:text-xs font-bold text-slate-600 dark:text-slate-300 text-center leading-tight">{label}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <h3 className="text-sm font-black text-slate-900 dark:text-white mb-3">Giá tour bao gồm</h3>
+                  <ul className="space-y-2">
+                    {includedItems.map((item, index) => (
+                      <li key={index} className="flex items-start gap-2">
+                        <CheckCircle className="size-4 text-emerald-500 shrink-0 mt-0.5" />
+                        <span className="text-sm font-medium text-slate-600 dark:text-slate-300">{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-slate-900 dark:text-white mb-3">Chưa bao gồm</h3>
+                  <ul className="space-y-2">
+                    {excludedItems.map((item, index) => (
+                      <li key={index} className="flex items-start gap-2">
+                        <X className="size-4 text-red-500 shrink-0 mt-0.5" />
+                        <span className="text-sm font-medium text-slate-600 dark:text-slate-300">{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </section>
+
+            <section id="sec-notes" className="scroll-mt-28 mb-10">
+              <h2 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white mb-1 font-sans">Lưu ý quan trọng</h2>
+              <p className="text-sm font-medium text-slate-500 mb-4">Thông tin cần biết trước khi đặt tour.</p>
+              <div className="space-y-2">
+                {noteItems.map((note) => {
+                  const open = openNoteKeys.includes(note.key);
+                  return (
+                    <div key={note.key} className="border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden">
+                      <button
+                        type="button"
+                        onClick={() => toggleNote(note.key)}
+                        className="w-full flex items-center justify-between px-4 py-3 text-left font-bold text-sm text-slate-900 dark:text-white hover:bg-slate-50 dark:hover:bg-slate-900/50"
+                      >
+                        {note.title}
+                        {open ? <ChevronUp className="size-5 text-slate-400" /> : <ChevronDown className="size-5 text-slate-400" />}
+                      </button>
+                      {open && (
+                        <div className="px-4 pb-4 text-sm font-medium text-slate-600 dark:text-slate-300 space-y-2 border-t border-slate-100 dark:border-slate-800 pt-3">
+                          {note.lines.map((line, i) => (
+                            <p key={i}>· {line}</p>
+                          ))}
                         </div>
                       )}
                     </div>
                   );
                 })}
               </div>
-              )}
-            </div>
+            </section>
 
-            {tour.highlights && (
-              <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 border border-slate-100/40 dark:border-slate-800/40 shadow-sm text-left">
-                <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-6 font-sans leading-tight">Địa điểm chi tiết / Nổi bật</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {tour.highlights.map((highlight: string, index: number) => (
-                    <div key={index} className="flex items-start gap-3">
-                      <MapPin className="size-5 text-blue-600 shrink-0 mt-0.5" />
-                      <span className="text-slate-700 dark:text-slate-300 text-sm font-semibold">{highlight}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+            <section id="sec-reviews" className="scroll-mt-28 mb-6">
+              <h2 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white mb-1 font-sans">Đánh giá của khách hàng</h2>
+              <p className="text-sm font-medium text-slate-500 mb-4">Trải nghiệm thực tế từ khách đã đi tour.</p>
 
-            {matchedLocations.length > 0 && (
-              <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 border border-slate-100/40 dark:border-slate-800/40 shadow-sm text-left">
-                <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-6 font-sans leading-tight">Thông tin địa điểm chi tiết</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {matchedLocations.map((loc) => (
-                    <div key={loc.location_id} className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
-                      <div className="flex items-center gap-2 mb-2">
-                        <MapPin className="size-5 text-blue-600" />
-                        <h3 className="font-bold text-slate-900 dark:text-white">{loc.location_name}</h3>
-                      </div>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">{loc.address}</p>
-                      <p className="text-sm text-slate-600 dark:text-slate-300 font-medium">{loc.description}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {(tour.included || tour.excluded) && (
-              <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 border border-slate-100/40 dark:border-slate-800/40 shadow-sm text-left">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  {tour.included && (
-                    <div>
-                      <h3 className="text-lg font-extrabold text-slate-900 dark:text-white mb-4 font-sans">Dịch vụ bao gồm</h3>
-                      <ul className="space-y-3">
-                        {tour.included.map((item: string, index: number) => (
-                          <li key={index} className="flex items-start gap-2.5">
-                            <CheckCircle className="size-5 text-emerald-500 shrink-0 mt-0.5" />
-                            <span className="text-slate-600 dark:text-slate-300 text-sm font-medium">{item}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                  {tour.excluded && (
-                    <div>
-                      <h3 className="text-lg font-extrabold text-slate-900 dark:text-white mb-4 font-sans">Chi phí tự túc</h3>
-                      <ul className="space-y-3">
-                        {tour.excluded.map((item: string, index: number) => (
-                          <li key={index} className="flex items-start gap-2.5">
-                            <X className="size-5 text-red-500 shrink-0 mt-0.5" />
-                            <span className="text-slate-600 dark:text-slate-300 text-sm font-medium">{item}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* ===== KHU VỰC ĐÁNH GIÁ ===== */}
-            <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 border border-slate-100/40 dark:border-slate-800/40 shadow-sm text-left">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
-                <h2 className="text-2xl font-black text-slate-900 dark:text-white font-sans leading-tight">Đánh giá từ khách hàng</h2>
-              </div>
-
-              {/* ===== TỔNG QUAN ĐIỂM + BIỂU ĐỒ PHÂN BỔ SAO ===== */}
-              <div className="flex flex-col sm:flex-row gap-6 mb-8 p-5 rounded-2xl bg-amber-50/60 dark:bg-slate-800/60 border border-amber-100 dark:border-slate-700">
-                {/* Điểm số tổng */}
-                <div className="flex flex-col items-center justify-center min-w-[110px] gap-1">
-                  <span className="text-5xl font-black text-slate-900 dark:text-white leading-none">{averageRating}</span>
-                  <div className="flex gap-0.5 mt-1">
-                    {[1, 2, 3, 4, 5].map((s) => {
-                      const avg = parseFloat(averageRating);
-                      return (
-                        <Star
-                          key={s}
-                          className={`size-4 ${avg >= s ? 'fill-amber-400 text-amber-400' : avg >= s - 0.5 ? 'fill-amber-200 text-amber-300' : 'text-slate-300 dark:text-slate-400'}`}
-                        />
-                      );
-                    })}
-                  </div>
-                  <span className="text-xs text-slate-500 dark:text-slate-400 font-semibold mt-0.5 text-center">
-                    {reviewCount.toLocaleString('vi-VN')} đánh giá
-                  </span>
-                </div>
-
-                {/* Thanh phân bổ từng sao */}
-                <div className="flex-1 flex flex-col gap-2 justify-center">
-                  {[5, 4, 3, 2, 1].map((star) => {
-                    const count = ratingDist[star] ?? 0;
-                    const pct = reviewCount > 0 ? Math.round((count / reviewCount) * 100) : 0;
-                    return (
-                      <div key={star} className="flex items-center gap-3">
-                        <div className="flex items-center gap-1 w-8 shrink-0">
-                          <Star className="size-3.5 fill-amber-400 text-amber-400" />
-                          <span className="text-xs font-bold text-slate-600 dark:text-slate-300">{star}</span>
-                        </div>
-                        <div className="flex-1 h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                          <div
-                            className="h-full rounded-full bg-amber-400 transition-all duration-700"
-                            style={{ width: `${pct}%` }}
-                          />
-                        </div>
-                        <span className="text-xs font-bold text-slate-500 dark:text-slate-400 w-9 text-right shrink-0">{pct}%</span>
-                        <span className="text-xs text-slate-400 dark:text-slate-400 w-14 text-right shrink-0 hidden sm:inline">({count.toLocaleString('vi-VN')})</span>
-                      </div>
-                    );
-                  })}
-                </div>
+              <div className="flex items-end gap-2 mb-5">
+                <span className="text-4xl font-black text-blue-700 dark:text-blue-400">{rating10}</span>
+                <span className="text-sm font-bold text-slate-600 dark:text-slate-300 pb-1">/10 · {ratingLabel} · {reviewCount.toLocaleString('vi-VN')} đánh giá</span>
               </div>
 
               {reviewNotice && (
-                <div className="mb-5 rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-700 dark:border-blue-900 dark:bg-blue-950/30 dark:text-blue-300">
+                <div className="mb-4 rounded-lg border border-blue-100 bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700 dark:border-blue-900 dark:bg-blue-950/30 dark:text-blue-300">
                   {reviewNotice}
                 </div>
               )}
 
-              {/* Danh sách review */}
-              <div className="space-y-6">
-                {reviews.map((review) => (
-                  <div key={review.id} className="border-b border-slate-100 dark:border-slate-800 pb-6 last:border-0 last:pb-0">
-                    <div className="flex items-start gap-4">
-                      <div className="text-3xl size-11 rounded-full bg-slate-50 dark:bg-slate-800/60 flex items-center justify-center shadow-inner shrink-0">{review.avatar}</div>
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between mb-1">
-                          <h4 className="text-slate-900 dark:text-white font-bold text-sm">{review.name}</h4>
-                          <span className="text-xs text-slate-400 dark:text-slate-400 font-bold">{review.date}</span>
-                        </div>
-                        <div className="flex items-center gap-0.5 mb-2">
-                          {[1, 2, 3, 4, 5].map((s) => (
-                            <Star
-                              key={s}
-                              className={`size-3.5 ${s <= review.rating ? 'fill-amber-400 text-amber-400' : 'text-slate-300 dark:text-slate-400'}`}
-                            />
-                          ))}
-                          <span className="ml-1.5 text-xs font-bold text-slate-500 dark:text-slate-400">{review.rating}/5</span>
-                        </div>
-                        <p className="text-slate-600 dark:text-slate-300 text-sm font-semibold italic">"{review.comment}"</p>
-                      </div>
+              <div className="space-y-4 mb-6">
+                {reviews.slice(0, 5).map((review) => (
+                  <div key={review.id} className="border-b border-slate-100 dark:border-slate-800 pb-4 last:border-0">
+                    <div className="flex items-center justify-between mb-1">
+                      <h4 className="font-bold text-sm text-slate-900 dark:text-white">{review.name}</h4>
+                      <span className="text-xs text-slate-400 font-bold">{review.date}</span>
                     </div>
+                    <div className="flex gap-0.5 mb-1">
+                      {[1, 2, 3, 4, 5].map((s) => (
+                        <Star key={s} className={`size-3 ${s <= review.rating ? 'fill-amber-400 text-amber-400' : 'text-slate-300'}`} />
+                      ))}
+                    </div>
+                    <p className="text-sm font-semibold text-slate-600 dark:text-slate-300">{review.comment}</p>
                   </div>
                 ))}
               </div>
 
-              {/* Form gửi đánh giá */}
-              <form onSubmit={handleSubmitReview} className="mt-8 rounded-3xl border border-slate-100 dark:border-slate-800 p-6">
-                <h3 className="text-lg font-extrabold text-slate-900 dark:text-white mb-4 font-sans">Viết đánh giá của bạn</h3>
-                
-                {userBookingsCount > userReviewsCount ? (
-                  <p className="mb-4 rounded-2xl bg-blue-50 border border-blue-100 px-4 py-3 text-sm font-semibold text-blue-700 dark:bg-blue-950/30 dark:border-blue-900 dark:text-blue-300">
-                    Bạn đã đặt tour này {userBookingsCount} lần và có thể viết {userBookingsCount - userReviewsCount} đánh giá nữa. Hãy chia sẻ trải nghiệm nhé!
-                  </p>
-                ) : userBookingsCount > 0 ? (
-                  <p className="mb-4 rounded-2xl bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300">
-                    Bạn đã viết đánh giá cho tất cả {userBookingsCount} lần đặt tour. Hãy đặt thêm tour để có thể đánh giá tiếp!
-                  </p>
-                ) : user ? (
-                  <p className="mb-4 rounded-2xl bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700 dark:bg-amber-950/30 dark:text-amber-300">
-                    Bạn chưa đặt tour này nên chưa thể gửi đánh giá. Hãy đặt tour để trải nghiệm nhé!
-                  </p>
-                ) : (
-                  <div className="mb-4 rounded-2xl bg-amber-50 border border-amber-100 px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 dark:bg-amber-950/30 dark:border-amber-900">
-                    <p className="text-sm font-semibold text-amber-700 dark:text-amber-300">
-                      Chỉ khách hàng đã đăng nhập và đặt tour mới có thể đánh giá.
-                    </p>
-                    <button onClick={() => navigate('/login')} className="shrink-0 px-4 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl transition-colors shadow-sm">
-                      Đăng nhập ngay
-                    </button>
+              <form onSubmit={handleSubmitReview} className="rounded-lg border border-slate-200 dark:border-slate-800 p-4">
+                <h3 className="text-sm font-extrabold mb-3">Viết đánh giá</h3>
+                {!user && (
+                  <div className="mb-3 rounded-lg bg-amber-50 px-3 py-2 flex justify-between gap-2 items-center dark:bg-amber-950/30">
+                    <p className="text-xs font-semibold text-amber-700 dark:text-amber-300">Đăng nhập để đánh giá.</p>
+                    <button type="button" onClick={() => navigate('/login')} className="px-3 py-1 bg-amber-600 text-white text-xs font-bold rounded-lg">Đăng nhập</button>
                   </div>
                 )}
-                <div className="mb-4">
-                  <label className="block text-xs font-black uppercase text-slate-400 dark:text-slate-400 mb-2">Mức độ hài lòng</label>
-                  <div className="flex items-center gap-1.5">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <button key={star} type="button" onClick={() => setMyRating(star)} className="hover:scale-110 transition-transform" disabled={!user || userBookingsCount <= userReviewsCount}>
-                        <Star className={`size-7 ${star <= myRating ? 'fill-amber-400 text-amber-400' : 'text-slate-300 dark:text-slate-400'}`} />
-                      </button>
-                    ))}
-                    <span className="ml-2 text-sm font-bold text-slate-600 dark:text-slate-300">{myRating}/5</span>
-                  </div>
+                <div className="mb-3 flex gap-1">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button key={star} type="button" onClick={() => setMyRating(star)} disabled={!user || userBookingsCount <= userReviewsCount}>
+                      <Star className={`size-6 ${star <= myRating ? 'fill-amber-400 text-amber-400' : 'text-slate-300'}`} />
+                    </button>
+                  ))}
                 </div>
                 <textarea
                   value={myComment}
                   onChange={(e) => setMyComment(e.target.value)}
-                  rows={4}
+                  rows={3}
                   disabled={!user || userBookingsCount <= userReviewsCount}
-                  placeholder="Chia sẻ trải nghiệm hành trình của bạn..."
-                  className="w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-transparent px-4 py-3 text-sm font-medium outline-none disabled:cursor-not-allowed disabled:opacity-60"
+                  placeholder="Chia sẻ trải nghiệm..."
+                  className="w-full rounded-lg border border-slate-200 dark:border-slate-800 bg-transparent px-3 py-2 text-sm font-medium outline-none disabled:opacity-60"
                 />
                 <button
                   type="submit"
                   disabled={!user || userBookingsCount <= userReviewsCount}
-                  className="mt-4 rounded-2xl bg-blue-900 px-6 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:bg-slate-400 dark:bg-blue-600 dark:disabled:bg-slate-700"
+                  className="mt-3 rounded-lg bg-blue-800 px-5 py-2.5 text-sm font-bold text-white disabled:bg-slate-400"
                 >
                   Gửi đánh giá
                 </button>
               </form>
-            </div>
+            </section>
+
+            <section className="scroll-mt-28 mb-6">
+              <h2 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white mb-4 font-sans">Tour liên quan</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {relatedTours.map((rel) => (
+                  <div key={rel.id} className="rounded-lg border border-slate-200 dark:border-slate-800 overflow-hidden hover:shadow-md transition-shadow">
+                    <div className="relative h-36">
+                      <ImageWithFallback src={tour.image} alt={rel.title} className="w-full h-full object-cover" />
+                    </div>
+                    <div className="p-3">
+                      <h3 className="text-sm font-bold text-slate-900 dark:text-white line-clamp-2 mb-2">{rel.title}</h3>
+                      <p className="text-base font-black text-orange-600 dark:text-orange-400">{rel.price.toLocaleString('vi-VN')}đ</p>
+                      <p className="text-[10px] font-bold text-slate-500">/ khách</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
           </div>
 
-          <div className="lg:col-span-1">
-            <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 sticky top-24 border border-slate-200/70 dark:border-slate-800 shadow-xl text-left ring-1 ring-blue-500/5">
-              <div className="mb-6">
-                <div className="flex items-baseline gap-1.5 mb-1">
-                  <span className="text-3xl font-black text-blue-900 dark:text-blue-400">{tour.price.toLocaleString('vi-VN')}đ</span>
-                  <span className="text-slate-400 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">/ người lớn</span>
-                </div>
-                <p className="text-sm font-bold text-slate-600 dark:text-slate-300 mb-2">
-                  Trẻ em (dưới 12 tuổi): {childPrice.toLocaleString('vi-VN')}đ
+          <div className="lg:col-span-4">
+            <div className="lg:sticky lg:top-24 space-y-3">
+              <div className="rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm text-left">
+                <p className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-1">
+                  Giá từ <span className="text-2xl font-black text-orange-600 dark:text-orange-400">{tour.price.toLocaleString('vi-VN')}đ</span> / Khách
                 </p>
-                <p className="text-xs font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wide">Trọn gói: {tour.duration}</p>
-              </div>
+                <p className="text-xs font-semibold text-slate-500 mb-4">Chọn ngày để tính tổng chuyến đi</p>
 
-              <div className="space-y-4 mb-6">
-                <div>
-                  <label className="block text-xs font-black uppercase text-slate-400 dark:text-slate-400 tracking-wider mb-2">Ngày khởi hành</label>
-                  <div className="relative">
-                    <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 size-4.5 text-blue-600 dark:text-blue-400" />
-                    <input
-                      type="date"
-                      value={selectedDate}
-                      onChange={(e) => setSelectedDate(e.target.value)}
-                      min={new Date().toISOString().split('T')[0]}
-                      className="w-full pl-12 pr-4 py-3 border border-slate-200 dark:border-slate-800 bg-transparent rounded-2xl outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 text-slate-800 dark:text-slate-100 font-bold text-sm transition-all"
-                    />
+                {!selectedDate ? (
+                  <div className="rounded-lg bg-slate-100 dark:bg-slate-800/60 p-4 mb-4 text-center">
+                    <Calendar className="size-6 text-slate-400 mx-auto mb-2" />
+                    <p className="text-sm font-bold text-slate-500">Chưa chọn ngày khởi hành...</p>
+                    <button
+                      type="button"
+                      onClick={() => scrollToId('sec-dates')}
+                      className="mt-2 text-xs font-bold text-blue-700 dark:text-blue-400 underline"
+                    >
+                      Chọn ngày khởi hành
+                    </button>
                   </div>
-                </div>
-                <div>
-                  <label className="block text-xs font-black uppercase text-slate-400 dark:text-slate-400 tracking-wider mb-2">Số lượng khách</label>
-                  <div className="rounded-2xl border border-slate-200 dark:border-slate-800 p-4 space-y-3">
-                    <div className="flex items-center justify-between gap-3">
-                      <div>
-                        <p className="text-sm font-bold text-slate-800 dark:text-slate-100">Người lớn</p>
-                        <p className="text-[11px] font-semibold text-slate-400">Từ 12 tuổi trở lên</p>
+                ) : (
+                  <>
+                    <div className="rounded-lg bg-blue-50 dark:bg-blue-950/30 p-3 mb-4">
+                      <p className="text-xs font-bold text-slate-500 mb-0.5">Ngày khởi hành</p>
+                      <p className="text-sm font-black text-slate-900 dark:text-white">
+                        {new Date(selectedDate + 'T00:00:00').toLocaleDateString('vi-VN', {
+                          weekday: 'long',
+                          day: '2-digit',
+                          month: '2-digit',
+                          year: 'numeric',
+                        })}
+                      </p>
+                    </div>
+
+                    <div className="space-y-3 mb-4">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="font-bold">Người lớn <span className="text-xs font-semibold text-slate-400">&gt;9 tuổi</span></span>
+                        <div className="flex items-center gap-2">
+                          <button type="button" onClick={() => setAdults(Math.max(1, adults - 1))} className="size-7 rounded border border-slate-200 dark:border-slate-700 font-bold">-</button>
+                          <span className="w-5 text-center font-black">{adults}</span>
+                          <button type="button" onClick={() => setAdults(adults + 1)} className="size-7 rounded border border-slate-200 dark:border-slate-700 font-bold">+</button>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <button type="button" onClick={() => setAdults(Math.max(1, adults - 1))} className="size-8 rounded-lg bg-slate-100 dark:bg-slate-800 font-bold">-</button>
-                        <span className="w-6 text-center font-black">{adults}</span>
-                        <button type="button" onClick={() => setAdults(adults + 1)} className="size-8 rounded-lg bg-slate-100 dark:bg-slate-800 font-bold">+</button>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="font-bold">Trẻ em <span className="text-xs font-semibold text-slate-400">6–9 tuổi</span></span>
+                        <div className="flex items-center gap-2">
+                          <button type="button" onClick={() => setChildren(Math.max(0, children - 1))} className="size-7 rounded border border-slate-200 dark:border-slate-700 font-bold">-</button>
+                          <span className="w-5 text-center font-black">{children}</span>
+                          <button type="button" onClick={() => setChildren(children + 1)} className="size-7 rounded border border-slate-200 dark:border-slate-700 font-bold">+</button>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="font-bold">Trẻ em <span className="text-xs font-semibold text-slate-400">2–5 tuổi</span></span>
+                        <div className="flex items-center gap-2">
+                          <button type="button" onClick={() => setChildYoung(Math.max(0, childYoung - 1))} className="size-7 rounded border border-slate-200 dark:border-slate-700 font-bold">-</button>
+                          <span className="w-5 text-center font-black">{childYoung}</span>
+                          <button type="button" onClick={() => setChildYoung(childYoung + 1)} className="size-7 rounded border border-slate-200 dark:border-slate-700 font-bold">+</button>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="font-bold">Trẻ nhỏ <span className="text-xs font-semibold text-slate-400">&lt;2 tuổi</span></span>
+                        <div className="flex items-center gap-2">
+                          <button type="button" onClick={() => setInfants(Math.max(0, infants - 1))} className="size-7 rounded border border-slate-200 dark:border-slate-700 font-bold">-</button>
+                          <span className="w-5 text-center font-black">{infants}</span>
+                          <button type="button" onClick={() => setInfants(infants + 1)} className="size-7 rounded border border-slate-200 dark:border-slate-700 font-bold">+</button>
+                        </div>
                       </div>
                     </div>
-                    <div className="flex items-center justify-between gap-3">
-                      <div>
-                        <p className="text-sm font-bold text-slate-800 dark:text-slate-100">Trẻ em</p>
-                        <p className="text-[11px] font-semibold text-slate-400">Dưới 12 tuổi</p>
+
+                    {adults === 1 && (
+                      <div className="flex justify-between text-xs font-semibold text-slate-500 mb-2">
+                        <span>Phụ thu phòng đơn</span>
+                        <span>{singleRoomSurcharge.toLocaleString('vi-VN')}đ</span>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <button type="button" onClick={() => setChildren(Math.max(0, children - 1))} className="size-8 rounded-lg bg-slate-100 dark:bg-slate-800 font-bold">-</button>
-                        <span className="w-6 text-center font-black">{children}</span>
-                        <button type="button" onClick={() => setChildren(children + 1)} className="size-8 rounded-lg bg-slate-100 dark:bg-slate-800 font-bold">+</button>
+                    )}
+
+                    <div className="border-t border-slate-100 dark:border-slate-800 pt-3 mb-4">
+                      <div className="flex justify-between font-black text-base">
+                        <span>Tổng cộng</span>
+                        <span className="text-orange-600 dark:text-orange-400">{displayTotal.toLocaleString('vi-VN')}đ</span>
                       </div>
                     </div>
-                  </div>
-                </div>
-              </div>
 
-              <div className="border-t border-slate-100 dark:border-slate-800 pt-5 mb-6 text-sm font-semibold">
-                <div className="flex justify-between mb-2">
-                  <span className="text-slate-500 dark:text-slate-400">{tour.price.toLocaleString('vi-VN')}đ x {adults} người lớn</span>
-                  <span className="text-slate-900 dark:text-slate-200">{(tour.price * adults).toLocaleString('vi-VN')}đ</span>
-                </div>
-                {children > 0 && (
-                  <div className="flex justify-between mb-2">
-                    <span className="text-slate-500 dark:text-slate-400">{childPrice.toLocaleString('vi-VN')}đ x {children} trẻ em</span>
-                    <span className="text-slate-900 dark:text-slate-200">{(childPrice * children).toLocaleString('vi-VN')}đ</span>
-                  </div>
+                    <PaylineButton onClick={handleBooking} />
+                  </>
                 )}
-                <div className="flex justify-between text-base font-bold pt-2">
-                  <span className="text-slate-900 dark:text-white">Tổng chi phí</span>
-                  <span className="text-blue-900 dark:text-blue-400 font-black">{bookingTotal.toLocaleString('vi-VN')}đ</span>
-                </div>
-              </div>
 
-              <PaylineButton onClick={handleBooking} />
-              <p className="text-[10px] text-center text-slate-400 dark:text-slate-400 font-bold tracking-wide uppercase">
-                Hỗ trợ hủy miễn phí trước 7 ngày
-              </p>
+                <button
+                  type="button"
+                  onClick={() => scrollToId('sec-dates')}
+                  className="mt-2 w-full rounded-lg border border-blue-600 text-blue-700 dark:text-blue-400 py-2.5 text-sm font-bold"
+                >
+                  Liên hệ tư vấn
+                </button>
+              </div>
             </div>
           </div>
         </div>

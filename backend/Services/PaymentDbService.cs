@@ -50,7 +50,9 @@ public class PaymentDbService
             p_user_name = userName ?? string.Empty,
             p_amount = amount,
             p_order_items = orderItems,
-            p_booking_refs = bookingRefs
+            p_booking_refs = bookingRefs,
+            // Disambiguate overload; reuse paymentCode as natural idempotency key.
+            p_idempotency_key = paymentCode
         });
 
         return response ?? throw new PaymentException("Không thể tạo đơn thanh toán");
